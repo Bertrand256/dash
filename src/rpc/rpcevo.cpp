@@ -704,7 +704,13 @@ UniValue protx_update_registrar(const JSONRPCRequest& request)
 
     CKey keyOwner;
     if (!pwalletMain->GetKey(dmn->pdmnState->keyIDOwner, keyOwner)) {
-        throw std::runtime_error(strprintf("Private key for owner address %s not found in your wallet", CBitcoinAddress(dmn->pdmnState->keyIDOwner).ToString()));
+        if(request.params.size() == 7 && request.params[6].get_str() != "") {
+            keyOwner = ParsePrivKey(request.params[6].get_str(), true);
+            if(keyOwner.GetPubKey().GetID() != dmn->pdmnState->keyIDOwner)
+                throw std::runtime_error(strprintf("The owner private key passed as an argument does not match the owner address associated with the ProRegTx transaction."));
+        }
+        else
+            throw std::runtime_error(strprintf("Private key for owner address %s not found in your wallet", CBitcoinAddress(dmn->pdmnState->keyIDOwner).ToString()));
     }
 
     CMutableTransaction tx;
