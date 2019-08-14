@@ -8,15 +8,12 @@
 #include "governance-validators.h"
 #include "governance-vote.h"
 #include "governance.h"
-#include "instantx.h"
 #include "masternode-meta.h"
 #include "masternode-sync.h"
 #include "messagesigner.h"
 #include "spork.h"
 #include "util.h"
 #include "validation.h"
-
-#include "llmq/quorums_instantsend.h"
 
 #include <string>
 #include <univalue.h>
@@ -121,7 +118,7 @@ bool CGovernanceObject::ProcessVote(CNode* pfrom,
     }
 
     auto mnList = deterministicMNManager->GetListAtChainTip();
-    auto dmn = mnList.GetValidMNByCollateral(vote.GetMasternodeOutpoint());
+    auto dmn = mnList.GetMNByCollateral(vote.GetMasternodeOutpoint());
 
     if (!dmn) {
         std::ostringstream ostr;
@@ -235,7 +232,7 @@ void CGovernanceObject::ClearMasternodeVotes()
 
     vote_m_it it = mapCurrentMNVotes.begin();
     while (it != mapCurrentMNVotes.end()) {
-        if (!mnList.HasValidMNByCollateral(it->first)) {
+        if (!mnList.HasMNByCollateral(it->first)) {
             fileVotes.RemoveVotesFromMasternode(it->first);
             mapCurrentMNVotes.erase(it++);
         } else {
@@ -498,18 +495,10 @@ bool CGovernanceObject::IsValidLocally(std::string& strError, bool& fMissingMast
             strError = "Failed to find Masternode by UTXO, missing masternode=" + strOutpoint;
             return false;
         }
-        if (!mnList.IsMNValid(dmn)) {
-            if (mnList.IsMNPoSeBanned(dmn)) {
-                strError = "Masternode is POSE_BANNED, masternode=" + strOutpoint;
-            } else {
-                strError = "Masternode is invalid for unknown reason, masternode=" + strOutpoint;
-            }
-            return false;
-        }
 
         // Check that we have a valid MN signature
-        if (!CheckSignature(dmn->pdmnState->pubKeyOperator)) {
-            strError = "Invalid masternode signature for: " + strOutpoint + ", pubkey = " + dmn->pdmnState->pubKeyOperator.ToString();
+        if (!CheckSignature(dmn->pdmnState->pubKeyOperator.Get())) {
+            strError = "Invalid masternode signature for: " + strOutpoint + ", pubkey = " + dmn->pdmnState->pubKeyOperator.Get().ToString();
             return false;
         }
 
@@ -607,8 +596,7 @@ bool CGovernanceObject::IsCollateralValid(std::string& strError, bool& fMissingC
         }
     }
 
-    if ((nConfirmationsIn < GOVERNANCE_FEE_CONFIRMATIONS) &&
-        (!instantsend.IsLockedInstantSendTransaction(nCollateralHash) || llmq::quorumInstantSendManager->IsLocked(nCollateralHash))) {
+    if ((nConfirmationsIn < GOVERNANCE_FEE_CONFIRMATIONS)) {
         strError = strprintf("Collateral requires at least %d confirmations to be relayed throughout the network (it has only %d)", GOVERNANCE_FEE_CONFIRMATIONS, nConfirmationsIn);
         if (nConfirmationsIn >= GOVERNANCE_MIN_RELAY_FEE_CONFIRMATIONS) {
             fMissingConfirmations = true;
