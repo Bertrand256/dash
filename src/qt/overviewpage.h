@@ -60,6 +60,7 @@ private:
     CAmount currentWatchImmatureBalance;
     int nDisplayUnit;
     bool fShowAdvancedPSUI;
+    int cachedNumISLocks;
 
     TxViewDelegate *txdelegate;
     std::unique_ptr<TransactionFilterProxy> filter;
@@ -69,9 +70,6 @@ private:
 
 private Q_SLOTS:
     void togglePrivateSend();
-    void privateSendAuto();
-    void privateSendReset();
-    void privateSendInfo();
     void updateDisplayUnit();
     void updatePrivateSendProgress();
     void updateAdvancedPSUI(bool fShowAdvancedPSUI);

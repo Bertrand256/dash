@@ -15,22 +15,16 @@
 #include <stdint.h>
 #include <string>
 
-#include <boost/function.hpp>
-
 #include <univalue.h>
 
 class CRPCCommand;
 
 namespace RPCServer
 {
-    void OnStarted(boost::function<void ()> slot);
-    void OnStopped(boost::function<void ()> slot);
-    void OnPreCommand(boost::function<void (const CRPCCommand&)> slot);
-    void OnPostCommand(boost::function<void (const CRPCCommand&)> slot);
+    void OnStarted(std::function<void ()> slot);
+    void OnStopped(std::function<void ()> slot);
+    void OnPreCommand(std::function<void (const CRPCCommand&)> slot);
 }
-
-class CBlockIndex;
-class CNetAddr;
 
 /** Wrapper for UniValue::VType, which includes typeAny:
  * Used to denote don't care type. Only used by RPCTypeCheckObj */
@@ -51,7 +45,7 @@ public:
     std::string URI;
     std::string authUser;
 
-    JSONRPCRequest() { id = NullUniValue; params = NullUniValue; fHelp = false; }
+    JSONRPCRequest() : id(NullUniValue), params(NullUniValue), fHelp(false) {}
     void parse(const UniValue& valRequest);
 };
 
@@ -67,7 +61,7 @@ void SetRPCWarmupStatus(const std::string& newStatus);
 void SetRPCWarmupFinished();
 
 /* returns the current warmup state.  */
-bool RPCIsInWarmup(std::string *statusOut);
+bool RPCIsInWarmup(std::string *outStatus);
 
 /**
  * Type-check arguments; throws JSONRPCError if wrong type given. Does not check that
@@ -114,7 +108,7 @@ public:
      * This is needed to cope with the case in which there is no HTTP server, but
      * only GUI RPC console, and to break the dependency of pcserver on httprpc.
      */
-    virtual RPCTimerBase* NewTimer(boost::function<void(void)>& func, int64_t millis) = 0;
+    virtual RPCTimerBase* NewTimer(std::function<void(void)>& func, int64_t millis) = 0;
 };
 
 /** Set the factory function for timers */
@@ -128,7 +122,7 @@ void RPCUnsetTimerInterface(RPCTimerInterface *iface);
  * Run func nSeconds from now.
  * Overrides previous timer <name> (if any).
  */
-void RPCRunLater(const std::string& name, boost::function<void(void)> func, int64_t nSeconds);
+void RPCRunLater(const std::string& name, std::function<void(void)> func, int64_t nSeconds);
 
 typedef UniValue(*rpcfn_type)(const JSONRPCRequest& jsonRequest);
 
@@ -152,7 +146,7 @@ private:
 public:
     CRPCTable();
     const CRPCCommand* operator[](const std::string& name) const;
-    std::string help(const std::string& strCommand, const std::string& strSubCommand) const;
+    std::string help(const std::string& name, const std::string& strSubCommand, const JSONRPCRequest& helpreq) const;
 
     /**
      * Execute a method.
@@ -192,20 +186,13 @@ extern int64_t ParseInt64V(const UniValue& v, const std::string &strName);
 extern double ParseDoubleV(const UniValue& v, const std::string &strName);
 extern bool ParseBoolV(const UniValue& v, const std::string &strName);
 
-extern int64_t nWalletUnlockTime;
 extern CAmount AmountFromValue(const UniValue& value);
-extern UniValue ValueFromAmount(const CAmount& amount);
-extern double GetDifficulty(const CBlockIndex* blockindex = NULL);
-extern std::string HelpRequiringPassphrase();
 extern std::string HelpExampleCli(const std::string& methodname, const std::string& args);
 extern std::string HelpExampleRpc(const std::string& methodname, const std::string& args);
-
-extern void EnsureWalletIsUnlocked();
 
 bool StartRPC();
 void InterruptRPC();
 void StopRPC();
-std::string JSONRPCExecBatch(const UniValue& vReq);
-void RPCNotifyBlockChange(bool ibd, const CBlockIndex *);
+std::string JSONRPCExecBatch(const JSONRPCRequest& jreq, const UniValue& vReq);
 
 #endif // BITCOIN_RPCSERVER_H

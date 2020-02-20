@@ -22,6 +22,14 @@
         <translation>복사(&amp;C)</translation>
     </message>
     <message>
+        <source>Show QR code for the currently selected address</source>
+        <translation>현재 선택된 주소에 대한 QR 코드 보이기</translation>
+    </message>
+    <message>
+        <source>&amp;Show QR code</source>
+        <translation>QR 코드($S)</translation>
+    </message>
+    <message>
         <source>Delete the currently selected address from the list</source>
         <translation>현재 선택된 주소를 목록에서 제거합니다.</translation>
     </message>
@@ -80,6 +88,14 @@
     <message>
         <source>&amp;Edit</source>
         <translation>편집(&amp;E)</translation>
+    </message>
+    <message>
+        <source>&amp;Show address QR code</source>
+        <translation>주소 QR 코드(&amp;S)</translation>
+    </message>
+    <message>
+        <source>QR code</source>
+        <translation>QR 코드</translation>
     </message>
     <message>
         <source>Export Address List</source>
@@ -438,14 +454,6 @@
         <translation>설정 파일을 엽니다.</translation>
     </message>
     <message>
-        <source>Open &amp;Masternode Configuration File</source>
-        <translation>마스터노드 설정 파일 열기(&amp;M)</translation>
-    </message>
-    <message>
-        <source>Open Masternode configuration file</source>
-        <translation>마스터노드 설정 파일을 엽니다.</translation>
-    </message>
-    <message>
         <source>Show Automatic &amp;Backups</source>
         <translation>자동 백업 표시(&amp;B)</translation>
     </message>
@@ -590,6 +598,30 @@
         <translation>정보</translation>
     </message>
     <message>
+        <source>Received and sent multiple transactions</source>
+        <translation>보내고 받은 다중 거래</translation>
+    </message>
+    <message>
+        <source>Sent multiple transactions</source>
+        <translation>다중 거래가 전송되었습니다</translation>
+    </message>
+    <message>
+        <source>Received multiple transactions</source>
+        <translation>다중 거래를 받았습니다</translation>
+    </message>
+    <message>
+        <source>Sent Amount: %1
+</source>
+        <translation>전송 금액: %1
+</translation>
+    </message>
+    <message>
+        <source>Received Amount: %1
+</source>
+        <translation>받은 금액: %1
+</translation>
+    </message>
+    <message>
         <source>Date: %1
 </source>
         <translation>날짜: %1
@@ -646,17 +678,6 @@
     <message>
         <source>Wallet is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;locked&lt;/b&gt;</source>
         <translation>지갑이 &lt;b&gt;암호화&lt;/b&gt; 되었고 현재 &lt;b&gt;잠겨져&lt;/b&gt; 있습니다</translation>
-    </message>
-</context>
-<context>
-    <name>ClientModel</name>
-    <message>
-        <source>Total: %1 (PS compatible: %2 / Enabled: %3)</source>
-        <translation>전체: %1 (PS 호환: %2 / 가능: %3)</translation>
-    </message>
-    <message>
-        <source>Network Alert</source>
-        <translation>네트워크 경고</translation>
     </message>
 </context>
 <context>
@@ -794,8 +815,8 @@
         <translation>이 기능을 사용하기 위해서는 '리스트 모드'를 켜주세요.</translation>
     </message>
     <message>
-        <source>Non-anonymized input selected. &lt;b&gt;PrivateSend will be disabled.&lt;/b&gt;&lt;br&gt;&lt;br&gt;If you still want to use PrivateSend, please deselect all non-anonymized inputs first and then check the PrivateSend checkbox again.</source>
-        <translation>익명화 되지 않은 입력이 선택되었습니다. &lt;b&gt;프라이빗샌드 기능이 비활성화됩니다. &lt;/b&gt;&lt;br&gt;&lt;br&gt;계속해서 프라이빗샌드 기능을 사용하고자 하신다면 모든 익명화되지 않은 입력 선택을 취소하시고 프라이빗샌드 체크박스를 다시 선택해주세요. </translation>
+        <source>Non-mixed input selected. &lt;b&gt;PrivateSend will be disabled.&lt;/b&gt;&lt;br&gt;&lt;br&gt;If you still want to use PrivateSend, please deselect all non-mixed inputs first and then check the PrivateSend checkbox again.</source>
+        <translation>믹싱되지 않은 입력이 선택되었습니다. &lt;b&gt;프라이빗샌드 기능이 비활성화됩니다. &lt;/b&gt;&lt;br&gt;&lt;br&gt;계속해서 프라이빗샌드 기능을 사용하고자 하시는 경우 믹싱되지 않은 모든 입력 선택을 취소하시고 프라이빗샌드 체크 박스를 다시 선택해주세요. </translation>
     </message>
     <message>
         <source>(%1 locked)</source>
@@ -971,8 +992,8 @@
         <translation>프라이빗샌드 정보</translation>
     </message>
     <message>
-        <source>&lt;h3&gt;PrivateSend Basics&lt;/h3&gt; PrivateSend gives you true financial privacy by obscuring the origins of your funds. All the Dash in your wallet is comprised of different "inputs" which you can think of as separate, discrete coins.&lt;br&gt; PrivateSend uses an innovative process to mix your inputs with the inputs of two other people, without having your coins ever leave your wallet. You retain control of your money at all times.&lt;hr&gt; &lt;b&gt;The PrivateSend process works like this:&lt;/b&gt;&lt;ol type="1"&gt; &lt;li&gt;PrivateSend begins by breaking your transaction inputs down into standard denominations. These denominations are 0.001 DASH, 0.01 DASH, 0.1 DASH, 1 DASH and 10 DASH -- sort of like the paper money you use every day.&lt;/li&gt; &lt;li&gt;Your wallet then sends requests to specially configured software nodes on the network, called "masternodes." These masternodes are informed then that you are interested in mixing a certain denomination. No identifiable information is sent to the masternodes, so they never know "who" you are.&lt;/li&gt; &lt;li&gt;When two other people send similar messages, indicating that they wish to mix the same denomination, a mixing session begins. The masternode mixes up the inputs and instructs all three users' wallets to pay the now-transformed input back to themselves. Your wallet pays that denomination directly to itself, but in a different address (called a change address).&lt;/li&gt; &lt;li&gt;In order to fully obscure your funds, your wallet must repeat this process a number of times with each denomination. Each time the process is completed, it's called a "round." Each round of PrivateSend makes it exponentially more difficult to determine where your funds originated.&lt;/li&gt; &lt;li&gt;This mixing process happens in the background without any intervention on your part. When you wish to make a transaction, your funds will already be anonymized. No additional waiting is required.&lt;/li&gt; &lt;/ol&gt; &lt;hr&gt;&lt;b&gt;IMPORTANT:&lt;/b&gt; Your wallet only contains 1000 of these "change addresses." Every time a mixing event happens, up to 9 of your addresses are used up. This means those 1000 addresses last for about 100 mixing events. When 900 of them are used, your wallet must create more addresses. It can only do this, however, if you have automatic backups enabled.&lt;br&gt; Consequently, users who have backups disabled will also have PrivateSend disabled. &lt;hr&gt;For more information, see the &lt;a href="https://docs.dash.org/en/latest/wallets/dashcore/privatesend-instantsend.html"&gt;PrivateSend documentation&lt;/a&gt;.</source>
-        <translation>&lt;h3&gt;프라이빗샌드에 관한 기본 정보&lt;/h3&gt; 프라이빗 샌드는 당신의 자금 출처를 가려 진정한 재정적 프라이버시를 보장합니다. 당신의 지갑에 보관된 모든 대시는 각기 다른 ‘입력값’으로 구성되어 있습니다. 쉽게 생각하면 별도의 분리된 동전으로 구성되어 있다고 볼 수 있습니다.&lt;br&gt; 프라이빗샌드는 당신의 코인이 지갑을 떠나지 않고도 그 입력값을 다른 두 사람의 입력값과 섞는 혁신적인 방식을 사용합니다. 이로써 당신의 자금은 언제나 당신의 통제 하에 있습니다.&lt;hr&gt;&lt;b&gt; 프라이빗샌드는 다음과 같은 방식으로 작동합니다.&lt;/b&gt;&lt;ol type="1"&gt;&lt;li&gt; 프라이빗샌드는 당신의 거래 입력값을 표준 단위로 쪼개는 것으로 시작합니다. 이렇게 분할하는 단위는 0.001대시, 0.01대시, 0.1대시, 1대시 혹은 10대시 입니다 - 귀하가 일상적으로 사용하는 지폐와 비슷하다고 생각하셔도 좋습니다. &lt;/li&gt;&lt;li&gt;이후 당신의 지갑은 ‘마스터노드’라고 불리는 네트워크의 특수 구성 소프트웨어 노드에 요청을 전송합니다. 이로써 이들 마스터노드는 당신이 특정 금액을 믹싱하고자 한다는 정보를 수신합니다. 마스터노드에는 당신의 개인 정보를 식별할 수 있는 어떤 내용도 전송되지 않습니다. 즉 당신이 ‘누구’인지 알 수 있는 방법은 없습니다.&lt;/li&gt;&lt;li&gt; 두 명의 다른 사람이 비슷한 메시지를 보내어 그들 역시 같은 단위의 금액을 믹싱하고 싶다는 정보를 표시하면 믹싱 세션이 시작됩니다. 마스터노드는 이들 입력값을 믹싱하여 세 사용자의 지갑에 변환된 입력을 지불하도록 지시합니다. 당신의 지갑은 해당 입력값을 지불하지만, 지불되는 주소는 '변경 주소'라고 불리는 다른 주소로 보내집니다.&lt;/li&gt;&lt;li&gt; 당신의 자금을 완전히 가리기 위해서, 당신의 지갑은 이 과정을 각 대시 분할 단위만큼 여러번 반복합니다. 이러한 반복을 ‘라운드’라고 부릅니다. 프라이빗샌드의 각 라운드가 진행됨에 따라 당신이 송금하고자 하는 자금의 출처는 기하급수적으로 높은 수준으로 가려집니다.&lt;/li&gt;&lt;li&gt; 이 믹싱 과정은 당신이 개입할 필요 없이 백그라운드에서 진행됩니다. 당신이 거래를 원하시는 경우, 당신의 자금은 이미 익명화가 진행되는 중입니다. 추가적으로 대기할 필요 역시 없습니다. &lt;/li&gt;&lt;/ol&gt;&lt;hr&gt;&lt;b&gt;중요:&lt;/b&gt; 당신의 지갑은 1,000개의 ‘변경 주소’만을 가지고 있습니다. 믹싱을 실행할 때마다 최대 9개의 주소가 사용됩니다. 이는 곧 이들 1000개의 주소가 약 100개의 믹싱 작업을 위해 사용될 수 있다는 것을 의미합니다. 전체 1,000개의 주소 중 900개가 사용된 경우 당신의 지갑은 더 많은 주소를 만들어야 합니다. 그러나 이 작업은 당신이 자동 백업을 설정한 경우에만 수행됩니다. &lt;br&gt;따라서 백업이 비활성화된 사용자는 프라이빗샌드 역시 비활성화 됩니다. &lt;hr&gt;더 많은 정보를 위해서는 다음을 참조하세요 &lt;a href="https://docs.dash.org/en/latest/wallets/dashcore/privatesend-instantsend.html"&gt;프라이빗샌드 설명서&lt;/a&gt;. </translation>
+        <source>&lt;h3&gt;PrivateSend Basics&lt;/h3&gt; PrivateSend gives you true financial privacy by obscuring the origins of your funds. All the Dash in your wallet is comprised of different "inputs" which you can think of as separate, discrete coins.&lt;br&gt; PrivateSend uses an innovative process to mix your inputs with the inputs of two other people, without having your coins ever leave your wallet. You retain control of your money at all times.&lt;hr&gt; &lt;b&gt;The PrivateSend process works like this:&lt;/b&gt;&lt;ol type="1"&gt; &lt;li&gt;PrivateSend begins by breaking your transaction inputs down into standard denominations. These denominations are 0.001 DASH, 0.01 DASH, 0.1 DASH, 1 DASH and 10 DASH -- sort of like the paper money you use every day.&lt;/li&gt; &lt;li&gt;Your wallet then sends requests to specially configured software nodes on the network, called "masternodes." These masternodes are informed then that you are interested in mixing a certain denomination. No identifiable information is sent to the masternodes, so they never know "who" you are.&lt;/li&gt; &lt;li&gt;When two other people send similar messages, indicating that they wish to mix the same denomination, a mixing session begins. The masternode mixes up the inputs and instructs all three users' wallets to pay the now-transformed input back to themselves. Your wallet pays that denomination directly to itself, but in a different address (called a change address).&lt;/li&gt; &lt;li&gt;In order to fully obscure your funds, your wallet must repeat this process a number of times with each denomination. Each time the process is completed, it's called a "round." Each round of PrivateSend makes it exponentially more difficult to determine where your funds originated.&lt;/li&gt; &lt;li&gt;This mixing process happens in the background without any intervention on your part. When you wish to make a transaction, your funds will already be mixed. No additional waiting is required.&lt;/li&gt; &lt;/ol&gt; &lt;hr&gt;&lt;b&gt;IMPORTANT:&lt;/b&gt; Your wallet only contains 1000 of these "change addresses." Every time a mixing event happens, up to 9 of your addresses are used up. This means those 1000 addresses last for about 100 mixing events. When 900 of them are used, your wallet must create more addresses. It can only do this, however, if you have automatic backups enabled.&lt;br&gt; Consequently, users who have backups disabled will also have PrivateSend disabled. &lt;hr&gt;For more information, see the &lt;a href="https://docs.dash.org/en/stable/wallets/dashcore/privatesend-instantsend.html"&gt;PrivateSend documentation&lt;/a&gt;.</source>
+        <translation>&lt;h3&gt;프라이빗샌드에 관한 기본 정보&lt;/h3&gt; 프라이빗 샌드는 당신의 자금 출처를 가려 진정한 재정적 프라이버시를 보장합니다. 당신의 지갑에 보관된 모든 대시는 각기 다른 ‘입력값’으로 구성되어 있습니다. 쉽게 생각하면 별도의 분리된 동전으로 구성되어 있다고 볼 수 있습니다.&lt;br&gt; 프라이빗샌드는 당신의 코인이 지갑을 떠나지 않고도 그 입력값을 다른 두 사람의 입력값과 섞는 혁신적인 방식을 사용합니다. 이로써 당신의 자금은 언제나 당신의 통제 하에 있습니다.&lt;hr&gt;&lt;b&gt; 프라이빗샌드는 다음과 같은 방식으로 작동합니다.&lt;/b&gt;&lt;ol type="1"&gt;&lt;li&gt; 프라이빗샌드는 당신의 거래 입력값을 표준 단위로 쪼개는 것으로 시작합니다. 이렇게 분할하는 단위는 0.001대시, 0.01대시, 0.1대시, 1대시 혹은 10대시 입니다 - 귀하가 일상적으로 사용하는 지폐와 비슷하다고 생각하셔도 좋습니다. &lt;/li&gt;&lt;li&gt;이후 당신의 지갑은 ‘마스터노드’라고 불리는 네트워크의 특수 구성 소프트웨어 노드에 요청을 전송합니다. 이로써 이들 마스터노드는 당신이 특정 금액을 믹싱하고자 한다는 정보를 수신합니다. 마스터노드에는 당신의 개인 정보를 식별할 수 있는 어떤 내용도 전송되지 않습니다. 즉 당신이 ‘누구’인지 알 수 있는 방법은 없습니다.&lt;/li&gt;&lt;li&gt; 두 명의 다른 사람이 비슷한 메시지를 보내어 그들 역시 같은 단위의 금액을 믹싱하고 싶다는 정보를 표시하면 믹싱 세션이 시작됩니다. 마스터노드는 이들 입력값을 믹싱하여 세 사용자의 지갑에 변환된 입력을 지불하도록 지시합니다. 당신의 지갑은 해당 입력값을 지불하지만, 지불되는 주소는 '변경 주소'라고 불리는 다른 주소로 보내집니다.&lt;/li&gt;&lt;li&gt; 당신의 자금을 완전히 가리기 위해서, 당신의 지갑은 이 과정을 각 대시 분할 단위만큼 여러번 반복합니다. 이러한 반복을 ‘라운드’라고 부릅니다. 프라이빗샌드의 각 라운드가 진행됨에 따라 당신이 송금하고자 하는 자금의 출처는 기하급수적으로 높은 수준으로 가려집니다.&lt;/li&gt;&lt;li&gt; 이 믹싱 과정은 당신이 개입할 필요 없이 백그라운드에서 진행됩니다. 당신이 거래를 원하시는 경우, 당신의 자금은 이미 믹싱을 진행하는 중입니다. 추가적으로 대기할 필요 역시 없습니다. &lt;/li&gt;&lt;/ol&gt;&lt;hr&gt;&lt;b&gt;중요:&lt;/b&gt; 당신의 지갑은 1,000개의 ‘변경 주소’만을 가지고 있습니다. 믹싱을 실행할 때마다 최대 9개의 주소가 사용됩니다. 이는 곧 이들 1000개의 주소가 약 100개의 믹싱 작업을 위해 사용될 수 있다는 것을 의미합니다. 전체 1,000개의 주소 중 900개가 사용된 경우 당신의 지갑은 더 많은 주소를 만들어야 합니다. 그러나 이 작업은 당신이 자동 백업을 설정한 경우에만 수행됩니다. &lt;br&gt;따라서 백업이 비활성화된 사용자는 프라이빗샌드 역시 비활성화 됩니다. &lt;hr&gt;더 많은 정보를 위해서는 다음을 참조하세요 &lt;a href="https://docs.dash.org/en/stable/wallets/dashcore/privatesend-instantsend.html"&gt;프라이빗샌드 설명서&lt;/a&gt;. </translation>
     </message>
 </context>
 <context>
@@ -990,8 +1011,16 @@
         <translation>프로그램을 처음으로 실행합니다. 어디에 %1 데이터를 저장 할 지 선택할 수 있습니다. </translation>
     </message>
     <message>
-        <source>%1 will download and store a copy of the Dash block chain. At least %2GB of data will be stored in this directory, and it will grow over time. The wallet will also be stored in this directory.</source>
-        <translation>%1이/가 다운로드 되며 사본이 대시 블록체인 상에 저장됩니다. 이 디렉토리에 최소 %2GB의 데이터가 저장되며, 저장되는 데이터의 양은 시간이 지남에 따라 증가합니다. 지갑 역시 이 디렉토리에 저장될 예정입니다.</translation>
+        <source>When you click OK, %1 will begin to download and process the full %4 block chain (%2GB) starting with the earliest transactions in %3 when %4 initially launched.</source>
+        <translation>확인을 클릭하면 %1은 모든 %4블록 체인 (%2GB) 장부를 %3 안에 다운로드하고 처리하기 시작합니다.  이는 %4가 시작될 때 생성된 가장 오래된 트랜잭션부터 시작합니다.</translation>
+    </message>
+    <message>
+        <source>This initial synchronisation is very demanding, and may expose hardware problems with your computer that had previously gone unnoticed. Each time you run %1, it will continue downloading where it left off.</source>
+        <translation>초기 동기화는 매우 오래 걸리며 이전에는 본 적 없는  하드웨어 문제가 발생할 수 있습니다. %1을 실행할 때마다 중단 된 곳에서 다시 계속 다운로드 됩니다.</translation>
+    </message>
+    <message>
+        <source>If you have chosen to limit block chain storage (pruning), the historical data must still be downloaded and processed, but will be deleted afterward to keep your disk usage low.</source>
+        <translation>블록 체인 저장 영역 (블록축소)을 제한하도록 선택한 경우, 이력 데이터는 계속해서 다운로드 및 처리 되어야 하지만 차후 디스크 용량을 줄이기 위해 삭제됩니다.</translation>
     </message>
     <message>
         <source>Use the default data directory</source>
@@ -1000,6 +1029,22 @@
     <message>
         <source>Use a custom data directory:</source>
         <translation>사용자 설정 데이터 디렉토리 사용하기</translation>
+    </message>
+    <message>
+        <source>At least %1 GB of data will be stored in this directory, and it will grow over time.</source>
+        <translation>최소 %1 GB의 데이터가 이 디렉토리에 저장되며 시간이 지남에 따라 증가할 것입니다.</translation>
+    </message>
+    <message>
+        <source>Approximately %1 GB of data will be stored in this directory.</source>
+        <translation>약 %1 GB의 데이터가 이 디렉토리에 저장됩니다.</translation>
+    </message>
+    <message>
+        <source>%1 will download and store a copy of the Dash block chain.</source>
+        <translation>%1은 비트코인 블록체인의 사본을 다운로드하여 저장합니다.</translation>
+    </message>
+    <message>
+        <source>The wallet will also be stored in this directory.</source>
+        <translation>지갑도 이 디렉토리에 저장됩니다.</translation>
     </message>
     <message>
         <source>Error: Specified data directory "%1" cannot be created.</source>
@@ -1025,76 +1070,12 @@
         <translation>유형</translation>
     </message>
     <message>
-        <source>My Masternodes</source>
-        <translation>나의 마스터노드</translation>
-    </message>
-    <message>
-        <source>Note: Status of your masternodes in local wallet can potentially be slightly incorrect.&lt;br /&gt;Always wait for wallet to sync additional data and then double check from another node&lt;br /&gt;if your masternode should be running but you still do not see "ENABLED" in "Status" field.</source>
-        <translation>주의: 로컬 지갑의 마스터노드 상태가 약간 다를 수 있습니다. 만일 당신의 마스터노드가 작동하고 있으나 여전히 '상태' 란에서 '활성화'가 표시되지 않은 경우 &lt;br /&gt;지갑이 추가적인 데이터와 동기화를 마치도록 기다리고 다른 노드로부터 이중 검증하세요.&lt;br /&gt;</translation>
-    </message>
-    <message>
-        <source>Alias</source>
-        <translation>에일리어스</translation>
-    </message>
-    <message>
-        <source>Address</source>
-        <translation>주소</translation>
-    </message>
-    <message>
-        <source>Protocol</source>
-        <translation>프로토콜</translation>
-    </message>
-    <message>
         <source>Status</source>
         <translation>상태</translation>
     </message>
     <message>
-        <source>Active</source>
-        <translation>활동 중</translation>
-    </message>
-    <message>
-        <source>Last Seen</source>
-        <translation>마지막 확인</translation>
-    </message>
-    <message>
-        <source>Payee</source>
-        <translation>수취인</translation>
-    </message>
-    <message>
-        <source>S&amp;tart alias</source>
-        <translation>에일리어스 시작(&amp;S)</translation>
-    </message>
-    <message>
-        <source>Start &amp;all</source>
-        <translation>모두 시작(&amp;A)</translation>
-    </message>
-    <message>
-        <source>Start &amp;MISSING</source>
-        <translation>미싱 시작(&amp;M)</translation>
-    </message>
-    <message>
-        <source>&amp;Update status</source>
-        <translation>업데이트 상태(&amp;U)</translation>
-    </message>
-    <message>
-        <source>Show additional Masternode information</source>
-        <translation>마스터노드 추가 정보를 보여줍니다.</translation>
-    </message>
-    <message>
-        <source>Show &amp;Info...</source>
-        <translation>정보 보기...(&amp;I)</translation>
-    </message>
-    <message>
-        <source>Status will be updated automatically in (sec):</source>
-        <translation>상태가 (초)안에 자동으로 업데이트 됩니다:</translation>
-    </message>
-    <message>
         <source>0</source>
         <translation>0</translation>
-    </message>
-    <message>
-        <source>All Masternodes</source>
-        <translation>모든 마스터노드</translation>
     </message>
     <message>
         <source>Filter List:</source>
@@ -1109,12 +1090,16 @@
         <translation>노드 개수:</translation>
     </message>
     <message>
-        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Note: This list represents the legacy and non-deterministic masternode list. It is only active as long as DIP3 has not been fully activated. After SPORK15 activation, this list will be empty.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;주의: 이 리스트는 레거시와 비결정론적 마스터노드 리스트를 나타냅니다. 이는 DIP3가 완전히 활성화되지 않은 경우에만 활성화됩니다. SPORK15 활성화 후에 이 리스트는 비워집니다.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+        <source>Show only masternodes this wallet has keys for.</source>
+        <translation>이 지갑이 키를 가지고 있는 마스터노드만 보이기</translation>
     </message>
     <message>
-        <source>DIP3 Masternodes</source>
-        <translation>DIP3 마스터노드</translation>
+        <source>My masternodes only</source>
+        <translation>나의 마스터노드만</translation>
+    </message>
+    <message>
+        <source>Service</source>
+        <translation>서비스</translation>
     </message>
     <message>
         <source>PoSe Score</source>
@@ -1133,16 +1118,24 @@
         <translation>다음 지불</translation>
     </message>
     <message>
+        <source>Payout Address</source>
+        <translation>지불 주소</translation>
+    </message>
+    <message>
         <source>Operator Reward</source>
         <translation>운영 보상</translation>
     </message>
     <message>
-        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Note: This list is not active yet and only for informational purposes. The network is still running in compatibility mode, which means that the non-deterministic masternode list is still active. Only after SPORK15 activation, this list will become the active one. Also, the values in the payment related fields are not used at the moment, but still updated for every block. Please ignore this until SPORK15 activation.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;주의: 이 리스트는 아직 활성화되지 않았으며 정보 전달을 위한 목적으로만 사용됩니다. 네트워크는 여전히 호환성 모드에서 작동하고 있으며, 이는 곧 비결정론적 마스터노드 리스트가 여전히 활성화되어 있음을 나타냅니다. 이 리스트는 SPORK15 활성화 이후에만 활성화됩니다. 또한, 지불과 관련된 필드의 값은 현재 사용되지 않지만, 여전히 모든 블록에 대해 업데이트 됩니다. SPORK15 활성화가 이루어질 때까지 이를 무시해주십시오.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+        <source>Collateral Address</source>
+        <translation>담보 주소</translation>
     </message>
     <message>
-        <source>Start alias</source>
-        <translation>에일리어스 시작</translation>
+        <source>Owner Address</source>
+        <translation>소유자 주소</translation>
+    </message>
+    <message>
+        <source>Voting Address</source>
+        <translation>투표 주소</translation>
     </message>
     <message>
         <source>Copy ProTx Hash</source>
@@ -1179,70 +1172,6 @@
     <message>
         <source>NONE</source>
         <translation>없음</translation>
-    </message>
-    <message>
-        <source>Confirm masternode start</source>
-        <translation>마스터노드 실행 확인</translation>
-    </message>
-    <message>
-        <source>Are you sure you want to start masternode %1?</source>
-        <translation>정말로 마스터노드 %1를 실행하시겠습니까?</translation>
-    </message>
-    <message>
-        <source>Confirm all masternodes start</source>
-        <translation>모든 마스터노드 실행 확인</translation>
-    </message>
-    <message>
-        <source>Are you sure you want to start ALL masternodes?</source>
-        <translation>정말로 모든 마스터노드를 실행하시겠습니까?</translation>
-    </message>
-    <message>
-        <source>Command is not available right now</source>
-        <translation>현재 이 명령을 실행할 수 없습니다.</translation>
-    </message>
-    <message>
-        <source>You can't use this command until masternode list is synced</source>
-        <translation>마스터노드 리스트가 동기화 될 때까지 이 명령을 실행할 수 없습니다.</translation>
-    </message>
-    <message>
-        <source>Confirm missing masternodes start</source>
-        <translation>미싱 마스터노드 시작 확인</translation>
-    </message>
-    <message>
-        <source>Are you sure you want to start MISSING masternodes?</source>
-        <translation>정말로 미싱 마스터노드를 시작하시겠습니까?</translation>
-    </message>
-    <message>
-        <source>Additional information for Masternode %1</source>
-        <translation>마스터노드 %1에 대한 추가 정보</translation>
-    </message>
-    <message>
-        <source>Masternode Private Key</source>
-        <translation>마스터노드 개인 키</translation>
-    </message>
-    <message>
-        <source>Private Key</source>
-        <translation>개인 키</translation>
-    </message>
-    <message>
-        <source>Collateral</source>
-        <translation>콜래트럴</translation>
-    </message>
-    <message>
-        <source>IP</source>
-        <translation>IP</translation>
-    </message>
-    <message>
-        <source>Version</source>
-        <translation>버전</translation>
-    </message>
-    <message>
-        <source>Unknown</source>
-        <translation>알 수 없음</translation>
-    </message>
-    <message>
-        <source>Sentinel</source>
-        <translation>센티넬</translation>
     </message>
     <message>
         <source>Additional information for DIP3 Masternode %1</source>
@@ -1350,10 +1279,6 @@
         <translation>(0 = 자동, &lt;0 = 지정된 코어 개수만큼 사용 안함)</translation>
     </message>
     <message>
-        <source>Amount of Dash to keep anonymized</source>
-        <translation>익명을 유지할 대시의 개수</translation>
-    </message>
-    <message>
         <source>W&amp;allet</source>
         <translation>지갑(&amp;a)</translation>
     </message>
@@ -1402,16 +1327,12 @@
         <translation>이 금액에 도달하는 경우 프라이빗샌드를 끄기 위한 한계점으로 작동합니다.</translation>
     </message>
     <message>
+        <source>Target PrivateSend balance</source>
+        <translation>타깃 프라이빗샌드 잔고</translation>
+    </message>
+    <message>
         <source>Automatically open the Dash Core client port on the router. This only works when your router supports UPnP and it is enabled.</source>
         <translation>라우터에서 대시 코어 클라이언트를 자동으로 엽니다. 이 기능은 당신의 라우터가 UPnP를 지원하고 해당 기능이 작동하는 경우에만 가능합니다.</translation>
-    </message>
-    <message>
-        <source>Accept connections from outside</source>
-        <translation>외부로부터의 연결 허용</translation>
-    </message>
-    <message>
-        <source>Allow incoming connections</source>
-        <translation>수신 연결 허용</translation>
     </message>
     <message>
         <source>Connect to the Dash network through a SOCKS5 proxy.</source>
@@ -1420,6 +1341,10 @@
     <message>
         <source>&amp;Connect through SOCKS5 proxy (default proxy):</source>
         <translation>SOCKS5 프록시를 거쳐 연결합니다(&amp;C) (기본 프록시):</translation>
+    </message>
+    <message>
+        <source>Shows if the supplied default SOCKS5 proxy is used to reach peers via this network type.</source>
+        <translation>선택된 기본 SOCKS5 프록시가 이 네트워크 유형을 통해 피어에 연결하는 경우에 보여주기</translation>
     </message>
     <message>
         <source>Minimize instead of exit the application when the window is closed. When this option is enabled, the application will be closed only after selecting Exit in the menu.</source>
@@ -1432,10 +1357,6 @@
     <message>
         <source>Expert</source>
         <translation>전문가</translation>
-    </message>
-    <message>
-        <source>This setting determines the amount of individual masternodes that an input will be anonymized through.&lt;br/&gt;More rounds of anonymization gives a higher degree of privacy, but also costs more in fees.</source>
-        <translation>이 설정은 얼마나 많은 개별 마스터노드를 거쳐 익명화를 진행할 지를 결정합니다.&lt;br/&gt;익명화를 위해 보다 많은 라운드를 거치는 것은 향상된 개인 정보 보호 수준을 제공하지만 더 많은 수수료가 발생합니다.</translation>
     </message>
     <message>
         <source>Whether to show coin control features or not.</source>
@@ -1466,12 +1387,24 @@
         <translation>검증되지 않은 잔돈 쓰기 (&amp;S)</translation>
     </message>
     <message>
+        <source>This setting determines the amount of individual masternodes that an input will be mixed through.&lt;br/&gt;More rounds of mixing gives a higher degree of privacy, but also costs more in fees.</source>
+        <translation>이 설정은 얼마나 많은 개별 마스터노드를 거쳐 믹싱을 진행할 지를 결정합니다.&lt;br/&gt;믹싱을 위해 보다 많은 라운드를 거치는 것은 향상된 개인 정보 보호 수준을 제공하지만 더 많은 수수료가 발생합니다.</translation>
+    </message>
+    <message>
         <source>&amp;Network</source>
         <translation>네트워크(&amp;N)</translation>
     </message>
     <message>
         <source>Map port using &amp;UPnP</source>
         <translation>UPnP를 사용하는 맵 포트(&amp;U)</translation>
+    </message>
+    <message>
+        <source>Accept connections from outside</source>
+        <translation>외부로부터의 연결 허용</translation>
+    </message>
+    <message>
+        <source>Allow incoming connections</source>
+        <translation>수신 연결 허용</translation>
     </message>
     <message>
         <source>Proxy &amp;IP:</source>
@@ -1492,10 +1425,6 @@
     <message>
         <source>Used for reaching peers via:</source>
         <translation>피어에 연결하기 위해 사용된 방법:</translation>
-    </message>
-    <message>
-        <source>Shows, if the supplied default SOCKS5 proxy is used to reach peers via this network type.</source>
-        <translation>선택된 기본 SOCKS5 프록시가 이 네트워크 유형을 통해 피어에 연결하는 경우에 보여주기</translation>
     </message>
     <message>
         <source>IPv4</source>
@@ -1715,22 +1644,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>완료:</translation>
     </message>
     <message>
-        <source>Try to manually submit a PrivateSend request.</source>
-        <translation>프라이빗샌드 요청을 수동으로 제출합니다.</translation>
-    </message>
-    <message>
-        <source>Reset the current status of PrivateSend (can interrupt PrivateSend if it's in the process of Mixing, which can cost you money!)</source>
-        <translation>프라이빗샌드의 현재 상태를 재설정합니다. (프라이빗샌드가 믹싱 단계에 있다면 이를 방해할 수도 있습니다. 이 경우에 수수료가 발생할 수 있습니다!)</translation>
-    </message>
-    <message>
-        <source>Information about PrivateSend and Mixing</source>
-        <translation>프라이빗샌드와 믹싱에 관한 정보</translation>
-    </message>
-    <message>
-        <source>Info</source>
-        <translation>정보</translation>
-    </message>
-    <message>
         <source>Amount and Rounds:</source>
         <translation>금액과 라운드:</translation>
     </message>
@@ -1765,14 +1678,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>(Last Message)</source>
         <translation>(지난 메시지)</translation>
-    </message>
-    <message>
-        <source>Try Mix</source>
-        <translation>믹스하기</translation>
-    </message>
-    <message>
-        <source>Reset</source>
-        <translation>재설정</translation>
     </message>
     <message>
         <source>out of sync</source>
@@ -1815,12 +1720,12 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>단위 분할 완료</translation>
     </message>
     <message>
-        <source>Mixed</source>
-        <translation>믹싱 완료</translation>
+        <source>Partially mixed</source>
+        <translation>부분적으로 믹싱됨</translation>
     </message>
     <message>
-        <source>Anonymized</source>
-        <translation>익명화 처리 완료</translation>
+        <source>Mixed</source>
+        <translation>믹싱 완료</translation>
     </message>
     <message numerus="yes">
         <source>Denominated inputs have %5 of %n rounds on average</source>
@@ -1875,10 +1780,6 @@ https://www.transifex.com/projects/p/dash/</translation>
 </source>
         <translation>지난 프라이빗샌드 메시지:
 </translation>
-    </message>
-    <message>
-        <source>PrivateSend was successfully reset.</source>
-        <translation>프라이빗샌드가 성공적으로 재설정 되었습니다.</translation>
     </message>
     <message>
         <source>If you don't want to see internal PrivateSend fees/transactions select "Most Common" as Type on the "Transactions" tab.</source>
@@ -2006,16 +1907,8 @@ https://www.transifex.com/projects/p/dash/</translation>
 <context>
     <name>QObject</name>
     <message>
-        <source>Dash Core</source>
-        <translation>대시 코어</translation>
-    </message>
-    <message>
         <source>%1 didn't yet exit safely...</source>
         <translation>%1가 아직 안전하게 종료되지 않았습니다...</translation>
-    </message>
-    <message>
-        <source>Error reading masternode configuration file: %1</source>
-        <translation>마스터노드 설정을 읽는 과정에서 에러가 발생하였습니다: %1</translation>
     </message>
     <message>
         <source>Amount</source>
@@ -2249,10 +2142,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>네트워크 트래픽(&amp;N)</translation>
     </message>
     <message>
-        <source>&amp;Clear</source>
-        <translation>지우기(&amp;C)</translation>
-    </message>
-    <message>
         <source>Totals</source>
         <translation>총액</translation>
     </message>
@@ -2317,12 +2206,20 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>현재 데이터 디렉토리에서 %1 디버그 로그 파일을 엽니다. 용량이 큰 로그 파일들은 여는 데 수 초가 걸릴 수 있습니다.</translation>
     </message>
     <message>
+        <source>InstantSend locks</source>
+        <translation>인스턴트샌드 잠금</translation>
+    </message>
+    <message>
         <source>Decrease font size</source>
         <translation>글자 크기 축소</translation>
     </message>
     <message>
         <source>Increase font size</source>
         <translation>글자 크기 확대</translation>
+    </message>
+    <message>
+        <source>&amp;Reset</source>
+        <translation>&amp;재설정(&amp;R)</translation>
     </message>
     <message>
         <source>Services</source>
@@ -2457,15 +2354,15 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>%1 RPC 콘솔에 오신걸 환영합니다</translation>
     </message>
     <message>
-        <source>Use up and down arrows to navigate history, and &lt;b&gt;Ctrl-L&lt;/b&gt; to clear screen.</source>
-        <translation>기록을 찾아보려면 위 아래 화살표 키를, 화면을 지우려면 &lt;b&gt;Ctrl-L&lt;/b&gt;키를 사용하십시오.</translation>
-    </message>
-    <message>
         <source>Type &lt;b&gt;help&lt;/b&gt; for an overview of available commands.</source>
         <translation>사용 가능한 명령을 둘러보려면 &lt;b&gt;help&lt;/b&gt;를 입력하십시오.</translation>
     </message>
     <message>
-        <source>WARNING: Scammers have been active, telling users to type commands here, stealing their wallet contents. Do not use this console without fully understanding the ramification of a command.</source>
+        <source>Use up and down arrows to navigate history, and %1 to clear screen.</source>
+        <translation>기록을 찾아보려면 위 아래 화살표 키를, 화면을 지우려면 %1 키를 사용하십시오.</translation>
+    </message>
+    <message>
+        <source>WARNING: Scammers have been active, telling users to type commands here, stealing their wallet contents. Do not use this console without fully understanding the ramifications of a command.</source>
         <translation>주의: 사기범들이 사용자들에게 이곳에 명령을 입력하도록 유도하면서 지갑의 내용물을 탈취할 수 있습니다. 명령의 결과에 관해 충분히 숙지하기 전에는 이 콘솔을 사용하지 마십시오.</translation>
     </message>
     <message>
@@ -2479,6 +2376,10 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Network activity disabled</source>
         <translation>네트워크 활동 비활성화</translation>
+    </message>
+    <message>
+        <source>Total: %1 (Enabled: %2)</source>
+        <translation>전체: %1 (가능: %2)</translation>
     </message>
     <message>
         <source>%1 B</source>
@@ -2584,10 +2485,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>지우기</translation>
     </message>
     <message>
-        <source>Request InstantSend</source>
-        <translation>인스턴트샌드 요청</translation>
-    </message>
-    <message>
         <source>Requested payments history</source>
         <translation>지불 요청 히스토리</translation>
     </message>
@@ -2669,18 +2566,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Message</source>
         <translation>메시지</translation>
-    </message>
-    <message>
-        <source>InstantSend</source>
-        <translation>인스턴트샌드</translation>
-    </message>
-    <message>
-        <source>Yes</source>
-        <translation>예</translation>
-    </message>
-    <message>
-        <source>No</source>
-        <translation>아니요</translation>
     </message>
     <message>
         <source>Resulting URI too long, try to reduce the text for label / message.</source>
@@ -2789,14 +2674,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>선택...</translation>
     </message>
     <message>
-        <source>Using the fallbackfee can result in sending a transaction that will take several hours or days (or never) to confirm. Consider choosing your fee manually or wait until your have validated the complete chain.</source>
-        <translation>폴백수수료(fallbackfee)를 사용하는 경우 거래를 전송하는 데 수 시간, 수 일이 소요되거나 거래가 전송되지 않을 수 있습니다. 수수료를 수동으로 선택하시거나 완전한 블록체인에 승인할 때 까지 기다리실 것을 권장합니다.</translation>
-    </message>
-    <message>
-        <source>Warning: Fee estimation is currently not possible.</source>
-        <translation>경고: 지금은 수수료 예측이 불가능합니다.</translation>
-    </message>
-    <message>
         <source>collapse fee-settings</source>
         <translation>수수료 설정 접기</translation>
     </message>
@@ -2809,16 +2686,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>프라이빗샌드</translation>
     </message>
     <message>
-        <source>InstantSend</source>
-        <translation>인스턴트샌드</translation>
-    </message>
-    <message>
         <source>If the custom fee is set to 1000 duffs and the transaction is only 250 bytes, then "per kilobyte" only pays 250 duffs in fee,&lt;br /&gt;while "at least" pays 1000 duffs. For transactions bigger than a kilobyte both pay by kilobyte.</source>
         <translation>만일 사용자 지정 수수료가 1000 더프로 설정되어 있으나 거래는 250바이트에 불과한 경우, 'KB 당'은 오직 250 더프를 수수료로 지불하는 한편 &lt;br /&gt;'최소'는 1000더프를 지불합니다. 1 KB보다 큰 거래를 진행하는 경우 두 옵션 모두 KB 당으로 지불합니다.</translation>
-    </message>
-    <message>
-        <source>If the custom fee is set to 1000 duffs and the transaction is only 250 bytes, then "per kilobyte" only pays 250 duffs in fee,&lt;br /&gt;while "total at least" pays 1000 duffs. For transactions bigger than a kilobyte both pay by kilobyte.</source>
-        <translation>만일 사용자 지정 수수료가 1000 더프로 설정되어 있으나 거래는 250바이트에 불과한 경우, 'KB 당'은 250 더프를 수수료로 지불하는 한편, &lt;br /&gt;'전체 최소'는 1000더프를 지불합니다. 1 KB보다 큰 거래를 진행하는 경우 두 옵션 모두 KB 당으로 지불합니다.</translation>
     </message>
     <message>
         <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks.&lt;br /&gt;But be aware that this can end up in a never confirming transaction once there is more demand for dash transactions than the network can process.</source>
@@ -2829,12 +2698,16 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>킬로바이트 당</translation>
     </message>
     <message>
-        <source>Hide</source>
-        <translation>숨기기</translation>
+        <source>Using the fallbackfee can result in sending a transaction that will take several hours or days (or never) to confirm. Consider choosing your fee manually or wait until you have validated the complete chain.</source>
+        <translation>폴백수수료(fallbackfee)를 사용하는 경우 거래를 전송하는 데 수 시간, 수 일이 소요되거나 거래가 전송되지 않을 수 있습니다. 수수료를 수동으로 선택하시거나 완전한 블록체인에 승인할 때 까지 기다리실 것을 권장합니다.</translation>
     </message>
     <message>
-        <source>total at least</source>
-        <translation>최소 총액</translation>
+        <source>Note: Not enough data for fee estimation, using the fallback fee instead.</source>
+        <translation>주의: 수수료 추정에 필요한 데이터가 부족하여 대체 수수료를 이용합니다.</translation>
+    </message>
+    <message>
+        <source>Hide</source>
+        <translation>숨기기</translation>
     </message>
     <message>
         <source>(read the tooltip)</source>
@@ -2851,14 +2724,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>(Smart fee not initialized yet. This usually takes a few blocks...)</source>
         <translation>(Smart fee가 아직 초기화 되지 않았습니다. 이 과정에는 수 블록이 소요됩니다...)</translation>
-    </message>
-    <message>
-        <source>normal</source>
-        <translation>일반</translation>
-    </message>
-    <message>
-        <source>fast</source>
-        <translation>빠름</translation>
     </message>
     <message>
         <source>Confirm the send action</source>
@@ -2917,24 +2782,12 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>잔돈 복사</translation>
     </message>
     <message>
+        <source>%1 (%2 blocks)</source>
+        <translation>%1 (%2 블록)</translation>
+    </message>
+    <message>
         <source>using</source>
         <translation>사용 중</translation>
-    </message>
-    <message>
-        <source>anonymous funds</source>
-        <translation>익명 처리된 자금</translation>
-    </message>
-    <message>
-        <source>(privatesend requires this amount to be rounded up to the nearest %1).</source>
-        <translation>(프라이빗샌드는 %1 가까이 라운드를 진행하기 위해서 이 금액을 필요로 합니다).</translation>
-    </message>
-    <message>
-        <source>any available funds (not anonymous)</source>
-        <translation>이용 가능한 모든 자금(비익명 포함)</translation>
-    </message>
-    <message>
-        <source>and InstantSend</source>
-        <translation>및 인스턴트샌드</translation>
     </message>
     <message>
         <source>%1 to %2</source>
@@ -2955,6 +2808,34 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>&lt;b&gt;(%1 of %2 entries displayed)&lt;/b&gt;</source>
         <translation>&lt;b&gt;(%2 중 %1 입력값 표시됨)&lt;/b&gt;</translation>
+    </message>
+    <message>
+        <source>PrivateSend funds only</source>
+        <translation>프라이빗샌드 자금만</translation>
+    </message>
+    <message>
+        <source>any available funds</source>
+        <translation>이용이 가능한 모든 자금</translation>
+    </message>
+    <message>
+        <source>(PrivateSend transactions have higher fees usually due to no change output being allowed)</source>
+        <translation>(프라이빗샌드 거래는 잔돈 아웃풋이 허용되지 않아 보다 높은 수수료가 책정됩니다)</translation>
+    </message>
+    <message>
+        <source>Transaction size: %1</source>
+        <translation>거래 크기: %1</translation>
+    </message>
+    <message>
+        <source>Fee rate: %1</source>
+        <translation>수수료 요율: %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>This transaction will consume %n input(s)</source>
+        <translation><numerusform>이 거래는 %n 입력값을 소모합니다</numerusform></translation>
+    </message>
+    <message>
+        <source>Warning: Using PrivateSend with %1 or more inputs can harm your privacy and is not recommended</source>
+        <translation>경고:  %1 혹은 그 이상의 인풋으로 프라이빗샌드를 이용하게 되면 당신의 프라이버시가 침해될 수 있어 권장하지 않습니다.</translation>
     </message>
     <message>
         <source>Confirm send coins</source>
@@ -2995,10 +2876,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Payment request expired.</source>
         <translation>지불 요청이 만료 되었습니다.</translation>
-    </message>
-    <message numerus="yes">
-        <source>%n block(s)</source>
-        <translation><numerusform>%n 블록</numerusform></translation>
     </message>
     <message>
         <source>Pay only the required fee of %1</source>
@@ -3330,16 +3207,12 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>%1 확인</translation>
     </message>
     <message>
-        <source>verified via InstantSend</source>
-        <translation>인스턴트샌드를 통해 검증됨</translation>
+        <source>locked via LLMQ based ChainLocks</source>
+        <translation>LLMQ 기반 체인락스로 잠김</translation>
     </message>
     <message>
-        <source>InstantSend verification in progress - %1 of %2 signatures</source>
-        <translation>인스턴트샌드 검증이 진행 중입니다 - %2 서명 중 %1</translation>
-    </message>
-    <message>
-        <source>InstantSend verification failed</source>
-        <translation>인스턴트샌드 검증에 실패하였습니다.</translation>
+        <source>verified via LLMQ based InstantSend</source>
+        <translation>LLMQ 기반 인스턴트샌드로 검증됨</translation>
     </message>
     <message>
         <source>Status</source>
@@ -3755,6 +3628,10 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>거래 세부 내역 보기</translation>
     </message>
     <message>
+        <source>Show address QR code</source>
+        <translation>주소 QR 코드 보이기</translation>
+    </message>
+    <message>
         <source>Export Transaction History</source>
         <translation>거래 기록 내보내기</translation>
     </message>
@@ -3807,6 +3684,10 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>거래 기록이 성공적으로 %1에 저장되었습니다.</translation>
     </message>
     <message>
+        <source>QR code</source>
+        <translation>QR 코드</translation>
+    </message>
+    <message>
         <source>Range:</source>
         <translation>범위:</translation>
     </message>
@@ -3834,14 +3715,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Send Coins</source>
         <translation>코인 보내기</translation>
-    </message>
-    <message>
-        <source>InstantSend doesn't support sending values that high yet. Transactions are currently limited to %1 DASH.</source>
-        <translation>인스턴트샌드는 이와 같은 고액 송금 기능을 아직 지원하지 않습니다. 현재 인스턴트샌드로 보낼 수 있는 최대한의 금액은 %1 DASH로 제한되어 있습니다.</translation>
-    </message>
-    <message>
-        <source>Used way too many inputs (&gt;%1) for this InstantSend transaction, fees could be huge.</source>
-        <translation>인스턴트샌드 거래를 위해서 지나치게 큰 입력값입니다(&gt;%1). 높은 수수료가 발생할 수 있습니다.</translation>
     </message>
 </context>
 <context>
@@ -3910,10 +3783,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>지갑 암호문을 저장하는 KeePass에서 사용할 URL을 구성하기 위한 이름 </translation>
     </message>
     <message>
-        <source>Set maximum size of high-priority/low-fee transactions in bytes (default: %d)</source>
-        <translation>우선 순위/적은 수수료 거래 크기의 최대치를 바이트로 설정하세요(디폴트: %d).</translation>
-    </message>
-    <message>
         <source>Set the number of script verification threads (%u to %d, 0 = auto, &lt;0 = leave that many cores free, default: %d)</source>
         <translation>스크립트 인증 스레드의 갯수 설정 (%u-%d, 0 = 자동, &lt;0 = 지정된 코어 개수만큼 사용 안함, 기본값: %d)</translation>
     </message>
@@ -3930,16 +3799,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>경고: 피어와 완전히 일치하지 않는 것으로 보입니다! 당신 혹은 다른 노드들의 업그레이드가 필요합니다.</translation>
     </message>
     <message>
-        <source>You must specify a masternodeprivkey in the configuration. Please see documentation for help.</source>
-        <translation>마스터노드 설정에서 마스터노드 개인 키를 지정하십시오. 도움이 필요하신 경우 문서를 확인하십시오.</translation>
-    </message>
-    <message>
         <source>Accept command line and JSON-RPC commands</source>
         <translation>명령줄과 JSON-RPC 명령 수락</translation>
-    </message>
-    <message>
-        <source>Add a node to connect to and attempt to keep the connection open</source>
-        <translation>연결을 위해 노드를 추가하고 연결을 유지합니다.</translation>
     </message>
     <message>
         <source>Allow DNS lookups for -addnode, -seednode and -connect</source>
@@ -4054,10 +3915,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>선택한 주소와 이에 연결된 화이트리스트 피어를 바인드 합니다. IPv6인 경우 [host]:port 명령어 표기법을 사용합니다.</translation>
     </message>
     <message>
-        <source>Bind to given address to listen for JSON-RPC connections. Use [host]:port notation for IPv6. This option can be specified multiple times (default: bind to all interfaces)</source>
-        <translation>JSON-RPC 연결을 수신하기 위해 선택한 주소를 바인드 합니다. IPv6인 경우 [host]:port 명령어 표기법을 사용합니다. 이 옵션은 복수로 설정할 수 있습니다. (디폴트: 모든 인터페이스를 바인드)</translation>
-    </message>
-    <message>
         <source>Create new files with system default permissions, instead of umask 077 (only effective with disabled wallet functionality)</source>
         <translation>umask 077 를 대신하여 시스템 기본 권한으로 새 파일을 만듭니다. (지갑 기능이 비활성화 상태에서만 유효합니다)</translation>
     </message>
@@ -4072,10 +3929,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Enable publish transaction hashes of attempted InstantSend double spend in &lt;address&gt;</source>
         <translation>&lt;address&gt;에서 시도된 인스턴트샌드 이중 지불의 거래 해시 공개를 활성화합니다.</translation>
-    </message>
-    <message>
-        <source>Error loading %s: You can't enable HD on a already existing non-HD wallet</source>
-        <translation>%s 로딩 에러: HD 지갑이 아닌 경우 HD를 활성화 할 수 없습니다.</translation>
     </message>
     <message>
         <source>Found unconfirmed denominated outputs, will wait till they confirm to continue.</source>
@@ -4102,10 +3955,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>getrawtransaction를 RPC CALL를 통해 완전한 거래 인덱스 유지 (기본값: %u)</translation>
     </message>
     <message>
-        <source>Make sure to encrypt your wallet and delete all non-encrypted backups after you verified that wallet works!</source>
-        <translation>해당 지갑이 작동하는 지 여부를 확인한 이후에는 당신의 지갑을 암호화하고, 암호화하지 않은 지갑 백업은 지워야 한다는 점을 주의하세요!</translation>
-    </message>
-    <message>
         <source>Maximum size of data in data carrier transactions we relay and mine (default: %u)</source>
         <translation>중계 및 채굴 시 데이터 운송 거래에서 데이터의 최대 크기 (디폴트: %u)</translation>
     </message>
@@ -4120,6 +3969,10 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Overrides minimum spork signers to change spork value. Only useful for regtest and devnet. Using this on mainnet or testnet will ban you.</source>
         <translation>최소 스포크 서명자를 무시하고 스포크 값을 변경합니다. 오직 회귀 테스트와 개발 네트워크에서만 유용합니다. 메인넷이나 테스트넷에서 사용하는 경우에는 금지당할 수 있습니다.</translation>
+    </message>
+    <message>
+        <source>PrivateSend uses exact denominated amounts to send funds, you might simply need to mix some more coins.</source>
+        <translation>프라이빗샌드는 송금을 위하여 정확한 분할 단위 금액을 사용합니다. 단순히 더 많은 코인을 믹싱함으로써 문제를 해결할 수 있을 지도 모릅니다.</translation>
     </message>
     <message>
         <source>Use N separate masternodes in parallel to mix funds (%u-%u, default: %u)</source>
@@ -4140,14 +3993,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Whitelisted peers cannot be DoS banned and their transactions are always relayed, even if they are already in the mempool, useful e.g. for a gateway</source>
         <translation>화이트리스트에 포함된 피어는 이미 멤풀에 포함되어 있다고 하더라도 DoS 추방이 되지 않으며, 이들의 거래는 항상 중계됩니다. 이는 예컨대 게이트웨이에서 유용합니다.</translation>
-    </message>
-    <message>
-        <source>You need to rebuild the database using -reindex-chainstate to change -txindex</source>
-        <translation>-txindex를 변경하기 위해서는 -reindex- 체인 상태를 사용하여 데이터를 재구성해야 합니다.</translation>
-    </message>
-    <message>
-        <source>You should specify a masternodeblsprivkey in the configuration. Please see documentation for help.</source>
-        <translation>설정에서 masternodeblsprivkey를 지정하십시오. 도움이 필요하신 경우 문서를 확인하십시오.</translation>
     </message>
     <message>
         <source>(default: %s)</source>
@@ -4178,16 +4023,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>포트 &lt;port&gt;로 KeePassHttp에 접속합니다. (디폴트: %u)</translation>
     </message>
     <message>
-        <source>Enable the client to act as a masternode (0-1, default: %u)</source>
-        <translation>클라이언트가 마스터노드로 활동하도록 활성화 합니다. (0-1, 디폴트: %u)</translation>
-    </message>
-    <message>
         <source>Entry exceeds maximum size.</source>
         <translation>입력값이 최대치를 초과하였습니다.</translation>
-    </message>
-    <message>
-        <source>Error loading %s: You can't disable HD on a already existing HD wallet</source>
-        <translation>%s 로딩 에러: 이미 존재하는 HD 지갑에서 HD를 비활성화 할 수 없습니다.</translation>
     </message>
     <message>
         <source>Failed to load fulfilled requests cache from</source>
@@ -4200,10 +4037,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Failed to load masternode cache from</source>
         <translation>다음으로부터 마스터노드 캐시를 불러오는 데 실패하였습니다.</translation>
-    </message>
-    <message>
-        <source>Failed to load masternode payments cache from</source>
-        <translation>다음으로부터 마스터노드 지불 캐시를 불러오는 데 실패하였습니다.</translation>
     </message>
     <message>
         <source>Found enough users, signing ( waiting %s )</source>
@@ -4250,24 +4083,24 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>잔고가 충분하지 않습니다.</translation>
     </message>
     <message>
-        <source>Invalid -onion address: '%s'</source>
-        <translation>잘못된 -onion 주소입니다: '%s'</translation>
-    </message>
-    <message>
-        <source>Invalid -proxy address: '%s'</source>
-        <translation>잘못된 -proxy 주소입니다: '%s'</translation>
+        <source>Invalid amount for -discardfee=&lt;amount&gt;: '%s'</source>
+        <translation>-discardfee=1: '%s' 에 대한 유효하지 않은 금액</translation>
     </message>
     <message>
         <source>Invalid amount for -paytxfee=&lt;amount&gt;: '%s' (must be at least %s)</source>
         <translation>유효하지 않은 금액입니다. -paytxfee=&lt;amount&gt;: '%s' (최소 %s 이상이어야 합니다)</translation>
     </message>
     <message>
-        <source>Invalid masternodeblsprivkey. Please see documenation.</source>
-        <translation>유효하지 않은 masternodeblsprivkey 입니다. 문서를 확인하세요.</translation>
-    </message>
-    <message>
         <source>Invalid minimum number of spork signers specified with -minsporkkeys</source>
         <translation>-minsporkkeys로 지정된 스포크 서명자의 최소 숫자가 유효하지 않습니다.</translation>
+    </message>
+    <message>
+        <source>Keep N DASH mixed (%u-%u, default: %u)</source>
+        <translation>N 대시를 믹싱한 상태로 유지합니다(%u-%u, 디폴트: %u).</translation>
+    </message>
+    <message>
+        <source>Keep at most &lt;n&gt; unconnectable transactions in memory (default: %u)</source>
+        <translation>최대 &lt;n&gt;개의 연결할 수 없는 거래를 메모리에 저장 (기본값: %u)</translation>
     </message>
     <message>
         <source>Keypool ran out, please call keypoolrefill first</source>
@@ -4294,16 +4127,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>마스터노드 캐시를 불러오는 중...</translation>
     </message>
     <message>
-        <source>Loading masternode payment cache...</source>
-        <translation>마스터노드 지불 캐시를 불러오는 중...</translation>
-    </message>
-    <message>
         <source>Lock is already in place.</source>
         <translation>이미 잠금 상태입니다.</translation>
-    </message>
-    <message>
-        <source>Lock masternodes from masternode configuration file (default: %u)</source>
-        <translation>마스터노드 설정 파일로부터 마스터노드를 잠급니다. (디폴트: %u)</translation>
     </message>
     <message>
         <source>Maximum per-connection receive buffer, &lt;n&gt;*1000 bytes (default: %u)</source>
@@ -4334,16 +4159,16 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>호환되는 마스터노드를 찾을 수 없습니다.</translation>
     </message>
     <message>
+        <source>Not enough funds to mix.</source>
+        <translation>믹싱을 진행하기에 잔고가 충분하지 않습니다.</translation>
+    </message>
+    <message>
         <source>Not in the Masternode list.</source>
         <translation>마스터노드 리스트에 없습니다.</translation>
     </message>
     <message>
         <source>Only connect to nodes in network &lt;net&gt; (ipv4, ipv6 or onion)</source>
         <translation>오직 네트워크에서만 노드에 접속합니다. &lt;net&gt;(ipv4, ipv6 혹은 onion)</translation>
-    </message>
-    <message>
-        <source>Port: %d</source>
-        <translation>포트: %d</translation>
     </message>
     <message>
         <source>Prepend debug output with timestamp (default: %u)</source>
@@ -4362,16 +4187,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>추적/디버그 정보를 debug.log 파일로 보냅니다. (디폴트: %u)</translation>
     </message>
     <message>
-        <source>Send transactions as zero-fee transactions if possible (default: %u)</source>
-        <translation>가능한 경우 수수료 제로 방식으로 거래합니다. (디폴트: %u)</translation>
-    </message>
-    <message>
         <source>Set key pool size to &lt;n&gt; (default: %u)</source>
         <translation>키풀 크기를 &lt;n&gt; 로 설정합니다. (기본값: %u)</translation>
-    </message>
-    <message>
-        <source>Set the masternode BLS private key</source>
-        <translation>마스터노드 BLS 개인 키를 설정합니다.</translation>
     </message>
     <message>
         <source>Set the number of threads to service RPC calls (default: %d)</source>
@@ -4386,10 +4203,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>밀리세컨드 단위로 연결 제한 시간을 설정합니다. (최소값: 1, 기본값: %d)</translation>
     </message>
     <message>
-        <source>Specify masternode configuration file (default: %s)</source>
-        <translation>마스터노드 설정 파일을 지정합니다. (디폴트: %s)</translation>
-    </message>
-    <message>
         <source>Specify pid file (default: %s)</source>
         <translation>pid 파일을 지정합니다. (기본값: %s)</translation>
     </message>
@@ -4398,20 +4211,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>거래를 보낼 때 검증되지 않은 잔돈 쓰기 (기본값: %u)</translation>
     </message>
     <message>
-        <source>Submitted following entries to masternode: %u / %d</source>
-        <translation>다음의 입력값을 마스터노드에 제출하기: %u / %d</translation>
-    </message>
-    <message>
-        <source>Submitted to masternode, waiting for more entries ( %u / %d ) %s</source>
-        <translation>마스터노드에 제출, 더 많은 입력값을 기다리는 중 (%u / %d ) %s</translation>
-    </message>
-    <message>
         <source>Submitted to masternode, waiting in queue %s</source>
         <translation>마스터노드에 제출, 대기열에서 기다리는 중 %s</translation>
-    </message>
-    <message>
-        <source>Synchroning blockchain...</source>
-        <translation>블록체인 동기화 중...</translation>
     </message>
     <message>
         <source>Synchronization failed</source>
@@ -4420,14 +4221,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Synchronization finished</source>
         <translation>동기화가 끝났습니다.</translation>
-    </message>
-    <message>
-        <source>Synchronizing masternodes...</source>
-        <translation>마스터노드 동기화 중...</translation>
-    </message>
-    <message>
-        <source>This is not a Masternode.</source>
-        <translation>이는 마스터노드가 아닙니다.</translation>
     </message>
     <message>
         <source>Threshold for disconnecting misbehaving peers (default: %u)</source>
@@ -4490,12 +4283,12 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>사용자 정의 코멘트 (%s)에 안전하지 못한 글자가 포함되어 있습니다.</translation>
     </message>
     <message>
-        <source>Will retry...</source>
-        <translation>다시 시도할 예정입니다...</translation>
+        <source>Verifying wallet(s)...</source>
+        <translation>지갑(들)을 검증 중...</translation>
     </message>
     <message>
-        <source>Invalid masternodeprivkey. Please see documenation.</source>
-        <translation>유효하지 않은 masternodeprivkey 입니다. 문서를 확인하세요.</translation>
+        <source>Will retry...</source>
+        <translation>다시 시도할 예정입니다...</translation>
     </message>
     <message>
         <source>Can't find random Masternode.</source>
@@ -4506,16 +4299,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>동기화가 진행되는 동안 믹싱할 수 없습니다.</translation>
     </message>
     <message>
-        <source>Could not parse masternode.conf</source>
-        <translation>masternode.conf 를 분석할 수 없습니다.</translation>
-    </message>
-    <message>
         <source>Invalid netmask specified in -whitelist: '%s'</source>
         <translation>-whitelist: '%s'로 지정된 넷마스크가 유효하지 않습니다. </translation>
-    </message>
-    <message>
-        <source>Invalid port detected in masternode.conf</source>
-        <translation>masternode.conf 에서 유효하지 않은 포트가 감지되었습니다.</translation>
     </message>
     <message>
         <source>Invalid script detected.</source>
@@ -4530,16 +4315,28 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>KeePass를 통해 AES 암호화된 의사 소통을 위한 KeePassHttp 키</translation>
     </message>
     <message>
-        <source>Keep at most &lt;n&gt; unconnectable transactions in memory (default: %u)</source>
-        <translation>최대 &lt;n&gt;개의 연결할 수 없는 거래를 메모리에 저장 (기본값: %u)</translation>
-    </message>
-    <message>
         <source>Disable all Dash specific functionality (Masternodes, PrivateSend, InstantSend, Governance) (0-1, default: %u)</source>
         <translation>모든 대시만의 기능(마스터노드, 프라이빗샌드, 인스턴트샌드, 거버넌스)을 비활성화 (0-1, 디폴트: %u)</translation>
     </message>
     <message>
         <source>%s file contains all private keys from this wallet. Do not share it with anyone!</source>
         <translation>%s 파일에는이 지갑의 모든 프라이빗키가 들어 있습니다. 절대 공유하지 마십시오!</translation>
+    </message>
+    <message>
+        <source>-masternode option is deprecated and ignored, specifying -masternodeblsprivkey is enough to start this node as a masternode.</source>
+        <translation>-masternode 옵션은 중요도가 하락하여 무시되고 -masternodeblsprivkey는 마스터노드로서 이 노드를 시작하기에 충분합니다.</translation>
+    </message>
+    <message>
+        <source>Add a node to connect to and attempt to keep the connection open (see the `addnode` RPC command help for more info)</source>
+        <translation>연결할 노드를 추가하고 이 연결을 유지합니다 (더 많은 정보를 확인하시려면 'addnode` RPC 코맨드를 확인하세요).</translation>
+    </message>
+    <message>
+        <source>Bind to given address to listen for JSON-RPC connections. This option is ignored unless -rpcallowip is also passed. Port is optional and overrides -rpcport. Use [host]:port notation for IPv6. This option can be specified multiple times (default: 127.0.0.1 and ::1 i.e., localhost, or if -rpcallowip has been specified, 0.0.0.0 and :: i.e., all addresses)</source>
+        <translation>JSON-RPC 연결을 수신하기 위해 선택한 주소를 바인드 합니다. -rpcallowip 역시 패스한 경우 외에는 이 옵션은 무시하셔도 좋습니다. 포트는 선택 사항이며 -rpcport를 덮어씁니다. IPv6인 경우 [host]:port 명령어 표기법을 사용합니다. 이 옵션은 복수로 설정할 수 있습니다 (디폴트: 127.0.0.1 및 ::1 즉 localhost, 혹은 -rpcallowip가 선택된 경우 0.0.0.0 및 :: 즉 모든 주소) </translation>
+    </message>
+    <message>
+        <source>Connect only to the specified node(s); -connect=0 disables automatic connections (the rules for this peer are the same as for -addnode)</source>
+        <translation>지정된 노드(들)에만 연결합니다; -connecdt=0을 이용하면 자동 연결이 해제됩니다 (이 피어를 위한 규칙은 -addnode를 위한 규칙과 같습니다)</translation>
     </message>
     <message>
         <source>Discover own IP addresses (default: 1 when listening and no -externalip or -proxy)</source>
@@ -4550,16 +4347,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>멤풀에 있는 거래 기록을 &lt;n&gt;시간 후 부터는 유지하지 않기 (디폴트: %u)</translation>
     </message>
     <message>
-        <source>Enable InstantSend, show confirmations for locked transactions (0-1, default: %u)</source>
-        <translation>인스턴트샌드를 활성화하고 잠긴 거래를 위한 거래 확인을 보여줍니다. (0-1, 디폴트: %u)</translation>
-    </message>
-    <message>
         <source>Enable multiple PrivateSend mixing sessions per block, experimental (0-1, default: %u)</source>
         <translation>실험적으로 블록당 다수의 프라이빗샌드 믹싱 세션을 활성화합니다. (0-1, 디폴트: %u)</translation>
-    </message>
-    <message>
-        <source>Enable use of automated PrivateSend for funds stored in this wallet (0-1, default: %u)</source>
-        <translation>이 지갑에 보관된 자금을 위해 자동화된 프라이빗샌드를 활성화 합니다. (0-1. 디폴트: %u)</translation>
     </message>
     <message>
         <source>Execute command when a wallet InstantSend transaction is successfully locked (%s in cmd is replaced by TxID)</source>
@@ -4586,14 +4375,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>&lt;category&gt;가 제공되지 않거나 &lt;category&gt; = 1 인 경우, 모든 디버깅 정보를 출력</translation>
     </message>
     <message>
-        <source>InstantSend doesn't support sending values that high yet. Transactions are currently limited to %1 DASH.</source>
-        <translation>인스턴트샌드는 이와 같은 고액 송금 기능을 아직 지원하지 않습니다. 현재 인스턴트샌드로 보낼 수 있는 최대한의 금액은 %1 DASH로 제한되어 있습니다.</translation>
-    </message>
-    <message>
-        <source>InstantSend requires inputs with at least %d confirmations, you might need to wait a few minutes and try again.</source>
-        <translation>인스턴트샌드는 최소 %d의 확인을 거친 입력값을 필요로 합니다. 몇 분 더 기다리신 후 다시 시도하세요.</translation>
-    </message>
-    <message>
         <source>Maintain a full address index, used to query for the balance, txids and unspent outputs for addresses (default: %u)</source>
         <translation>전체 주소 인덱스를 유지, 잔고를 위해 쿼리를 사용, 주소를 위한 txid와 사용되지 않은 출력 (디폴트: %u)</translation>
     </message>
@@ -4610,8 +4391,12 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>최대한 &lt;n&gt;개의 피어 연결을 유지합니다. (일시적인 서비스 연결은 제외) (디폴트: %u)</translation>
     </message>
     <message>
-        <source>PrivateSend uses exact denominated amounts to send funds, you might simply need to anonymize some more coins.</source>
-        <translation>프라이빗샌드는 송금을 위하여 정확한 분할 단위 금액을 사용합니다. 단순히 더 많은 코인을 익명화함으로써 문제를 해결할 수 있을 지도 모릅니다.</translation>
+        <source>Make sure to encrypt your wallet and delete all non-encrypted backups after you have verified that the wallet works!</source>
+        <translation>해당 지갑이 작동하는 지 여부를 확인한 이후에는 당신의 지갑을 암호화하고, 암호화하지 않은 지갑 백업은 지워야 한다는 점을 주의하세요!</translation>
+    </message>
+    <message>
+        <source>Maximum total size of all orphan transactions in megabytes (default: %u)</source>
+        <translation>메가 바이트로 표시된 모든 오펀 거래의 최대 총 사이즈 (디폴트: %u)</translation>
     </message>
     <message>
         <source>Prune configured below the minimum of %d MiB.  Please use a higher number.</source>
@@ -4622,12 +4407,20 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>블록 축소: 마지막 지갑 동기화가 축소된 데이터보다 오래 되었습니다. -reindex가 필요합니다. (축소된 노드의 경우 모든 블록체인을 재다운로드 하십시오)</translation>
     </message>
     <message>
+        <source>Query for peer addresses via DNS lookup, if low on addresses (default: 1 unless -connect used)</source>
+        <translation>주소가 부족한 경우 DNS 검색을 통해 피어 주소를 요청합니다 (-connect 가 사용되지 않는 한 디폴트: 1)</translation>
+    </message>
+    <message>
         <source>Randomize credentials for every proxy connection. This enables Tor stream isolation (default: %u)</source>
         <translation>매 프록시 연결시 인증 정보를 무작위화 합니다. 이는 Tor 스트림 아이솔레이션 기능을 활성화시킵니다. (디폴트: %u)</translation>
     </message>
     <message>
         <source>Rescans are not possible in pruned mode. You will need to use -reindex which will download the whole blockchain again.</source>
         <translation>블록 축소 모드에서는 재검색이 불가능 합니다. -reindex 명령을 사용해서 모든 블록체인을 다시 다운로드 해야 합니다.</translation>
+    </message>
+    <message>
+        <source>Set the masternode BLS private key and enable the client to act as a masternode</source>
+        <translation>마스터노드로서 작동하기 위해 마스터노드 BLS 개인 키를 설정하고 클라이언트를 활성화합니다</translation>
     </message>
     <message>
         <source>Specify full path to directory for automatic wallet backups (must exist)</source>
@@ -4686,24 +4479,16 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>경고: 알려지지 않은 버전의 블록이 채굴되었습니다! 알려지지 않은 규칙이 적용되었을 가능성이 있습니다.</translation>
     </message>
     <message>
-        <source>You are starting in lite mode, all Dash-specific functionality is disabled.</source>
-        <translation>라이트 모드로 시작하면 모든 대시 관련 기능이 비활성화됩니다.</translation>
+        <source>You need to rebuild the database using -reindex to change -timestampindex</source>
+        <translation>-timestampindex를 변경하기 위해서는 -reindex 체인 상태를 사용하여 데이터를 재구성해야 합니다.</translation>
     </message>
     <message>
         <source>You need to rebuild the database using -reindex to go back to unpruned mode.  This will redownload the entire blockchain</source>
         <translation>축소 모드를 해제하고 데이터베이스를 재구성 하기 위해 -reindex를 사용해야 합니다. 이 명령은 모든 블록체인을 다시 다운로드 할 것 입니다.</translation>
     </message>
     <message>
-        <source>(%d could be used only on mainnet)</source>
-        <translation>(%d 은/는 오직 메인넷에서만 이용할 수 있습니다)</translation>
-    </message>
-    <message>
         <source>(default: %u)</source>
         <translation>(기본값: %u)</translation>
-    </message>
-    <message>
-        <source>(must be %d for mainnet)</source>
-        <translation>(메인넷을 위해서는 %d여야 합니다)</translation>
     </message>
     <message>
         <source>-maxmempool must be at least %d MB</source>
@@ -4778,16 +4563,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>백업 삭제에 실패하였습니다. 에러: %s</translation>
     </message>
     <message>
-        <source>Failed to load InstantSend data cache from</source>
-        <translation>인스턴트샌드 데이터 캐시 로딩 실패</translation>
-    </message>
-    <message>
         <source>Failed to load sporks cache from</source>
         <translation>스포크 캐시 로딩 실패</translation>
-    </message>
-    <message>
-        <source>Failed to parse host:port string</source>
-        <translation>host:post 문자열을 분석하는 데 실패하였습니다.</translation>
     </message>
     <message>
         <source>Fee (in %s/kB) to add to transactions you send (default: %s)</source>
@@ -4806,6 +4583,10 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>유효하지 않은 금액 -fallbackfee=&lt;amount&gt;: '%s'</translation>
     </message>
     <message>
+        <source>Invalid masternodeblsprivkey. Please see documentation.</source>
+        <translation>유효하지 않은 masternodeblsprivkey 입니다. 문서를 확인하세요.</translation>
+    </message>
+    <message>
         <source>Keep the transaction memory pool below &lt;n&gt; megabytes (default: %u)</source>
         <translation>거래 메모리 풀의 용량을 &lt;n&gt;메가바이트 아래로 유지하기 (기본값: %u)</translation>
     </message>
@@ -4816,18 +4597,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Last successful PrivateSend action was too recent.</source>
         <translation>지난 성공적 프라이빗샌드 활동이 너무 최신입니다.</translation>
-    </message>
-    <message>
-        <source>Line: %d</source>
-        <translation>라인: %d</translation>
-    </message>
-    <message>
-        <source>Loading InstantSend data cache...</source>
-        <translation>인스턴트샌드 데이터 캐시로드 중...</translation>
-    </message>
-    <message>
-        <source>Loading addresses...</source>
-        <translation>주소를 불러오는 중...</translation>
     </message>
     <message>
         <source>Loading block index...</source>
@@ -4856,10 +4625,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Make the wallet broadcast transactions</source>
         <translation>지갑 브로드캐스트 거래 생성</translation>
-    </message>
-    <message>
-        <source>Masternode cache is empty, skipping payments and governance cache...</source>
-        <translation>마스터노드 캐시가 비어 있습니다. 지불 및 거버넌스 캐시를 건너뜁니다...</translation>
     </message>
     <message>
         <source>Masternode options:</source>
@@ -4904,10 +4669,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Not enough file descriptors available.</source>
         <translation>사용 가능한 파일 설명자가 부족합니다.</translation>
-    </message>
-    <message>
-        <source>Not enough funds to anonymize.</source>
-        <translation>익명화를 진행하기에 잔고가 충분하지 않습니다.</translation>
     </message>
     <message>
         <source>Number of automatic wallet backups (default: %u)</source>
@@ -4958,6 +4719,10 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>시작할 때 블록체인에서 누락된 지갑 거래를 다시 검색합니다. </translation>
     </message>
     <message>
+        <source>Synchronizing blockchain...</source>
+        <translation>블록체인 동기화 중...</translation>
+    </message>
+    <message>
         <source>The wallet will avoid paying less than the minimum relay fee.</source>
         <translation>이 지갑은 최소 중계 수수료보다 적은 수수료를 지불하지 않을 것입니다.</translation>
     </message>
@@ -5006,10 +4771,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>지갑 디버깅/테스트 옵션:</translation>
     </message>
     <message>
-        <source>Wallet is not initialized</source>
-        <translation>지갑이 초기화되지 않았습니다.</translation>
-    </message>
-    <message>
         <source>Wallet needed to be rewritten: restart %s to complete</source>
         <translation>지갑을 새로 써야 합니다:  완성을 위해 %s을/를 다시 시작하십시오.</translation>
     </message>
@@ -5028,6 +4789,22 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>You can not start a masternode in lite mode.</source>
         <translation>라이트 모드에서는 마스터 노드를 시작할 수 없습니다.</translation>
+    </message>
+    <message>
+        <source>You can not start a masternode with wallet enabled.</source>
+        <translation>지갑이 활성화된 상태에서는 마스터노드를 실행할 수 없습니다.</translation>
+    </message>
+    <message>
+        <source>You need to rebuild the database using -reindex to change -addressindex</source>
+        <translation>-addressindex를 변경하기 위해서는 -reindex 체인 상태를 사용하여 데이터를 재구성해야 합니다.</translation>
+    </message>
+    <message>
+        <source>You need to rebuild the database using -reindex to change -spentindex</source>
+        <translation>-spentindex를 변경하기 위해서는 -reindex 체인 상태를 사용하여 데이터를 재구성해야 합니다.</translation>
+    </message>
+    <message>
+        <source>You need to rebuild the database using -reindex to change -txindex</source>
+        <translation>-txindex를 변경하기 위해서는 -reindex 체인 상태를 사용하여 데이터를 재구성해야 합니다.</translation>
     </message>
     <message>
         <source>ZeroMQ notification options:</source>
@@ -5054,24 +4831,32 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>%s 개발자</translation>
     </message>
     <message>
-        <source>Accept connections from outside (default: 1 if no -proxy or -connect/-noconnect)</source>
-        <translation>외부로부터의 연결을 허용합니다. (-proxy 가 없는 경우 혹은 -connect/-noconnect 인 경우 디폴트: 1)</translation>
-    </message>
-    <message>
         <source>Cannot obtain a lock on data directory %s. %s is probably already running.</source>
         <translation>%s 데이터 디렉토리에 잠금을 설정 할 수 없습니다. %s가 이미 실행 중인 것으로 보입니다.</translation>
-    </message>
-    <message>
-        <source>Connect only to the specified node(s); -noconnect or -connect=0 alone to disable automatic connections</source>
-        <translation>지정된 노드(들)에만 연결합니다: 자동 연결을 해제하기 위하여 -noconnect 혹은 -connect=0 만을 사용합니다.</translation>
     </message>
     <message>
         <source>Distributed under the MIT software license, see the accompanying file %s or %s</source>
         <translation>MIT 소프트웨어 라이센스에 따라 배포 되었습니다. 첨부 파일 %s 또는 %s을 참조하십시오.</translation>
     </message>
     <message>
+        <source>Enable use of PrivateSend for funds stored in this wallet (0-1, default: %u)</source>
+        <translation>이 지갑에 저장된 자금을 위해 프라이빗샌드 사용을 활성화합니다 (0-1, 디폴트: %u)</translation>
+    </message>
+    <message>
+        <source>Error loading %s: You can't enable HD on an already existing non-HD wallet</source>
+        <translation>%s 로딩 에러: HD 지갑이 아닌 경우 HD를 활성화 할 수 없습니다.</translation>
+    </message>
+    <message>
+        <source>Error loading wallet %s. -wallet parameter must only specify a filename (not a path).</source>
+        <translation>지갑 %s 로딩 중 에러. -wallet 파라미터는 (경로가 아닌) 파일 이름만을 선택해야 합니다.</translation>
+    </message>
+    <message>
         <source>Error reading %s! All keys read correctly, but transaction data or address book entries might be missing or incorrect.</source>
         <translation>%s 불러오기 오류 입니다.  주소 키는 모두 정확하게 읽혔으나 거래 데이터 혹은 주소록에서 누락이나 오류가 존재할 수 있습니다.</translation>
+    </message>
+    <message>
+        <source>Exclude debugging information for a category. Can be used in conjunction with -debug=1 to output debug logs for all categories except one or more specified categories.</source>
+        <translation>카테고리에 대한 디버깅 정보를 제외합니다. 하나 혹은 그 이상의 지정된 카테고리를 제외한 모든 카테고리에 대한 디버그 로그를 출력하기 위해 -debug=1과 함께 사용될 수 있습니다.</translation>
     </message>
     <message>
         <source>Force relay of transactions from whitelisted peers even if they violate local relay policy (default: %d)</source>
@@ -5102,20 +4887,20 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>%s이/가 유용하다고 생각한다면 프로젝트에 공헌해주세요. 이 소프트웨어에 대한 보다 자세한 정보는 %s를 방문해주십시오.</translation>
     </message>
     <message>
-        <source>Provide liquidity to PrivateSend by infrequently mixing coins on a continual basis (%u-%u, default: %u, 1=very frequent, high fees, %u=very infrequent, low fees)</source>
-        <translation>코인 믹싱을 자주 반복하지 않음으로써 프라이빗샌드에 유동성 제공 (%u-%u, 디폴트: %u, 1=매우 빈번, 높은 수수료, %u=매우 드뭄, 적은 수수료)</translation>
-    </message>
-    <message>
-        <source>Query for peer addresses via DNS lookup, if low on addresses (default: 1 unless -connect/-noconnect)</source>
-        <translation>주소가 부족한 경우 DNS 검색을 통해 피어 주소를 요청합니다. (디폴트: -connect/-noconnect가 아닌 한 1) </translation>
-    </message>
-    <message>
         <source>Reduce storage requirements by enabling pruning (deleting) of old blocks. This allows the pruneblockchain RPC to be called to delete specific blocks, and enables automatic pruning of old blocks if a target size in MiB is provided. This mode is incompatible with -txindex and -rescan. Warning: Reverting this setting requires re-downloading the entire blockchain. (default: 0 = disable pruning blocks, 1 = allow manual pruning via RPC, &gt;%u = automatically prune block files to stay under the specified target size in MiB)</source>
         <translation>오래된 블록을 정리(삭제) 함으로써 스토리지 용량 요구 사항을 줄입니다. 이로써 pruneblockchain RPC를 호출하여 특정 블록을 삭제하고, MiB로 목표 사이즈를 설정하는 경우 오래된 블록을 자동으로 정리합니다. 이 모드는 -txindex와 -rescan과 호환되지 않습니다. 경고: 이 설정을 되돌리기 위해서는 전체 블록체인을 다시 다운로드 해야 합니다. (디폴트: 0 = 블록 정리 기능 해제, 1 = RPC를 통한 수동 블록 정리 허용, &gt;%u = 자동으로 블록 파일을 정리하여 MiB로 지정된 목표 사이즈로 유지)</translation>
     </message>
     <message>
         <source>Set lowest fee rate (in %s/kB) for transactions to be included in block creation. (default: %s)</source>
         <translation>블록 생성에 포함되기 위한 거래의 최저 수수료 비율(%s/kB)을 설정하십시오. (기본값: %s)</translation>
+    </message>
+    <message>
+        <source>The fee rate (in %s/kB) that indicates your tolerance for discarding change by adding it to the fee (default: %s). Note: An output is discarded if it is dust at this rate, but we will always discard up to the dust relay fee and a discard fee above that is limited by the fee estimate for the longest target</source>
+        <translation>수수료 비율(%s/kB)은 버려지는 잔돈을 수수료에 추가하는 데 대한 당신의 허용치를 나타냅니다 (디폴트: %s). 주의: 더스트가 이 비율이라면 출력값은 버려집니다. 그러나 우리는 더스트 릴레이 수수료 및 가장 긴 목표물을 위한 수수료 추정에 의해 제한되는 것 이상의 수수료만을 폐기합니다.</translation>
+    </message>
+    <message>
+        <source>This is the transaction fee you may discard if change is smaller than dust at this level</source>
+        <translation>잔돈이 이 수준의 더스트보다 적은 경우 당신이 버려야 할 수도 있는 거래 수수료입니다</translation>
     </message>
     <message>
         <source>This is the transaction fee you may pay when fee estimates are not available.</source>
@@ -5128,6 +4913,10 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Unable to locate enough PrivateSend non-denominated funds for this transaction.</source>
         <translation>이 거래를 수행하는 데 필요한 충분한 프라이빗샌드 단위 분할 금액을 찾을 수 없습니다.  </translation>
+    </message>
+    <message>
+        <source>Unable to replay blocks. You will need to rebuild the database using -reindex-chainstate.</source>
+        <translation>블록을 재실행 할 수 없습니다. -reindex-chainstate를 이용해 데이터베이스를 재구성해야 합니다.</translation>
     </message>
     <message>
         <source>Use N separate masternodes for each denominated input to mix funds (%u-%u, default: %u)</source>
@@ -5150,20 +4939,24 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>지갑은 멤풀 체인 한계값(기본값: %u)을 넘는 거래를 생성하지 않습니다.</translation>
     </message>
     <message>
-        <source>Warning: At least %d of %d masternodes are running on a newer software version. Please check latest releases, you might need to update too.</source>
-        <translation>경고: %d개의 마스터노드 중 최소 %d 개가 새로운 버전의 소프트웨어에서 구동 중입니다. 최신 버전을 확인하세요. 업데이트가 필요할 수 있습니다.</translation>
-    </message>
-    <message>
-        <source>Warning: Every masternode (out of %d known ones) is running on a newer software version. Please check latest releases, it's very likely that you missed a major/critical update.</source>
-        <translation>경고: (알려진 %d 중) 모든 마스터노드가 새로운 버전의 소프트웨어에서 구동 중입니다. 최신의 버전을 확인하세요. 중요한 업데이트가 실행되지 않은 것으로 보입니다.</translation>
-    </message>
-    <message>
         <source>Warning: Wallet file corrupt, data salvaged! Original %s saved as %s in %s; if your balance or transactions are incorrect you should restore from a backup.</source>
         <translation>경고: 지갑 파일이 손상, 데이터가 복구되었습니다! 기존의 %s 파일은 %s에 %s라는 이름으로 저장됩니다. 잔액과 거래 내역이 정확하지 않다면 백업 파일로 복원해야 합니다. </translation>
     </message>
     <message>
+        <source>Whether to save the mempool on shutdown and load on restart (default: %u)</source>
+        <translation>갑자기 종료되는 경우 멤풀을 저장하고 재시작 시 로딩할 지의 여부를 결정합니다 (디폴트: %u)</translation>
+    </message>
+    <message>
         <source>Whitelist peers connecting from the given IP address (e.g. 1.2.3.4) or CIDR notated network (e.g. 1.2.3.0/24). Can be specified multiple times.</source>
         <translation>지정된 IP주소 (예 1.2.3.4) 혹은 CIDR로 작성된 네트워크 (예 1.2.3.0/24)로 화이트리스트 피어에 접속합니다. 이는 복수로 지정 할 수 있습니다.</translation>
+    </message>
+    <message>
+        <source>You are starting in lite mode, most Dash-specific functionality is disabled.</source>
+        <translation>라이트 모드로 시작하면 대부분의 대시 고유 기능은 비활성화 됩니다.</translation>
+    </message>
+    <message>
+        <source>%d of last 100 blocks have unexpected version</source>
+        <translation>지난 100 블록 중 %d가 예상치 못한 버전을 지니고 있습니다</translation>
     </message>
     <message>
         <source>%s corrupt, salvage failed</source>
@@ -5194,6 +4987,10 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>-devnet과 -server가 지정될 때에는 -rpcport도 지정되어야 합니다.</translation>
     </message>
     <message>
+        <source>Accept connections from outside (default: 1 if no -proxy or -connect)</source>
+        <translation>외부로부터의 연결을 허용합니다 (-proxy 혹은 -connect가 없는 경우 디폴트: 1)</translation>
+    </message>
+    <message>
         <source>Allow RFC1918 addresses to be relayed and connected to (default: %u)</source>
         <translation>RFC1918 주소가 릴레이되고 (default: %u)에 연결되는 것을 허용합니다.</translation>
     </message>
@@ -5214,6 +5011,10 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Copyright (C)</translation>
     </message>
     <message>
+        <source>Create up to N inputs of each denominated amount (%u-%u, default: %u)</source>
+        <translation>각 분할 단위 금액에 최대 N개 입력값을 생성합니다 (%u-%u, 디폴트: %u)</translation>
+    </message>
+    <message>
         <source>Error loading %s</source>
         <translation>%s 불러오기 오류</translation>
     </message>
@@ -5224,6 +5025,22 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Error loading %s: Wallet requires newer version of %s</source>
         <translation>%s 불러오기 에러: 지갑에 새 버전의 %s이/가 필요합니다</translation>
+    </message>
+    <message>
+        <source>Error loading %s: You can't disable HD on an already existing HD wallet</source>
+        <translation>%s 로딩 에러: 이미 존재하는 HD 지갑에서 HD를 비활성화 할 수 없습니다.</translation>
+    </message>
+    <message>
+        <source>Error loading wallet %s. -wallet filename must be a regular file.</source>
+        <translation>지갑 %s 로딩 중 에러. -wallet 파일명은 일반 파일이어야 합니다</translation>
+    </message>
+    <message>
+        <source>Error loading wallet %s. Duplicate -wallet filename specified.</source>
+        <translation>지갑 %s 로딩 중 에러. 설정된 -wallet 파일명을 복사하세요</translation>
+    </message>
+    <message>
+        <source>Error loading wallet %s. Invalid characters in -wallet filename.</source>
+        <translation>지갑 %s 로딩 중 에러. -wallet 파일명에 유효하지 않은 문자입니다</translation>
     </message>
     <message>
         <source>Error upgrading chainstate database</source>
@@ -5242,6 +5059,18 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>초기치 설정 정상 여부 검사에 실패하였습니다. %s가 종료됩니다.</translation>
     </message>
     <message>
+        <source>Inputs vs outputs size mismatch.</source>
+        <translation>입력값 vs 출력값 사이즈가 일치하지 않습니다.</translation>
+    </message>
+    <message>
+        <source>Invalid -onion address or hostname: '%s'</source>
+        <translation>올바르지 않은 -onion 주소 또는 호스트 이름: '%s'</translation>
+    </message>
+    <message>
+        <source>Invalid -proxy address or hostname: '%s'</source>
+        <translation>올바르지 않은 -proxy 주소 또는 호스트 이름: '%s'</translation>
+    </message>
+    <message>
         <source>Invalid amount for -%s=&lt;amount&gt;: '%s'</source>
         <translation>유효하지 않은 금액 -%s=&lt;amount&gt;: '%s'</translation>
     </message>
@@ -5250,16 +5079,12 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>-sporkaddr로 지정된 스포크 주소가 유효하지 않습니다.</translation>
     </message>
     <message>
-        <source>Keep N DASH anonymized (%u-%u, default: %u)</source>
-        <translation>N 대시를 익명으로 유지합니다(%u-%u, 디폴트: %u).</translation>
+        <source>Loading P2P addresses...</source>
+        <translation>P2P 주소 불러오는 중...</translation>
     </message>
     <message>
         <source>Print this help message and exit</source>
         <translation>이 도움말 메시지를 출력 후 종료</translation>
-    </message>
-    <message>
-        <source>Receive and display P2P network alerts (default: %u)</source>
-        <translation>P2P 네트워크 경고를 받고 표시합니다(디폴트: %u).</translation>
     </message>
     <message>
         <source>Reducing -maxconnections from %d to %d, because of system limitations.</source>
@@ -5272,6 +5097,10 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Relay non-P2SH multisig (default: %u)</source>
         <translation>비-P2SH 다중 서명을 릴레이 (기본값: %u)</translation>
+    </message>
+    <message>
+        <source>Replaying blocks...</source>
+        <translation>블록 재실행 중...</translation>
     </message>
     <message>
         <source>Rescanning...</source>
@@ -5302,10 +5131,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>최대 블록 사이즈를 바이트로 설정합니다(디폴트: %d).</translation>
     </message>
     <message>
-        <source>Set the masternode private key</source>
-        <translation>마스터노드 개인 키를 설정합니다.</translation>
-    </message>
-    <message>
         <source>Show all debugging options (usage: --help -help-debug)</source>
         <translation>모든 디버그 설정 보기(설정: --help -help-debug)</translation>
     </message>
@@ -5330,6 +5155,10 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>공개 주소를 지정하십시오.</translation>
     </message>
     <message>
+        <source>Start PrivateSend automatically (0-1, default: %u)</source>
+        <translation>자동으로 프라이빗샌드 시작 (0-1, 디폴트: %u)</translation>
+    </message>
+    <message>
         <source>Starting network threads...</source>
         <translation>네트워크 스레드 시작중...</translation>
     </message>
@@ -5340,10 +5169,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Synchronizing governance objects...</source>
         <translation>거버넌스 객체 동기화중...</translation>
-    </message>
-    <message>
-        <source>Synchronizing masternode payments...</source>
-        <translation>마스터노드 지불 동기화중...</translation>
     </message>
     <message>
         <source>The source code is available from %s.</source>
@@ -5364,6 +5189,10 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Transaction created successfully.</source>
         <translation>거래가 성공적으로 생성되었습니다.</translation>
+    </message>
+    <message>
+        <source>Transaction fee and change calculation failed</source>
+        <translation>거래 수수료와 계산 변경에 실패하였습니다</translation>
     </message>
     <message>
         <source>Transaction fees are too high.</source>
@@ -5394,16 +5223,16 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>알 수 없는 상태: id = %u</translation>
     </message>
     <message>
+        <source>Unsupported logging category %s=%s.</source>
+        <translation>지원되지 않는 로깅 카테고리 %s=%s.</translation>
+    </message>
+    <message>
         <source>Username for JSON-RPC connections</source>
         <translation>JSON-RPC 연결에 사용할 사용자 이름</translation>
     </message>
     <message>
         <source>Verifying blocks...</source>
         <translation>블록 검증 중...</translation>
-    </message>
-    <message>
-        <source>Verifying wallet...</source>
-        <translation>지갑 검증 중...</translation>
     </message>
     <message>
         <source>Very low number of keys left: %d</source>
@@ -5432,10 +5261,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Your entries added successfully.</source>
         <translation>당신의 입력이 성공적으로 추가되었습니다.</translation>
-    </message>
-    <message>
-        <source>Your transaction was accepted into the pool!</source>
-        <translation>당신의 거래가 성공적으로 풀에 반영되었습니다!</translation>
     </message>
     <message>
         <source>Zapping all transactions from wallet...</source>
