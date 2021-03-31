@@ -1,18 +1,18 @@
-// Copyright (c) 2014-2018 The Dash Core developers
+// Copyright (c) 2014-2019 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef CACHEMULTIMAP_H_
-#define CACHEMULTIMAP_H_
+#ifndef BITCOIN_CACHEMULTIMAP_H
+#define BITCOIN_CACHEMULTIMAP_H
 
 #include <cstddef>
 #include <map>
 #include <list>
 #include <set>
 
-#include "serialize.h"
+#include <serialize.h>
 
-#include "cachemap.h"
+#include <cachemap.h>
 
 /**
  * Map like container that keeps the N most recently added items
@@ -245,4 +245,4 @@ private:
     }
 };
 
-#endif /* CACHEMULTIMAP_H_ */
+#endif // BITCOIN_CACHEMULTIMAP_H

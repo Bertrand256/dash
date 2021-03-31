@@ -6,7 +6,7 @@
 #ifndef BITCOIN_CONSENSUS_PARAMS_H
 #define BITCOIN_CONSENSUS_PARAMS_H
 
-#include "uint256.h"
+#include <uint256.h>
 #include <map>
 #include <string>
 
@@ -20,6 +20,8 @@ enum DeploymentPos
     DEPLOYMENT_BIP147, // Deployment of BIP147 (NULLDUMMY)
     DEPLOYMENT_DIP0003, // Deployment of DIP0002 and DIP0003 (txv3 and deterministic MN lists)
     DEPLOYMENT_DIP0008, // Deployment of ChainLock enforcement
+    DEPLOYMENT_REALLOC, // Deployment of Block Reward Reallocation
+    DEPLOYMENT_V17, // Deployment of V17 Hard Fork
     // NOTE: Also add new deployments to VersionBitsDeploymentInfo in versionbits.cpp
     MAX_VERSION_BITS_DEPLOYMENTS
 };
@@ -35,9 +37,13 @@ struct BIP9Deployment {
     /** Timeout/expiry MedianTime for the deployment attempt. */
     int64_t nTimeout;
     /** The number of past blocks (including the block under consideration) to be taken into account for locking in a fork. */
-    int64_t nWindowSize;
-    /** A number of blocks, in the range of 1..nWindowSize, which must signal for a fork in order to lock it in. */
-    int64_t nThreshold;
+    int64_t nWindowSize{0};
+    /** A starting number of blocks, in the range of 1..nWindowSize, which must signal for a fork in order to lock it in. */
+    int64_t nThresholdStart{0};
+    /** A minimum number of blocks, in the range of 1..nWindowSize, which must signal for a fork in order to lock it in. */
+    int64_t nThresholdMin{0};
+    /** A coefficient which adjusts the speed a required number of signaling blocks is decreasing from nThresholdStart to nThresholdMin at with each period. */
+    int64_t nFalloffCoeff{0};
 };
 
 enum LLMQType : uint8_t
@@ -47,9 +53,16 @@ enum LLMQType : uint8_t
     LLMQ_50_60 = 1, // 50 members, 30 (60%) threshold, one per hour
     LLMQ_400_60 = 2, // 400 members, 240 (60%) threshold, one every 12 hours
     LLMQ_400_85 = 3, // 400 members, 340 (85%) threshold, one every 24 hours
+    LLMQ_100_67 = 4, // 100 members, 67 (67%) threshold, one per hour
 
     // for testing only
-    LLMQ_5_60 = 100, // 5 members, 3 (60%) threshold, one per hour
+    LLMQ_TEST = 100, // 3 members, 2 (66%) threshold, one per hour. Params might differ when -llmqtestparams is used
+
+    // for devnets only
+    LLMQ_DEVNET = 101, // 10 members, 6 (60%) threshold, one per hour. Params might differ when -llmqdevnetparams is used
+
+    // for testing activation of new quorums only
+    LLMQ_TEST_V17 = 102, // 3 members, 2 (66%) threshold, one per hour. Params might differ when -llmqtestparams is used
 };
 
 // Configures a LLMQ and its DKG
@@ -108,9 +121,12 @@ struct LLMQParams {
     // Number of quorums to consider "active" for signing sessions
     int signingActiveQuorumCount;
 
-    // Used for inter-quorum communication. This is the number of quorums for which we should keep old connections. This
-    // should be at least as much as the active quorums set.
+    // Used for intra-quorum communication. This is the number of quorums for which we should keep old connections. This
+    // should be at least one more then the active quorums set.
     int keepOldConnections;
+
+    // How many members should we try to send all sigShares to before we give up.
+    int recoveryMembers;
 };
 
 /**
@@ -125,8 +141,6 @@ struct Params {
     int nMasternodePaymentsIncreasePeriod; // in blocks
     int nInstantSendConfirmationsRequired; // in blocks
     int nInstantSendKeepLock; // in blocks
-    int nInstantSendSigsRequired;
-    int nInstantSendSigsTotal;
     int nBudgetPaymentsStartBlock;
     int nBudgetPaymentsCycleBlocks;
     int nBudgetPaymentsWindowBlocks;
@@ -150,10 +164,12 @@ struct Params {
     /** Block height at which DIP0003 becomes enforced */
     int DIP0003EnforcementHeight;
     uint256 DIP0003EnforcementHash;
+    /** Block height at which DIP0008 becomes active */
+    int DIP0008Height;
     /**
      * Minimum blocks including miner confirmation of the total of nMinerConfirmationWindow blocks in a retargeting period,
      * (nPowTargetTimespan / nPowTargetSpacing) which is also used for BIP9 deployments.
-     * Default BIP9Deployment::nThreshold value for deployments where it's not specified and for unknown deployments.
+     * Default BIP9Deployment::nThresholdStart value for deployments where it's not specified and for unknown deployments.
      * Examples: 1916 for 95%, 1512 for testchains.
      */
     uint32_t nRuleChangeActivationThreshold;
@@ -178,9 +194,15 @@ struct Params {
     int nHighSubsidyFactor{1};
 
     std::map<LLMQType, LLMQParams> llmqs;
-    LLMQType llmqChainLocks;
-    LLMQType llmqForInstantSend{LLMQ_NONE};
+    LLMQType llmqTypeChainLocks;
+    LLMQType llmqTypeInstantSend{LLMQ_NONE};
+    LLMQType llmqTypePlatform{LLMQ_NONE};
 };
 } // namespace Consensus
+
+// This must be outside of all namespaces. We must also duplicate the forward declaration of is_serializable_enum to
+// avoid inclusion of serialize.h here.
+template<typename T> struct is_serializable_enum;
+template<> struct is_serializable_enum<Consensus::LLMQType> : std::true_type {};
 
 #endif // BITCOIN_CONSENSUS_PARAMS_H

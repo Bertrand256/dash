@@ -1,19 +1,20 @@
-// Copyright (c) 2018 The Dash Core developers
+// Copyright (c) 2018-2020 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef DASH_PROVIDERTX_H
-#define DASH_PROVIDERTX_H
+#ifndef BITCOIN_EVO_PROVIDERTX_H
+#define BITCOIN_EVO_PROVIDERTX_H
 
-#include "bls/bls.h"
-#include "consensus/validation.h"
-#include "primitives/transaction.h"
+#include <bls/bls.h>
+#include <consensus/validation.h>
+#include <primitives/transaction.h>
 
-#include "netaddress.h"
-#include "pubkey.h"
+#include <key_io.h>
+#include <netaddress.h>
+#include <pubkey.h>
+#include <univalue.h>
 
 class CBlockIndex;
-class UniValue;
 
 class CProRegTx
 {
@@ -49,7 +50,7 @@ public:
         READWRITE(pubKeyOperator);
         READWRITE(keyIDVoting);
         READWRITE(nOperatorReward);
-        READWRITE(*(CScriptBase*)(&scriptPayout));
+        READWRITE(scriptPayout);
         READWRITE(inputsHash);
         if (!(s.GetType() & SER_GETHASH)) {
             READWRITE(vchSig);
@@ -61,7 +62,27 @@ public:
     std::string MakeSignString() const;
 
     std::string ToString() const;
-    void ToJson(UniValue& obj) const;
+
+    void ToJson(UniValue& obj) const
+    {
+        obj.clear();
+        obj.setObject();
+        obj.pushKV("version", nVersion);
+        obj.pushKV("collateralHash", collateralOutpoint.hash.ToString());
+        obj.pushKV("collateralIndex", (int)collateralOutpoint.n);
+        obj.pushKV("service", addr.ToString(false));
+        obj.pushKV("ownerAddress", EncodeDestination(keyIDOwner));
+        obj.pushKV("votingAddress", EncodeDestination(keyIDVoting));
+
+        CTxDestination dest;
+        if (ExtractDestination(scriptPayout, dest)) {
+            obj.pushKV("payoutAddress", EncodeDestination(dest));
+        }
+        obj.pushKV("pubKeyOperator", pubKeyOperator.ToString());
+        obj.pushKV("operatorReward", (double)nOperatorReward / 100);
+
+        obj.pushKV("inputsHash", inputsHash.ToString());
+    }
 };
 
 class CProUpServTx
@@ -86,7 +107,7 @@ public:
         READWRITE(nVersion);
         READWRITE(proTxHash);
         READWRITE(addr);
-        READWRITE(*(CScriptBase*)(&scriptOperatorPayout));
+        READWRITE(scriptOperatorPayout);
         READWRITE(inputsHash);
         if (!(s.GetType() & SER_GETHASH)) {
             READWRITE(sig);
@@ -95,7 +116,20 @@ public:
 
 public:
     std::string ToString() const;
-    void ToJson(UniValue& obj) const;
+
+    void ToJson(UniValue& obj) const
+    {
+        obj.clear();
+        obj.setObject();
+        obj.pushKV("version", nVersion);
+        obj.pushKV("proTxHash", proTxHash.ToString());
+        obj.pushKV("service", addr.ToString(false));
+        CTxDestination dest;
+        if (ExtractDestination(scriptOperatorPayout, dest)) {
+            obj.pushKV("operatorPayoutAddress", EncodeDestination(dest));
+        }
+        obj.pushKV("inputsHash", inputsHash.ToString());
+    }
 };
 
 class CProUpRegTx
@@ -124,7 +158,7 @@ public:
         READWRITE(nMode);
         READWRITE(pubKeyOperator);
         READWRITE(keyIDVoting);
-        READWRITE(*(CScriptBase*)(&scriptPayout));
+        READWRITE(scriptPayout);
         READWRITE(inputsHash);
         if (!(s.GetType() & SER_GETHASH)) {
             READWRITE(vchSig);
@@ -133,7 +167,21 @@ public:
 
 public:
     std::string ToString() const;
-    void ToJson(UniValue& obj) const;
+
+    void ToJson(UniValue& obj) const
+    {
+        obj.clear();
+        obj.setObject();
+        obj.pushKV("version", nVersion);
+        obj.pushKV("proTxHash", proTxHash.ToString());
+        obj.pushKV("votingAddress", EncodeDestination(keyIDVoting));
+        CTxDestination dest;
+        if (ExtractDestination(scriptPayout, dest)) {
+            obj.pushKV("payoutAddress", EncodeDestination(dest));
+        }
+        obj.pushKV("pubKeyOperator", pubKeyOperator.ToString());
+        obj.pushKV("inputsHash", inputsHash.ToString());
+    }
 };
 
 class CProUpRevTx
@@ -174,7 +222,16 @@ public:
 
 public:
     std::string ToString() const;
-    void ToJson(UniValue& obj) const;
+
+    void ToJson(UniValue& obj) const
+    {
+        obj.clear();
+        obj.setObject();
+        obj.pushKV("version", nVersion);
+        obj.pushKV("proTxHash", proTxHash.ToString());
+        obj.pushKV("reason", (int)nReason);
+        obj.pushKV("inputsHash", inputsHash.ToString());
+    }
 };
 
 
@@ -183,4 +240,4 @@ bool CheckProUpServTx(const CTransaction& tx, const CBlockIndex* pindexPrev, CVa
 bool CheckProUpRegTx(const CTransaction& tx, const CBlockIndex* pindexPrev, CValidationState& state);
 bool CheckProUpRevTx(const CTransaction& tx, const CBlockIndex* pindexPrev, CValidationState& state);
 
-#endif //DASH_PROVIDERTX_H
+#endif // BITCOIN_EVO_PROVIDERTX_H

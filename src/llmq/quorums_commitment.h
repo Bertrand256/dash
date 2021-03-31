@@ -1,15 +1,19 @@
-// Copyright (c) 2018 The Dash Core developers
+// Copyright (c) 2018-2019 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef DASH_QUORUMS_COMMITMENT_H
-#define DASH_QUORUMS_COMMITMENT_H
+#ifndef BITCOIN_LLMQ_QUORUMS_COMMITMENT_H
+#define BITCOIN_LLMQ_QUORUMS_COMMITMENT_H
 
-#include "consensus/params.h"
+#include <llmq/quorums_utils.h>
 
-#include "evo/deterministicmns.h"
+#include <consensus/params.h>
 
-#include "bls/bls.h"
+#include <evo/deterministicmns.h>
+
+#include <bls/bls.h>
+
+#include <univalue.h>
 
 namespace llmq
 {
@@ -24,7 +28,7 @@ public:
 
 public:
     uint16_t nVersion{CURRENT_VERSION};
-    uint8_t llmqType{Consensus::LLMQ_NONE};
+    Consensus::LLMQType llmqType{Consensus::LLMQ_NONE};
     uint256 quorumHash;
     std::vector<bool> signers;
     std::vector<bool> validMembers;
@@ -36,7 +40,7 @@ public:
     CBLSSignature membersSig; // aggregated member sig of blockHash+validMembers+pubKeyHash+vvecHash
 
 public:
-    CFinalCommitment() {}
+    CFinalCommitment() = default;
     CFinalCommitment(const Consensus::LLMQParams& params, const uint256& _quorumHash);
 
     int CountSigners() const
@@ -48,11 +52,9 @@ public:
         return (int)std::count(validMembers.begin(), validMembers.end(), true);
     }
 
-    bool Verify(const std::vector<CDeterministicMNCPtr>& members, bool checkSigs) const;
+    bool Verify(const CBlockIndex* pQuorumIndex, bool checkSigs) const;
     bool VerifyNull() const;
     bool VerifySizes(const Consensus::LLMQParams& params) const;
-
-    void ToJson(UniValue& obj) const;
 
 public:
     ADD_SERIALIZE_METHODS
@@ -86,6 +88,22 @@ public:
         }
         return true;
     }
+
+    void ToJson(UniValue& obj) const
+    {
+        obj.setObject();
+        obj.pushKV("version", (int)nVersion);
+        obj.pushKV("llmqType", (int)llmqType);
+        obj.pushKV("quorumHash", quorumHash.ToString());
+        obj.pushKV("signersCount", CountSigners());
+        obj.pushKV("signers", CLLMQUtils::ToHexStr(signers));
+        obj.pushKV("validMembersCount", CountValidMembers());
+        obj.pushKV("validMembers", CLLMQUtils::ToHexStr(validMembers));
+        obj.pushKV("quorumPublicKey", quorumPublicKey.ToString());
+        obj.pushKV("quorumVvecHash", quorumVvecHash.ToString());
+        obj.pushKV("quorumSig", quorumSig.ToString());
+        obj.pushKV("membersSig", membersSig.ToString());
+    }
 };
 
 class CFinalCommitmentTxPayload
@@ -109,11 +127,20 @@ public:
         READWRITE(commitment);
     }
 
-    void ToJson(UniValue& obj) const;
+    void ToJson(UniValue& obj) const
+    {
+        obj.setObject();
+        obj.pushKV("version", (int)nVersion);
+        obj.pushKV("height", (int)nHeight);
+
+        UniValue qcObj;
+        commitment.ToJson(qcObj);
+        obj.pushKV("commitment", qcObj);
+    }
 };
 
 bool CheckLLMQCommitment(const CTransaction& tx, const CBlockIndex* pindexPrev, CValidationState& state);
 
-}
+} // namespace llmq
 
-#endif //DASH_QUORUMS_COMMITMENT_H
+#endif // BITCOIN_LLMQ_QUORUMS_COMMITMENT_H

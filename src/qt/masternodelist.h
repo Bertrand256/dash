@@ -1,18 +1,17 @@
-#ifndef MASTERNODELIST_H
-#define MASTERNODELIST_H
+#ifndef BITCOIN_QT_MASTERNODELIST_H
+#define BITCOIN_QT_MASTERNODELIST_H
 
-#include "platformstyle.h"
-#include "primitives/transaction.h"
-#include "sync.h"
-#include "util.h"
+#include <primitives/transaction.h>
+#include <sync.h>
+#include <util.h>
 
-#include "evo/deterministicmns.h"
+#include <evo/deterministicmns.h>
 
 #include <QMenu>
 #include <QTimer>
 #include <QWidget>
 
-#define MASTERNODELIST_UPDATE_SECONDS 15
+#define MASTERNODELIST_UPDATE_SECONDS 3
 #define MASTERNODELIST_FILTER_COOLDOWN_SECONDS 3
 
 namespace Ui
@@ -33,8 +32,23 @@ class MasternodeList : public QWidget
     Q_OBJECT
 
 public:
-    explicit MasternodeList(const PlatformStyle* platformStyle, QWidget* parent = 0);
+    explicit MasternodeList(QWidget* parent = 0);
     ~MasternodeList();
+
+    enum {
+        COLUMN_SERVICE,
+        COLUMN_STATUS,
+        COLUMN_POSE,
+        COLUMN_REGISTERED,
+        COLUMN_LAST_PAYMENT,
+        COLUMN_NEXT_PAYMENT,
+        COLUMN_PAYOUT_ADDRESS,
+        COLUMN_OPERATOR_REWARD,
+        COLUMN_COLLATERAL_ADDRESS,
+        COLUMN_OWNER_ADDRESS,
+        COLUMN_VOTING_ADDRESS,
+        COLUMN_PROTX_HASH,
+    };
 
     void setClientModel(ClientModel* clientModel);
     void setWalletModel(WalletModel* walletModel);
@@ -42,6 +56,7 @@ public:
 private:
     QMenu* contextMenuDIP3;
     int64_t nTimeFilterUpdatedDIP3;
+    int64_t nTimeUpdatedDIP3;
     bool fFilterUpdatedDIP3;
 
     QTimer* timer;
@@ -54,9 +69,11 @@ private:
 
     QString strCurrentFilterDIP3;
 
+    bool mnListChanged;
+
     CDeterministicMNCPtr GetSelectedDIP3MN();
 
-    void updateDIP3List(bool fForce);
+    void updateDIP3List();
 
 Q_SIGNALS:
     void doubleClicked(const QModelIndex&);
@@ -70,7 +87,7 @@ private Q_SLOTS:
     void copyProTxHash_clicked();
     void copyCollateralOutpoint_clicked();
 
+    void handleMasternodeListChanged();
     void updateDIP3ListScheduled();
-    void updateDIP3ListForced();
 };
-#endif // MASTERNODELIST_H
+#endif // BITCOIN_QT_MASTERNODELIST_H

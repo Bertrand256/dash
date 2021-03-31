@@ -2,10 +2,10 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef DASH_BATCHEDLOGGER_H
-#define DASH_BATCHEDLOGGER_H
+#ifndef BITCOIN_BATCHEDLOGGER_H
+#define BITCOIN_BATCHEDLOGGER_H
 
-#include "tinyformat.h"
+#include <tinyformat.h>
 
 class CBatchedLogger
 {
@@ -14,7 +14,7 @@ private:
     std::string header;
     std::string msg;
 public:
-    CBatchedLogger(const std::string& _category, const std::string& _header);
+    CBatchedLogger(uint64_t _category, const std::string& _header);
     virtual ~CBatchedLogger();
 
     template<typename... Args>
@@ -29,4 +29,4 @@ public:
     void Flush();
 };
 
-#endif//DASH_BATCHEDLOGGER_H
+#endif//BITCOIN_BATCHEDLOGGER_H

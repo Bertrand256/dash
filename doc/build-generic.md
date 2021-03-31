@@ -49,7 +49,7 @@ Please replace `<host>` with your local system's `host-platform-triplet`. The fo
 - `x86_64-pc-linux-gnu` for Linux64
 - `i686-w64-mingw32` for Win32
 - `x86_64-w64-mingw32` for Win64
-- `x86_64-apple-darwin11` for MacOSX
+- `x86_64-apple-darwin14` for MacOSX
 - `arm-linux-gnueabihf` for Linux ARM 32 bit
 - `aarch64-linux-gnu` for Linux ARM 64 bit
 
@@ -61,15 +61,15 @@ If you want to build for the same host but different distro, add `--enable-glibc
 
 ccache
 ------
-The depends system also contains [ccache](https://ccache.samba.org/), which caches build results on source->object
-level. `./configure` of Dash Core will autodetect the presence of ccache and enable use of it. To disable ccache, use
-`./configure --prefix=<prefix> --disable-ccache`.
+`./configure` of Dash Core will autodetect the presence of ccache and enable use of it. To disable ccache, use
+`./configure --prefix=<prefix> --disable-ccache`. When installed and enabled, [ccache](https://ccache.samba.org/) will
+cache build results on source->object level.
 
 The default maximum cache size is 5G, which might not be enough to cache multiple builds when switching Git branches
 very often. It is advised to increase the maximum cache size:
 
 ```bash
-$ ./depends/<host>/native/bin/ccache -M20G
+$ ccache -M20G
 ```
 
 Additional Configure Flags

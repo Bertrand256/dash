@@ -11,7 +11,9 @@ src/dashd
 src/dash-cli
 src/dash-tx
 src/test/test_dash
+src/test/test_dash_fuzzy
 src/qt/test/test_dash-qt
+src/qt/res/css/colors/*
 src/bench/bench_dash
 
 # autoreconf
@@ -61,8 +63,6 @@ libconftest.dylib*
 *.pyc
 *.o
 *.o-*
-*.patch
-!depends/patches/*/*.patch
 *.a
 *.pb.cc
 *.pb.h
@@ -74,6 +74,10 @@ libconftest.dylib*
 *.json.h
 *.raw.h
 
+# Only ignore unexpected patches
+*.patch
+!depends/patches/**/*.patch
+
 #libtool object files
 *.lo
 *.la
@@ -83,11 +87,12 @@ libconftest.dylib*
 Makefile
 dash-qt
 Dash-Qt.app
+background.tiff*
+!/depends/Makefile
 
 # Unit-tests
 Makefile.test
 dash-qt_test
-src/test/buildenv.py
 
 # Resources cpp
 qrc_*.cpp
@@ -95,6 +100,7 @@ qrc_*.cpp
 # Mac specific
 .DS_Store
 build
+*.dSYM
 
 #lcov
 *.gcno
@@ -108,9 +114,8 @@ coverage_percent.txt
 linux-coverage-build
 linux-build
 win32-build
-qa/pull-tester/tests_config.py
-qa/pull-tester/tests_config.ini
-qa/cache/*
+test/config.ini
+test/cache/*
 
 !src/leveldb*/Makefile
 

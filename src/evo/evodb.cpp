@@ -1,10 +1,35 @@
-// Copyright (c) 2018 The Dash Core developers
+// Copyright (c) 2018-2019 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "evodb.h"
+#include <evo/evodb.h>
 
-CEvoDB* evoDb;
+std::unique_ptr<CEvoDB> evoDb;
+
+CEvoDBScopedCommitter::CEvoDBScopedCommitter(CEvoDB &_evoDB) :
+    evoDB(_evoDB)
+{
+}
+
+CEvoDBScopedCommitter::~CEvoDBScopedCommitter()
+{
+    if (!didCommitOrRollback)
+        Rollback();
+}
+
+void CEvoDBScopedCommitter::Commit()
+{
+    assert(!didCommitOrRollback);
+    didCommitOrRollback = true;
+    evoDB.CommitCurTransaction();
+}
+
+void CEvoDBScopedCommitter::Rollback()
+{
+    assert(!didCommitOrRollback);
+    didCommitOrRollback = true;
+    evoDB.RollbackCurTransaction();
+}
 
 CEvoDB::CEvoDB(size_t nCacheSize, bool fMemory, bool fWipe) :
     db(fMemory ? "" : (GetDataDir() / "evodb"), nCacheSize, fMemory, fWipe),
@@ -14,8 +39,21 @@ CEvoDB::CEvoDB(size_t nCacheSize, bool fMemory, bool fWipe) :
 {
 }
 
+void CEvoDB::CommitCurTransaction()
+{
+    LOCK(cs);
+    curDBTransaction.Commit();
+}
+
+void CEvoDB::RollbackCurTransaction()
+{
+    LOCK(cs);
+    curDBTransaction.Clear();
+}
+
 bool CEvoDB::CommitRootTransaction()
 {
+    LOCK(cs);
     assert(curDBTransaction.IsClean());
     rootDBTransaction.Commit();
     bool ret = db.WriteBatch(rootBatch);
@@ -28,11 +66,10 @@ bool CEvoDB::VerifyBestBlock(const uint256& hash)
     // Make sure evodb is consistent.
     // If we already have best block hash saved, the previous block should match it.
     uint256 hashBestBlock;
-    bool fHasBestBlock = Read(EVODB_BEST_BLOCK, hashBestBlock);
-    uint256 hashBlockIndex = fHasBestBlock ? hash : uint256();
-    assert(hashBestBlock == hashBlockIndex);
-
-    return fHasBestBlock;
+    if (!Read(EVODB_BEST_BLOCK, hashBestBlock)) {
+        return false;
+    }
+    return hashBestBlock == hash;
 }
 
 void CEvoDB::WriteBestBlock(const uint256& hash)

@@ -20,7 +20,7 @@ include_directories(
 if(UNIX AND NOT APPLE)
     set(DEPENDS_PREFIX depends/x86_64-pc-linux-gnu)
 elseif(APPLE)
-    set(DEPENDS_PREFIX depends/x86_64-apple-darwin11)
+    set(DEPENDS_PREFIX depends/x86_64-apple-darwin14)
 elseif(WIN32)
     set(DEPENDS_PREFIX depends/x86_64-w64-mingw32)
 endif()
@@ -33,32 +33,46 @@ if(DEFINED DEPENDS_PREFIX)
 endif()
 
 add_definitions(
+        -DENABLE_CRASH_HOOKS=1
+        -DENABLE_STACKTRACES=1
         -DENABLE_WALLET=1
 )
 
 file(GLOB SOURCE_FILES
+        src/*.cpp
+        src/*.h
         src/bench/*.cpp
         src/bench/*.h
         src/bls/*.cpp
         src/bls/*.h
+        src/coinjoin/*.cpp
+        src/coinjoin/*.h
         src/compat/*.cpp
         src/compat/*.h
-        src/consensus/*.h
         src/consensus/*.cpp
+        src/consensus/*.h
         src/crypto/*.c
-        src/crypto/*.h
         src/crypto/*.cpp
+        src/crypto/*.h
+        src/evo/*.cpp
+        src/evo/*.h
         src/leveldb/db/*.cc
         src/leveldb/db/*.h
         src/leveldb/include/*.h
+        src/llmq/*.cpp
+        src/llmq/*.h
+        src/masternode/*.cpp
+        src/masternode/*.h
         src/policy/*.cpp
         src/policy/*.h
         src/primitives/*.cpp
         src/primitives/*.h
-        src/qt/test/*.cpp
-        src/qt/test/*.h
         src/qt/*.cpp
         src/qt/*.h
+        src/qt/test/*.cpp
+        src/qt/test/*.h
+        src/rpc/*.cpp
+        src/rpc/*.h
         src/script/*.cpp
         src/script/*.h
         src/secp256k1/include/*.h
@@ -67,19 +81,11 @@ file(GLOB SOURCE_FILES
         src/univalue/include/*.h
         src/univalue/lib/*.cpp
         src/univalue/lib/*.h
-        src/wallet/test/*.cpp
         src/wallet/*.cpp
         src/wallet/*.h
+        src/wallet/test/*.cpp
         src/zmq/*.cpp
         src/zmq/*.h
-        src/*.cpp
-        src/*.h
-        src/evo/*.h
-        src/evo/*.cpp
-        src/llmq/*.h
-        src/llmq/*.cpp
-        src/rpc/*.cpp
-        src/rpc/*.h
         )
 
 add_executable(dash ${SOURCE_FILES})

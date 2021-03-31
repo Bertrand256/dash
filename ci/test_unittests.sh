@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-
+#
 # This script is executed inside the builder image
+
+export LC_ALL=C
 
 set -e
 
 source ./ci/matrix.sh
 
-if [ "$RUN_TESTS" != "true" ]; then
+if [ "$RUN_UNITTESTS" != "true" ]; then
   echo "Skipping unit tests"
   exit 0
 fi
@@ -19,6 +21,7 @@ export WINEDEBUG=fixme-all
 export BOOST_TEST_LOG_LEVEL=test_suite
 
 cd build-ci/dashcore-$BUILD_TARGET
+
 if [ "$DIRECT_WINE_EXEC_TESTS" = "true" ]; then
   # Inside Docker, binfmt isn't working so we can't trust in make invoking windows binaries correctly
   wine ./src/test/test_dash.exe
