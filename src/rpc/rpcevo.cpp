@@ -755,8 +755,12 @@ UniValue protx_update_registrar(const JSONRPCRequest& request)
     CKey keyOwner;
     if (!pwallet->GetKey(dmn->pdmnState->keyIDOwner, keyOwner)) {
         if(request.params.size() == 7 && request.params[6].get_str() != "") {
-            keyOwner = ParsePrivKey(pwallet, request.params[6].get_str(), true);
-            if(keyOwner.GetPubKey().GetID() != dmn->pdmnState->keyIDOwner)
+            keyOwner = DecodeSecret(request.params[6].get_str());
+            if (!keyOwner.IsValid())
+                throw std::runtime_error(strprintf("Invalid owner private key encoding"));
+
+            CPubKey pubkeyOwner = keyOwner.GetPubKey();
+            if(pubkeyOwner.GetID() != dmn->pdmnState->keyIDOwner)
                 throw std::runtime_error(strprintf("The owner private key passed as an argument does not match the owner address associated with the ProRegTx transaction."));
         }
         else
