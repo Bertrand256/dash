@@ -721,7 +721,7 @@ UniValue protx_update_registrar(const JSONRPCRequest& request)
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
         return NullUniValue;
 
-    if (request.fHelp || (request.params.size() != 5 && request.params.size() != 6)) {
+    if (request.fHelp || (request.params.size() != 5 && request.params.size() != 6 && request.params.size() != 7)) {
         protx_update_registrar_help(pwallet);
     }
 
@@ -758,7 +758,17 @@ UniValue protx_update_registrar(const JSONRPCRequest& request)
 
     CKey keyOwner;
     if (!pwallet->GetKey(dmn->pdmnState->keyIDOwner, keyOwner)) {
-        throw std::runtime_error(strprintf("Private key for owner address %s not found in your wallet", EncodeDestination(dmn->pdmnState->keyIDOwner)));
+        if(request.params.size() == 7 && request.params[6].get_str() != "") {
+            keyOwner = DecodeSecret(request.params[6].get_str());
+            if (!keyOwner.IsValid())
+                throw std::runtime_error(strprintf("Invalid owner private key encoding"));
+
+            CPubKey pubkeyOwner = keyOwner.GetPubKey();
+            if(pubkeyOwner.GetID() != dmn->pdmnState->keyIDOwner)
+                throw std::runtime_error(strprintf("The owner private key passed as an argument does not match the owner address associated with the ProRegTx transaction."));
+        }
+        else
+            throw std::runtime_error(strprintf("Private key for owner address %s not found in your wallet", EncodeDestination(dmn->pdmnState->keyIDOwner)));
     }
 
     CMutableTransaction tx;
