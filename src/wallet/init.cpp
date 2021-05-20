@@ -375,15 +375,15 @@ bool WalletInit::Verify() const
     std::set<fs::path> wallet_paths;
 
     for (const auto& wallet_file : wallet_files) {
-        fs::path wallet_path = fs::absolute(wallet_file, GetWalletDir());
+        WalletLocation location(wallet_file);
 
-        if (!wallet_paths.insert(wallet_path).second) {
+        if (!wallet_paths.insert(location.GetPath()).second) {
             return InitError(strprintf(_("Error loading wallet %s. Duplicate -wallet filename specified."), wallet_file));
         }
 
         std::string error_string;
         std::string warning_string;
-        bool verify_success = CWallet::Verify(wallet_file, salvage_wallet, error_string, warning_string);
+        bool verify_success = CWallet::Verify(location, salvage_wallet, error_string, warning_string);
         if (!error_string.empty()) InitError(error_string);
         if (!warning_string.empty()) InitWarning(warning_string);
         if (!verify_success) return false;
@@ -400,7 +400,8 @@ bool WalletInit::Open() const
     }
 
     for (const std::string& walletFile : gArgs.GetArgs("-wallet")) {
-        if (!CWallet::CreateWalletFromFile(walletFile, fs::absolute(walletFile, GetWalletDir()))) {
+        std::shared_ptr<CWallet> pwallet = CWallet::CreateWalletFromFile(WalletLocation(walletFile));
+        if (!pwallet) {
             return false;
         }
     }
@@ -410,7 +411,7 @@ bool WalletInit::Open() const
 
 void WalletInit::Start(CScheduler& scheduler) const
 {
-    for (CWallet* pwallet : GetWallets()) {
+    for (const std::shared_ptr<CWallet>& pwallet : GetWallets()) {
         pwallet->postInitProcess();
     }
 
@@ -424,7 +425,7 @@ void WalletInit::Start(CScheduler& scheduler) const
 
 void WalletInit::Flush() const
 {
-    for (CWallet* pwallet : GetWallets()) {
+    for (const std::shared_ptr<CWallet>& pwallet : GetWallets()) {
         if (CCoinJoinClientOptions::IsEnabled()) {
             // Stop CoinJoin, release keys
             auto it = coinJoinClientManagers.find(pwallet->GetName());
@@ -437,23 +438,22 @@ void WalletInit::Flush() const
 
 void WalletInit::Stop() const
 {
-    for (CWallet* pwallet : GetWallets()) {
+    for (const std::shared_ptr<CWallet>& pwallet : GetWallets()) {
         pwallet->Flush(true);
     }
 }
 
 void WalletInit::Close() const
 {
-    for (CWallet* pwallet : GetWallets()) {
+    for (const std::shared_ptr<CWallet>& pwallet : GetWallets()) {
         RemoveWallet(pwallet);
-        delete pwallet;
     }
 }
 
 void WalletInit::AutoLockMasternodeCollaterals() const
 {
     // we can't do this before DIP3 is fully initialized
-    for (CWallet* pwallet : GetWallets()) {
+    for (const auto pwallet : GetWallets()) {
         pwallet->AutoLockMasternodeCollaterals();
     }
 }

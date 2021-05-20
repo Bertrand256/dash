@@ -1249,7 +1249,9 @@ void PeerLogicValidation::UpdatedBlockTip(const CBlockIndex *pindexNew, const CB
         }
         // Relay inventory, but don't relay old inventory during initial block download.
         connman->ForEachNode([nNewHeight, &vHashes](CNode* pnode) {
-            if (pnode->m_masternode_connection) return;
+            if (!pnode->CanRelay()) {
+                return;
+            }
             if (nNewHeight > (pnode->nStartingHeight != -1 ? pnode->nStartingHeight - 2000 : 0)) {
                 for (const uint256& hash : reverse_iterate(vHashes)) {
                     pnode->PushBlockHash(hash);
@@ -1531,6 +1533,8 @@ void static ProcessGetBlockData(CNode* pfrom, const CChainParams& chainparams, c
                     typedef std::pair<unsigned int, uint256> PairType;
                     for (PairType &pair : merkleBlock.vMatchedTxn) {
                         connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::TX, *pblock->vtx[pair.first]));
+                    }
+                    for (PairType &pair : merkleBlock.vMatchedTxn) {
                         auto islock = llmq::quorumInstantSendManager->GetInstantSendLockByTxid(pair.second);
                         if (islock != nullptr) {
                             connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::ISLOCK, *islock));
@@ -2358,7 +2362,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         // nodes)
         connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::SENDHEADERS));
 
-        if (!pfrom->m_masternode_connection) {
+        if (pfrom->CanRelay()) {
             // Tell our peer we are willing to provide version-1 cmpctblocks
             // However, we do not request new block announcements using
             // cmpctblock messages.
@@ -2652,7 +2656,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 LogPrint(BCLog::NET, " getblocks stopping, pruned or too old block at %d %s\n", pindex->nHeight, pindex->GetBlockHash().ToString());
                 break;
             }
-            if (!pfrom->m_masternode_connection) {
+            if (pfrom->CanRelay()) {
                 pfrom->PushInventory(CInv(MSG_BLOCK, pindex->GetBlockHash()));
             }
             if (--nLimit <= 0)
@@ -2934,6 +2938,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 // We will continue to reject this tx since it has rejected
                 // parents so avoid re-requesting it from other peers.
                 recentRejects->insert(tx.GetHash());
+                llmq::quorumInstantSendManager->TransactionRemovedFromMempool(ptx);
             }
         } else {
             if (!state.CorruptionPossible()) {
@@ -2961,6 +2966,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                     LogPrintf("Not relaying invalid transaction %s from whitelisted peer=%d (%s)\n", tx.GetHash().ToString(), pfrom->GetId(), FormatStateMessage(state));
                 }
             }
+            llmq::quorumInstantSendManager->TransactionRemovedFromMempool(ptx);
         }
 
         int nDoS = 0;
@@ -3984,7 +3990,7 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
         if (pindexBestHeader == nullptr)
             pindexBestHeader = chainActive.Tip();
         bool fFetch = state.fPreferredDownload || (nPreferredDownload == 0 && !pto->fClient && !pto->fOneShot); // Download if this is a nice peer, or we have no nice peers and this one might do.
-        if (!state.fSyncStarted && !pto->fClient && !fImporting && !fReindex && !pto->m_masternode_connection) {
+        if (!state.fSyncStarted && !pto->fClient && !fImporting && !fReindex && pto->CanRelay()) {
             // Only actively request headers from a single peer, unless we're close to end of initial download.
             if ((nSyncStarted == 0 && fFetch) || pindexBestHeader->GetBlockTime() > GetAdjustedTime() - nMaxTipAge) {
                 state.fSyncStarted = true;
@@ -4023,7 +4029,7 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
         //
         // Try sending block announcements via headers
         //
-        if (!pto->m_masternode_connection) {
+        if (pto->CanRelay()) {
             // If we have less than MAX_BLOCKS_TO_ANNOUNCE in our
             // list of block hashes we're relaying, and our peer wants
             // headers announcements, then find the first header
@@ -4381,7 +4387,7 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
         // Message: getdata (blocks)
         //
         std::vector<CInv> vGetData;
-        if (!pto->fClient && !pto->m_masternode_connection && ((fFetch && !pto->m_limited_node) || !IsInitialBlockDownload()) && state.nBlocksInFlight < MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
+        if (!pto->fClient && pto->CanRelay() && ((fFetch && !pto->m_limited_node) || !IsInitialBlockDownload()) && state.nBlocksInFlight < MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
             std::vector<const CBlockIndex*> vToDownload;
             NodeId staller = -1;
             FindNextBlocksToDownload(pto->GetId(), MAX_BLOCKS_IN_TRANSIT_PER_PEER - state.nBlocksInFlight, vToDownload, staller, consensusParams);

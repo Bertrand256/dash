@@ -1,5 +1,5 @@
 // Copyright (c) 2011-2015 The Bitcoin Core developers
-// Copyright (c) 2014-2019 The Dash Core developers
+// Copyright (c) 2014-2021 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -193,8 +193,6 @@ ShutdownWindow::ShutdownWindow(interfaces::Node& node, QWidget *parent, Qt::Wind
     QWidget(parent, f)
 {
     setObjectName("ShutdownWindow");
-
-    GUIUtil::loadStyleSheet(node, this);
 
     QVBoxLayout *layout = new QVBoxLayout();
     layout->addWidget(new QLabel(

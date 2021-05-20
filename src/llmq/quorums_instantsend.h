@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2020 The Dash Core developers
+// Copyright (c) 2019-2021 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -43,6 +43,8 @@ typedef std::shared_ptr<CInstantSendLock> CInstantSendLockPtr;
 class CInstantSendDb
 {
 private:
+    static const int CURRENT_VERSION = 1;
+
     CDBWrapper& db;
 
     mutable unordered_lru_cache<uint256, CInstantSendLockPtr, StaticSaltedHasher, 10000> islockCache;
@@ -53,7 +55,9 @@ private:
     void RemoveInstantSendLockMined(CDBBatch& batch, const uint256& hash, int nHeight);
 
 public:
-    explicit CInstantSendDb(CDBWrapper& _db) : db(_db) {}
+    explicit CInstantSendDb(CDBWrapper& _db);
+
+    void Upgrade();
 
     void WriteNewInstantSendLock(const uint256& hash, const CInstantSendLock& islock);
     void RemoveInstantSendLock(CDBBatch& batch, const uint256& hash, CInstantSendLockPtr islock, bool keep_cache = true);
@@ -81,6 +85,8 @@ class CInstantSendManager : public CRecoveredSigsListener
 private:
     mutable CCriticalSection cs;
     CInstantSendDb db;
+
+    std::atomic<bool> fUpgradedDB{false};
 
     std::thread workThread;
     CThreadInterrupt workInterrupt;
@@ -146,6 +152,7 @@ public:
     void ProcessInstantSendLock(NodeId from, const uint256& hash, const CInstantSendLockPtr& islock);
 
     void TransactionAddedToMempool(const CTransactionRef& tx);
+    void TransactionRemovedFromMempool(const CTransactionRef& tx);
     void BlockConnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindex, const std::vector<CTransactionRef>& vtxConflicted);
     void BlockDisconnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexDisconnected);
 
@@ -161,7 +168,7 @@ public:
 
     void RemoveMempoolConflictsForLock(const uint256& hash, const CInstantSendLock& islock);
     void ResolveBlockConflicts(const uint256& islockHash, const CInstantSendLock& islock);
-    void RemoveChainLockConflictingLock(const uint256& islockHash, const CInstantSendLock& islock);
+    void RemoveConflictingLock(const uint256& islockHash, const CInstantSendLock& islock);
     static void AskNodesForLockedTx(const uint256& txid);
     void ProcessPendingRetryLockTxs();
 

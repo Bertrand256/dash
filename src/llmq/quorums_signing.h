@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020 The Dash Core developers
+// Copyright (c) 2018-2021 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -7,13 +7,14 @@
 
 #include <llmq/quorums.h>
 
-#include <net.h>
 #include <chainparams.h>
 #include <saltedhasher.h>
 #include <univalue.h>
 #include <unordered_lru_cache.h>
 
 #include <unordered_map>
+
+typedef int64_t NodeId;
 
 namespace llmq
 {

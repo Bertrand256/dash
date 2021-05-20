@@ -253,9 +253,6 @@ namespace GUIUtil
     bool GetStartOnSystemStartup();
     bool SetStartOnSystemStartup(bool fAutoStart);
 
-    /** Modify Qt network specific settings on migration */
-    void migrateQtSettings();
-
     /** Change the stylesheet directory. This is used by
         the parameter -custom-css-dir.*/
     void setStyleSheetDirectory(const QString& path);
@@ -275,10 +272,9 @@ namespace GUIUtil
     /** Check if the given theme name is valid or not */
     const bool isValidTheme(const QString& strTheme);
 
-    /** Updates the widgets stylesheet and adds it to the list of ui debug elements.
-    Beeing on that list means the stylesheet of the widget gets updated if the
-    related css files has been changed if -debug-ui mode is active. */
-    void loadStyleSheet(interfaces::Node& node, QWidget* widget = nullptr, bool fForceUpdate = false);
+    /** Sets the stylesheet of the whole app and updates it if the
+    related css files has been changed and -debug-ui mode is active. */
+    void loadStyleSheet(bool fForceUpdate = false);
 
     enum class FontFamily {
         SystemDefault,
@@ -325,6 +321,8 @@ namespace GUIUtil
 
     /** Load dash specific appliciation fonts */
     bool loadFonts();
+    /** Check if the fonts have been loaded successfully */
+    bool fontsLoaded();
 
     /** Set an application wide default font, depends on the selected theme */
     void setApplicationFont();
@@ -349,12 +347,18 @@ namespace GUIUtil
     /** Get the default bold QFont */
     QFont getFontBold();
 
+    /** Return supported normal default for the current font family */
+    QFont::Weight getSupportedFontWeightNormalDefault();
+    /** Return supported bold default for the current font family */
+    QFont::Weight getSupportedFontWeightBoldDefault();
     /** Return supported weights for the current font family */
     std::vector<QFont::Weight> getSupportedWeights();
     /** Convert an index to a weight in the supported weights vector */
     QFont::Weight supportedWeightFromIndex(int nIndex);
     /** Convert a weight to an index in the supported weights vector */
     int supportedWeightToIndex(QFont::Weight weight);
+    /** Check if a weight is supported by the current font family */
+    bool isSupportedWeight(QFont::Weight weight);
 
     /** Return the name of the currently active theme.*/
     QString getActiveTheme();
@@ -363,7 +367,7 @@ namespace GUIUtil
     bool dashThemeActive();
 
     /** Load the theme and update all UI elements according to the appearance settings. */
-    void loadTheme(interfaces::Node& node, QWidget* widget = nullptr, bool fForce = false);
+    void loadTheme(bool fForce = false);
 
     /** Disable the OS default focus rect for macOS because we have custom focus rects
      * set in the css files */

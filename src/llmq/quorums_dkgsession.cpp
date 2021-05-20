@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 The Dash Core developers
+// Copyright (c) 2018-2021 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -471,6 +471,7 @@ void CDKGSession::VerifyConnectionAndMinProtoVersions()
         protoMap.emplace(pnode->verifiedProRegTxHash, pnode->nVersion);
     });
 
+    bool fShouldAllMembersBeConnected = CLLMQUtils::IsAllMembersConnectedEnabled(params.type);
     for (auto& m : members) {
         if (m->dmn->proTxHash == myProTxHash) {
             continue;
@@ -478,8 +479,8 @@ void CDKGSession::VerifyConnectionAndMinProtoVersions()
 
         auto it = protoMap.find(m->dmn->proTxHash);
         if (it == protoMap.end()) {
-            m->badConnection = true;
-            logger.Batch("%s is not connected to us", m->dmn->proTxHash.ToString());
+            m->badConnection = fShouldAllMembersBeConnected;
+            logger.Batch("%s is not connected to us, badConnection=%b", m->dmn->proTxHash.ToString(), m->badConnection);
         } else if (it != protoMap.end() && it->second < MIN_MASTERNODE_PROTO_VERSION) {
             m->badConnection = true;
             logger.Batch("%s does not have min proto version %d (has %d)", m->dmn->proTxHash.ToString(), MIN_MASTERNODE_PROTO_VERSION, it->second);

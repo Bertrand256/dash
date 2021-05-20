@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 The Dash Core developers
+// Copyright (c) 2018-2021 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,15 +9,18 @@
 #include <evo/deterministicmns.h>
 #include <llmq/quorums_commitment.h>
 
-#include <validationinterface.h>
+#include <chain.h>
 #include <consensus/params.h>
 #include <saltedhasher.h>
 #include <unordered_lru_cache.h>
+#include <threadinterrupt.h>
 
 #include <bls/bls.h>
 #include <bls/bls_worker.h>
 
 #include <ctpl.h>
+
+class CNode;
 
 namespace llmq
 {

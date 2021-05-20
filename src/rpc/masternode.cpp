@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2019 The Dash Core developers
+// Copyright (c) 2014-2021 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -200,12 +200,13 @@ void masternode_outputs_help()
 
 UniValue masternode_outputs(const JSONRPCRequest& request)
 {
-    CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
-    if (request.fHelp)
-        masternode_outputs_help();
-
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
         return NullUniValue;
+
+    if (request.fHelp)
+        masternode_outputs_help();
 
     LOCK2(cs_main, pwallet->cs_wallet);
 

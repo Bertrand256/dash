@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2020 The Dash Core developers
+// Copyright (c) 2014-2021 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -1345,12 +1345,12 @@ bool CCoinJoinClientSession::PrepareDenominate(int nMinRounds, int nMaxRounds, s
                 ++nSteps;
                 continue;
             }
-            CWallet* pwallet = GetWallet(mixingWallet.GetName());
+            const auto pwallet = GetWallet(mixingWallet.GetName());
             if (!pwallet) {
                 strErrorRet ="Couldn't get wallet pointer";
                 return false;
             }
-            scriptDenom = keyHolderStorage.AddKey(pwallet);
+            scriptDenom = keyHolderStorage.AddKey(pwallet.get());
         }
         vecPSInOutPairsRet.emplace_back(entry, CTxOut(nDenomAmount, scriptDenom));
         // step is complete
@@ -1434,7 +1434,7 @@ bool CCoinJoinClientSession::MakeCollateralAmounts(const CompactTallyItem& tally
         return false;
     }
 
-    CWallet* pwallet = GetWallet(mixingWallet.GetName());
+    const auto pwallet = GetWallet(mixingWallet.GetName());
 
     if (!pwallet) {
         LogPrint(BCLog::COINJOIN, "CCoinJoinClientSession::%s -- Couldn't get wallet pointer\n", __func__);
@@ -1607,7 +1607,7 @@ bool CCoinJoinClientSession::CreateDenominated(CAmount nBalanceToDenominate, con
         return false;
     }
 
-    CWallet* pwallet = GetWallet(mixingWallet.GetName());
+    const auto pwallet = GetWallet(mixingWallet.GetName());
 
     if (!pwallet) {
         LogPrint(BCLog::COINJOIN, "CCoinJoinClientSession::%s -- Couldn't get wallet pointer\n", __func__);

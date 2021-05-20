@@ -1,6 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
-// Copyright (c) 2014-2019 The Dash Core developers
+// Copyright (c) 2014-2021 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -21,7 +21,7 @@
 #include <wallet/crypter.h>
 #include <wallet/coinselection.h>
 #include <wallet/walletdb.h>
-#include <wallet/rpcwallet.h>
+#include <wallet/walletutil.h>
 
 #include <coinjoin/coinjoin.h>
 #include <governance/governance-object.h>
@@ -38,12 +38,11 @@
 #include <utility>
 #include <vector>
 
-typedef CWallet* CWalletRef;
-bool AddWallet(CWallet* wallet);
-bool RemoveWallet(CWallet* wallet);
+bool AddWallet(const std::shared_ptr<CWallet>& wallet);
+bool RemoveWallet(const std::shared_ptr<CWallet>& wallet);
 bool HasWallets();
-std::vector<CWallet*> GetWallets();
-CWallet* GetWallet(const std::string& name);
+std::vector<std::shared_ptr<CWallet>> GetWallets();
+std::shared_ptr<CWallet> GetWallet(const std::string& name);
 
 /**
  * Settings
@@ -790,12 +789,8 @@ private:
      */
     bool AddWatchOnly(const CScript& dest) override EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
-    /**
-     * Wallet filename from wallet=<path> command line or config option.
-     * Used in debug logs and to send RPCs to the right wallet instance when
-     * more than one wallet is loaded.
-     */
-    std::string m_name;
+    /** Wallet location which includes wallet name (see WalletLocation). */
+    WalletLocation m_location;
 
     /** Internal database handle. */
     std::unique_ptr<WalletDatabase> database;
@@ -845,9 +840,11 @@ public:
         return *database;
     }
 
+    const WalletLocation& GetLocation() const { return m_location; }
+
     /** Get a name for this wallet for logging/debugging purposes.
      */
-    const std::string& GetName() const { return m_name; }
+    const std::string& GetName() const { return m_location.GetName(); }
 
     void LoadKeyPool(int64_t nIndex, const CKeyPool &keypool) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
@@ -865,7 +862,7 @@ public:
     unsigned int nMasterKeyMaxID = 0;
 
     /** Construct wallet with specified name and database implementation. */
-    CWallet(std::string name, std::unique_ptr<WalletDatabase> database) : m_name(std::move(name)), database(std::move(database))
+    CWallet(const WalletLocation& location, std::unique_ptr<WalletDatabase> database) : m_location(location), database(std::move(database))
     {
     }
 
@@ -1037,7 +1034,7 @@ public:
     bool AddToWalletIfInvolvingMe(const CTransactionRef& tx, const CBlockIndex* pIndex, int posInBlock, bool fUpdate) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     int64_t RescanFromTime(int64_t startTime, const WalletRescanReserver& reserver, bool update);
     CBlockIndex* ScanForWalletTransactions(CBlockIndex* pindexStart, CBlockIndex* pindexStop, const WalletRescanReserver& reserver, bool fUpdate = false);
-    void TransactionRemovedFromMempool(const CTransactionRef &ptx) override;
+    void TransactionRemovedFromMempool(const CTransactionRef &ptx, MemPoolRemovalReason reason) override;
     void ReacceptWalletTransactions();
     void ResendWalletTransactions(int64_t nBestBlockTime, CConnman* connman) override;
     // ResendWalletTransactionsBefore may only be called if fBroadcastTransactions!
@@ -1165,6 +1162,9 @@ public:
     //! Flush wallet (bitdb flush)
     void Flush(bool shutdown=false);
 
+    /** Wallet is about to be unloaded */
+    boost::signals2::signal<void ()> NotifyUnload;
+
     /**
      * Address book entry changed.
      * @note called with lock cs_wallet held.
@@ -1205,10 +1205,10 @@ public:
     bool AbandonTransaction(const uint256& hashTx);
 
     //! Verify wallet naming and perform salvage on the wallet if required
-    static bool Verify(std::string wallet_file, bool salvage_wallet, std::string& error_string, std::string& warning_string);
+    static bool Verify(const WalletLocation& location, bool salvage_wallet, std::string& error_string, std::string& warning_string);
 
     /* Initializes the wallet, returns a new CWallet instance or a null pointer in case of an error */
-    static CWallet* CreateWalletFromFile(const std::string& name, const fs::path& path);
+    static std::shared_ptr<CWallet> CreateWalletFromFile(const WalletLocation& location);
 
     /**
      * Wallet post-init setup

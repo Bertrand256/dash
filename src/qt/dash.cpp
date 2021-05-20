@@ -1,5 +1,5 @@
 // Copyright (c) 2011-2015 The Bitcoin Core developers
-// Copyright (c) 2014-2019 The Dash Core developers
+// Copyright (c) 2014-2021 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -212,6 +212,7 @@ public Q_SLOTS:
     /// Handle runaway exceptions. Shows a message box with the problem and quits the program.
     void handleRunawayException(const QString &message);
     void addWallet(WalletModel* walletModel);
+    void removeWallet();
 
 Q_SIGNALS:
     void requestedInitialize();
@@ -358,9 +359,6 @@ void BitcoinApplication::createOptionsModel(bool resetSettings)
 void BitcoinApplication::createWindow(const NetworkStyle *networkStyle)
 {
     window = new BitcoinGUI(m_node, networkStyle, 0);
-
-    GUIUtil::loadTheme(m_node, window);
-
     pollShutdownTimer = new QTimer(window);
     connect(pollShutdownTimer, SIGNAL(timeout()), window, SLOT(detectShutdown()));
 }
@@ -454,8 +452,19 @@ void BitcoinApplication::addWallet(WalletModel* walletModel)
 
     connect(walletModel, SIGNAL(coinsSent(WalletModel*, SendCoinsRecipient, QByteArray)),
         paymentServer, SLOT(fetchPaymentACK(WalletModel*, const SendCoinsRecipient&, QByteArray)));
+    connect(walletModel, SIGNAL(unload()), this, SLOT(removeWallet()));
 
     m_wallet_models.push_back(walletModel);
+#endif
+}
+
+void BitcoinApplication::removeWallet()
+{
+#ifdef ENABLE_WALLET
+    WalletModel* walletModel = static_cast<WalletModel*>(sender());
+    m_wallet_models.erase(std::find(m_wallet_models.begin(), m_wallet_models.end(), walletModel));
+    window->removeWallet(walletModel);
+    walletModel->deleteLater();
 #endif
 }
 
@@ -478,8 +487,10 @@ void BitcoinApplication::initializeResult(bool success)
 
 #ifdef ENABLE_WALLET
         m_handler_load_wallet = m_node.handleLoadWallet([this](std::unique_ptr<interfaces::Wallet> wallet) {
-            QMetaObject::invokeMethod(this, "addWallet", Qt::QueuedConnection,
-                Q_ARG(WalletModel*, new WalletModel(std::move(wallet), m_node, optionsModel)));
+            WalletModel* wallet_model = new WalletModel(std::move(wallet), m_node, optionsModel, nullptr);
+            // Fix wallet model thread affinity.
+            wallet_model->moveToThread(thread());
+            QMetaObject::invokeMethod(this, "addWallet", Qt::QueuedConnection, Q_ARG(WalletModel*, wallet_model));
         });
 
         for (auto& wallet : m_node.getWallets()) {
@@ -703,14 +714,14 @@ int main(int argc, char *argv[])
     qInstallMessageHandler(DebugMessageHandler);
     // Allow parameter interaction before we create the options model
     app.parameterSetup();
-    // Load GUI settings from QSettings
-    app.createOptionsModel(gArgs.GetBoolArg("-resetguisettings", false));
     // Load custom application fonts and setup font management
     if (!GUIUtil::loadFonts()) {
         QMessageBox::critical(0, QObject::tr(PACKAGE_NAME),
                               QObject::tr("Error: Failed to load application fonts."));
         return EXIT_FAILURE;
     }
+    // Load GUI settings from QSettings
+    app.createOptionsModel(gArgs.GetBoolArg("-resetguisettings", false));
     // Validate/set font family
     if (gArgs.IsArgSet("-font-family")) {
         GUIUtil::FontFamily family;

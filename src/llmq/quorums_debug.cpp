@@ -1,10 +1,11 @@
-// Copyright (c) 2018-2019 The Dash Core developers
+// Copyright (c) 2018-2021 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <llmq/quorums_debug.h>
 
 #include <chainparams.h>
+#include <timedata.h>
 #include <validation.h>
 
 #include <evo/deterministicmns.h>

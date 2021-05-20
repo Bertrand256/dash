@@ -1,6 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
-// Copyright (c) 2014-2020 The Dash Core developers
+// Copyright (c) 2014-2021 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -3688,29 +3688,23 @@ void CConnman::RelayTransaction(const CTransaction& tx)
         nInv = MSG_DSTX;
     }
     CInv inv(nInv, hash);
-    LOCK(cs_vNodes);
-    for (CNode* pnode : vNodes)
-    {
-        if (pnode->m_masternode_connection)
-            continue;
-        pnode->PushInventory(inv);
-    }
+    RelayInv(inv);
 }
 
-void CConnman::RelayInv(CInv &inv, const int minProtoVersion, bool fAllowMasternodeConnections) {
+void CConnman::RelayInv(CInv &inv, const int minProtoVersion) {
     LOCK(cs_vNodes);
     for (const auto& pnode : vNodes) {
-        if (pnode->nVersion < minProtoVersion || (pnode->m_masternode_connection && !fAllowMasternodeConnections))
+        if (pnode->nVersion < minProtoVersion || !pnode->CanRelay())
             continue;
         pnode->PushInventory(inv);
     }
 }
 
-void CConnman::RelayInvFiltered(CInv &inv, const CTransaction& relatedTx, const int minProtoVersion, bool fAllowMasternodeConnections)
+void CConnman::RelayInvFiltered(CInv &inv, const CTransaction& relatedTx, const int minProtoVersion)
 {
     LOCK(cs_vNodes);
     for (const auto& pnode : vNodes) {
-        if (pnode->nVersion < minProtoVersion || (pnode->m_masternode_connection && !fAllowMasternodeConnections))
+        if (pnode->nVersion < minProtoVersion || !pnode->CanRelay())
             continue;
         {
             LOCK(pnode->cs_filter);
@@ -3721,11 +3715,11 @@ void CConnman::RelayInvFiltered(CInv &inv, const CTransaction& relatedTx, const 
     }
 }
 
-void CConnman::RelayInvFiltered(CInv &inv, const uint256& relatedTxHash, const int minProtoVersion, bool fAllowMasternodeConnections)
+void CConnman::RelayInvFiltered(CInv &inv, const uint256& relatedTxHash, const int minProtoVersion)
 {
     LOCK(cs_vNodes);
     for (const auto& pnode : vNodes) {
-        if (pnode->nVersion < minProtoVersion || (pnode->m_masternode_connection && !fAllowMasternodeConnections))
+        if (pnode->nVersion < minProtoVersion || !pnode->CanRelay())
             continue;
         {
             LOCK(pnode->cs_filter);

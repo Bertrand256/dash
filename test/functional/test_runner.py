@@ -52,8 +52,8 @@ if os.name == 'posix':
 TEST_EXIT_PASSED = 0
 TEST_EXIT_SKIPPED = 77
 
-# 20 minutes represented in seconds
-TRAVIS_TIMEOUT_DURATION = 20 * 60
+# 30 minutes represented in seconds
+TRAVIS_TIMEOUT_DURATION = 30 * 60
 
 BASE_SCRIPTS= [
     # Scripts that are run by the travis build process.
@@ -162,6 +162,7 @@ BASE_SCRIPTS= [
     'rpc_masternode.py',
     'rpc_mnauth.py',
     'rpc_verifyislock.py',
+    'rpc_verifychainlock.py',
     'p2p_fingerprint.py',
     'rpc_platform_filter.py',
     'feature_dip0020_activation.py',

@@ -1,18 +1,18 @@
 package=bls-dash
-$(package)_version=1.0.0
+$(package)_version=1.1.0
 $(package)_download_path=https://github.com/dashpay/bls-signatures/archive
 $(package)_download_file=$($(package)_version).tar.gz
 $(package)_file_name=$(package)-$($(package)_download_file)
 $(package)_build_subdir=build
-$(package)_sha256_hash=ecbc51457dd3de153af27333038f149ba585e16fe46351b763938cb6ef0f2d9a
+$(package)_sha256_hash=276c8573104e5f18bb5b9fd3ffd49585dda5ba5f6de2de74759dda8ca5a9deac
 $(package)_dependencies=gmp cmake
 
-$(package)_relic_version=186a15da6d07ef436dd8f00a4345838310a0aad3
+$(package)_relic_version=3a23142be0a5510a3aa93cd6c76fc59d3fc732a5
 $(package)_relic_download_path=https://github.com/relic-toolkit/relic/archive
 $(package)_relic_download_file=$($(package)_relic_version).tar.gz
 $(package)_relic_file_name=relic-toolkit-$($(package)_relic_download_file)
 $(package)_relic_build_subdir=relic
-$(package)_relic_sha256_hash=70fb36acfd206f2128f6da38bda9f9ef070062d50adb97b053d98477bf0112fc
+$(package)_relic_sha256_hash=ddad83b1406985a1e4703bd03bdbab89453aa700c0c99567cf8de51c205e5dde
 
 $(package)_extra_sources=$($(package)_relic_file_name)
 
@@ -32,7 +32,7 @@ endef
 
 define $(package)_set_vars
   $(package)_config_opts=-DCMAKE_INSTALL_PREFIX=$($(package)_staging_dir)/$(host_prefix)
-  $(package)_config_opts+= -DCMAKE_PREFIX_PATH=$($(package)_staging_dir)/$(host_prefix)
+  $(package)_config_opts+= -DCMAKE_PREFIX_PATH=$(host_prefix)
   $(package)_config_opts+= -DSTLIB=ON -DSHLIB=OFF -DSTBIN=ON
   $(package)_config_opts+= -DBUILD_BLS_PYTHON_BINDINGS=0 -DBUILD_BLS_TESTS=0 -DBUILD_BLS_BENCHMARKS=0
   $(package)_config_opts_linux=-DOPSYS=LINUX -DCMAKE_SYSTEM_NAME=Linux

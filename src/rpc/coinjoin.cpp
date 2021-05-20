@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2020 The Dash Core developers
+// Copyright (c) 2019-2021 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -6,6 +6,7 @@
 #ifdef ENABLE_WALLET
 #include <coinjoin/coinjoin-client.h>
 #include <coinjoin/coinjoin-client-options.h>
+#include <wallet/rpcwallet.h>
 #endif // ENABLE_WALLET
 #include <coinjoin/coinjoin-server.h>
 #include <rpc/server.h>
@@ -16,7 +17,8 @@
 #ifdef ENABLE_WALLET
 UniValue coinjoin(const JSONRPCRequest& request)
 {
-    CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
         return NullUniValue;
 
@@ -143,7 +145,8 @@ UniValue getcoinjoininfo(const JSONRPCRequest& request)
 
     obj.pushKV("queue_size", coinJoinClientQueueManager.GetQueueSize());
 
-    CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
     if (!pwallet) {
         return obj;
     }

@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2020 The Dash Core developers
+// Copyright (c) 2014-2021 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -137,12 +137,13 @@ void gobject_prepare_help(CWallet* const pwallet)
 
 UniValue gobject_prepare(const JSONRPCRequest& request)
 {
-    CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
-    if (request.fHelp || (request.params.size() != 5 && request.params.size() != 6 && request.params.size() != 8))
-        gobject_prepare_help(pwallet);
-
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
         return NullUniValue;
+
+    if (request.fHelp || (request.params.size() != 5 && request.params.size() != 6 && request.params.size() != 8))
+        gobject_prepare_help(pwallet);
 
     EnsureWalletIsUnlocked(pwallet);
 
@@ -244,13 +245,14 @@ void gobject_list_prepared_help(CWallet* const pwallet)
 
 UniValue gobject_list_prepared(const JSONRPCRequest& request)
 {
-    CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
+        return NullUniValue;
+
     if (request.fHelp || (request.params.size() > 2)) {
         gobject_list_prepared_help(pwallet);
     }
-
-    if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
-        return NullUniValue;
 
     EnsureWalletIsUnlocked(pwallet);
 
@@ -570,12 +572,13 @@ void gobject_vote_many_help(CWallet* const pwallet)
 
 UniValue gobject_vote_many(const JSONRPCRequest& request)
 {
-    CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
-    if (request.fHelp || request.params.size() != 4)
-        gobject_vote_many_help(pwallet);
-
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
         return NullUniValue;
+
+    if (request.fHelp || request.params.size() != 4)
+        gobject_vote_many_help(pwallet);
 
     uint256 hash = ParseHashV(request.params[1], "Object hash");
     std::string strVoteSignal = request.params[2].get_str();
@@ -624,12 +627,13 @@ void gobject_vote_alias_help(CWallet* const pwallet)
 
 UniValue gobject_vote_alias(const JSONRPCRequest& request)
 {
-    CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
-    if (request.fHelp || request.params.size() != 5)
-        gobject_vote_alias_help(pwallet);
-
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
         return NullUniValue;
+
+    if (request.fHelp || request.params.size() != 5)
+        gobject_vote_alias_help(pwallet);
 
     uint256 hash = ParseHashV(request.params[1], "Object hash");
     std::string strVoteSignal = request.params[2].get_str();
