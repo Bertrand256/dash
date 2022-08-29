@@ -47,7 +47,7 @@ class HTTPBasicsTest(BitcoinTestFramework):
             conn.request('POST', '/', json.dumps(body), {"Authorization": "Basic " + str_to_b64str(auth)})
             resp = conn.getresponse()
             if should_not_match:
-                assert(resp.status != expexted_status)
+                assert resp.status != expexted_status
             else:
                 assert_equal(resp.status, expexted_status)
             conn.close()
@@ -100,7 +100,7 @@ class HTTPBasicsTest(BitcoinTestFramework):
         self.log.info('Try running all non-whitelisted commands as each user...')
         for command in nonwhitelisted:
             test_command(command, [], rpcuser_authpair_platform, 403)
-            if command != "stop":  # avoid stoping the node while testing
+            if command != "stop":  # avoid stopping the node while testing
                 # we don't care about the exact status here, should simply be anything else but 403
                 test_command(command, [], rpcuser_authpair_operator, 403, True)
 

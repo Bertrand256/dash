@@ -10,8 +10,10 @@ src/dash
 src/dashd
 src/dash-cli
 src/dash-tx
+src/dash-wallet
+src/test/fuzz
+!src/test/fuzz/*.*
 src/test/test_dash
-src/test/test_dash_fuzzy
 src/qt/test/test_dash-qt
 src/qt/res/css/colors/*
 src/bench/bench_dash
@@ -33,6 +35,7 @@ build-aux/m4/ltversion.m4
 build-aux/missing
 build-aux/compile
 build-aux/test-driver
+config.cache
 config.log
 config.status
 configure
@@ -40,6 +43,7 @@ libtool
 src/config/dash-config.h
 src/config/dash-config.h.in
 src/config/stamp-h1
+src/obj
 share/setup.nsi
 share/qt/Info.plist
 
@@ -56,7 +60,7 @@ libconftest.dylib*
 .dirstamp
 .libs
 .*.swp
-*.*~*
+*~
 *.bak
 *.rej
 *.orig
@@ -66,16 +70,19 @@ libconftest.dylib*
 *.a
 *.pb.cc
 *.pb.h
+*.dat
 
 *.log
 *.trs
 *.dmg
+*.iso
 
 *.json.h
 *.raw.h
 
 # Only ignore unexpected patches
 *.patch
+!contrib/guix/patches/*.patch
 !depends/patches/**/*.patch
 
 #libtool object files
@@ -85,10 +92,14 @@ libconftest.dylib*
 # Compilation and Qt preprocessor part
 *.qm
 Makefile
+!depends/Makefile
 dash-qt
 Dash-Qt.app
 background.tiff*
 !/depends/Makefile
+
+# Qt Creator
+Makefile.am.user
 
 # Unit-tests
 Makefile.test
@@ -140,3 +151,12 @@ make
 # CLion
 .idea
 cmake-build-debug
+
+# clang-check
+*.plist
+
+osx_volname
+dist/
+*.background.tiff
+
+/guix-build-*

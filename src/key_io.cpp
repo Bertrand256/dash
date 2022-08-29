@@ -6,15 +6,13 @@
 
 #include <base58.h>
 #include <bech32.h>
-#include <script/script.h>
-#include <utilstrencodings.h>
+#include <chainparams.h>
 
 #include <boost/variant/apply_visitor.hpp>
 #include <boost/variant/static_visitor.hpp>
 
 #include <assert.h>
 #include <string.h>
-#include <algorithm>
 
 namespace
 {
@@ -24,7 +22,7 @@ private:
     const CChainParams& m_params;
 
 public:
-    DestinationEncoder(const CChainParams& params) : m_params(params) {}
+    explicit DestinationEncoder(const CChainParams& params) : m_params(params) {}
 
     std::string operator()(const CKeyID& id) const
     {
@@ -142,7 +140,9 @@ std::string EncodeExtKey(const CExtKey& key)
     data.resize(size + BIP32_EXTKEY_SIZE);
     key.Encode(data.data() + size);
     std::string ret = EncodeBase58Check(data);
-    memory_cleanse(data.data(), data.size());
+    if (!data.empty()) {
+        memory_cleanse(data.data(), data.size());
+    }
     return ret;
 }
 
