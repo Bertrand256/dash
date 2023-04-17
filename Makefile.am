@@ -55,7 +55,8 @@ DIST_SHARE = \
   $(top_srcdir)/share/rpcauth
 
 BIN_CHECKS=$(top_srcdir)/contrib/devtools/symbol-check.py \
-           $(top_srcdir)/contrib/devtools/security-check.py
+           $(top_srcdir)/contrib/devtools/security-check.py \
+           $(top_srcdir)/contrib/devtools/pixie.py
 
 WINDOWS_PACKAGING = $(top_srcdir)/share/pixmaps/dash.ico \
   $(top_srcdir)/share/pixmaps/nsis-header.bmp \
@@ -98,7 +99,7 @@ $(OSX_APP)/Contents/PkgInfo:
 
 $(OSX_APP)/Contents/Resources/empty.lproj:
 	$(MKDIR_P) $(@D)
-	@touch $@ 
+	@touch $@
 
 $(OSX_APP)/Contents/Info.plist: $(OSX_PLIST)
 	$(MKDIR_P) $(@D)
@@ -187,7 +188,20 @@ $(BITCOIN_WALLET_BIN): FORCE
 	$(MAKE) -C src $(@F)
 
 if USE_LCOV
-LCOV_FILTER_PATTERN=-p "/usr/include/" -p "/usr/lib/" -p "src/leveldb/" -p "src/crc32c/" -p "src/bench/" -p "src/univalue" -p "src/crypto/ctaes" -p "src/secp256k1"
+LCOV_FILTER_PATTERN = \
+	-p "/usr/local/" \
+	-p "/usr/include/" \
+	-p "/usr/lib/" \
+	-p "/usr/lib64/" \
+	-p "src/dashbls/" \
+	-p "src/immer/" \
+	-p "src/leveldb/" \
+	-p "src/crc32c/" \
+	-p "src/bench/" \
+	-p "src/univalue" \
+	-p "src/crypto/ctaes" \
+	-p "src/secp256k1" \
+	-p "depends"
 
 baseline.info:
 	$(LCOV) -c -i -d $(abs_builddir)/src -o $@
@@ -276,6 +290,8 @@ EXTRA_DIST += \
     test/util/data/txcreatescript1.json \
     test/util/data/txcreatescript2.hex \
     test/util/data/txcreatescript2.json \
+    test/util/data/txcreatescript5.hex \
+    test/util/data/txcreatescript6.hex \
     test/util/data/txcreatesignv1.hex \
     test/util/data/txcreatesignv1.json \
     test/util/data/txcreatesignv2.hex \
@@ -304,3 +320,11 @@ clean-local: clean-docs
 	rm -rf coverage_percent.txt test_dash.coverage/ total.coverage/ test/tmp/ cache/ $(OSX_APP)
 	rm -rf test/functional/__pycache__ test/functional/test_framework/__pycache__ test/cache share/rpcauth/__pycache__
 	rm -rf osx_volname dist/ dpi36.background.tiff dpi72.background.tiff
+
+test-security-check:
+if TARGET_DARWIN
+	$(AM_V_at) $(PYTHON) $(top_srcdir)/contrib/devtools/test-symbol-check.py TestSymbolChecks.test_MACHO
+endif
+if TARGET_LINUX
+	$(AM_V_at) $(PYTHON) $(top_srcdir)/contrib/devtools/test-symbol-check.py TestSymbolChecks.test_ELF
+endif

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright (c) 2021-2022 The Dash Core developers
+# Distributed under the MIT software license, see the accompanying
+# file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #
 # This script is executed inside the builder image
 
@@ -33,13 +36,13 @@ fi
 
 ccache --max-size=$CCACHE_SIZE
 
-if [ -n "$USE_SHELL" ]; then
-  export CONFIG_SHELL="$USE_SHELL"
+if [ -n "$CONFIG_SHELL" ]; then
+  export CONFIG_SHELL="$CONFIG_SHELL"
 fi
 
-BITCOIN_CONFIG_ALL="--disable-dependency-tracking --prefix=$BUILD_DIR/depends/$HOST --bindir=$OUT_DIR/bin --libdir=$OUT_DIR/lib"
+BITCOIN_CONFIG_ALL="--disable-dependency-tracking --prefix=$BASE_BUILD_DIR/depends/$HOST --bindir=$BASE_OUTDIR/bin --libdir=$BASE_OUTDIR/lib"
 
-( test -n "$USE_SHELL" && eval '"$USE_SHELL" -c "./autogen.sh"' ) || ./autogen.sh
+( test -n "$CONFIG_SHELL" && eval '"$CONFIG_SHELL" -c "./autogen.sh"' ) || ./autogen.sh
 
 rm -rf build-ci
 mkdir build-ci

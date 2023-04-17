@@ -4,18 +4,14 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #if defined(HAVE_CONFIG_H)
-#include <config/dash-config.h>
+#include <config/bitcoin-config.h>
 #endif
 
 #include <qt/utilitydialog.h>
 
 #include <qt/forms/ui_helpmessagedialog.h>
 
-#include <qt/bitcoingui.h>
 #include <qt/guiutil.h>
-#ifdef ENABLE_BIP70
-#include <qt/paymentrequestplus.h>
-#endif
 
 #include <clientversion.h>
 #include <init.h>
@@ -26,9 +22,10 @@
 
 #include <QCloseEvent>
 #include <QLabel>
+#include <QMainWindow>
 #include <QRegExp>
-#include <QTextTable>
 #include <QTextCursor>
+#include <QTextTable>
 #include <QVBoxLayout>
 
 /** "Help message" or "About" dialog box */
@@ -194,10 +191,9 @@ ShutdownWindow::ShutdownWindow(interfaces::Node& node, QWidget *parent, Qt::Wind
     GUIUtil::updateFonts();
 }
 
-QWidget *ShutdownWindow::showShutdownWindow(interfaces::Node& node, BitcoinGUI *window)
+QWidget* ShutdownWindow::showShutdownWindow(interfaces::Node& node, QMainWindow* window)
 {
-    if (!window)
-        return nullptr;
+    assert(window != nullptr);
 
     // Show a simple window indicating shutdown status
     QWidget *shutdownWindow = new ShutdownWindow(node);

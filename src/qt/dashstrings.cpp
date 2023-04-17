@@ -73,8 +73,8 @@ QT_TRANSLATE_NOOP("dash-core", ""
 "Prune: last wallet synchronisation goes beyond pruned data. You need to -"
 "reindex (download the whole blockchain again in case of pruned node)"),
 QT_TRANSLATE_NOOP("dash-core", ""
-"Rescans are not possible in pruned mode. You will need to use -reindex which "
-"will download the whole blockchain again."),
+"SQLiteDatabase: Unknown sqlite wallet schema version %d. Only version %d is "
+"supported"),
 QT_TRANSLATE_NOOP("dash-core", ""
 "The block database contains a block which appears to be from the future. "
 "This may be due to your computer's date and time being set incorrectly. Only "
@@ -94,10 +94,6 @@ QT_TRANSLATE_NOOP("dash-core", ""
 "at this level"),
 QT_TRANSLATE_NOOP("dash-core", ""
 "This is the transaction fee you may pay when fee estimates are not available."),
-QT_TRANSLATE_NOOP("dash-core", ""
-"This product includes software developed by the OpenSSL Project for use in "
-"the OpenSSL Toolkit %s and cryptographic software written by Eric Young and "
-"UPnP software written by Thomas Bernard."),
 QT_TRANSLATE_NOOP("dash-core", ""
 "Total length of network version string (%i) exceeds maximum length (%i). "
 "Reduce the number or size of uacomments."),
@@ -169,12 +165,10 @@ QT_TRANSLATE_NOOP("dash-core", "Error loading %s: Wallet corrupted"),
 QT_TRANSLATE_NOOP("dash-core", "Error loading %s: Wallet requires newer version of %s"),
 QT_TRANSLATE_NOOP("dash-core", "Error loading %s: You can't disable HD on an already existing HD wallet"),
 QT_TRANSLATE_NOOP("dash-core", "Error loading block database"),
-QT_TRANSLATE_NOOP("dash-core", "Error loading wallet %s. Duplicate -wallet filename specified."),
 QT_TRANSLATE_NOOP("dash-core", "Error opening block database"),
 QT_TRANSLATE_NOOP("dash-core", "Error reading from database, shutting down."),
 QT_TRANSLATE_NOOP("dash-core", "Error upgrading chainstate database"),
 QT_TRANSLATE_NOOP("dash-core", "Error upgrading evo database"),
-QT_TRANSLATE_NOOP("dash-core", "Error: A fatal internal error occurred, see debug.log for details"),
 QT_TRANSLATE_NOOP("dash-core", "Error: Disk space is low for %s"),
 QT_TRANSLATE_NOOP("dash-core", "Error: failed to add socket to epollfd (epoll_ctl returned error %s)"),
 QT_TRANSLATE_NOOP("dash-core", "Error: failed to add socket to kqueuefd (kevent returned error %s)"),
@@ -194,8 +188,10 @@ QT_TRANSLATE_NOOP("dash-core", "Failed to load masternode cache from %s"),
 QT_TRANSLATE_NOOP("dash-core", "Failed to load sporks cache from %s"),
 QT_TRANSLATE_NOOP("dash-core", "Failed to rescan the wallet during initialization"),
 QT_TRANSLATE_NOOP("dash-core", "Failed to start a new mixing queue"),
+QT_TRANSLATE_NOOP("dash-core", "Failed to verify database"),
 QT_TRANSLATE_NOOP("dash-core", "Found enough users, signing ( waiting %s )"),
 QT_TRANSLATE_NOOP("dash-core", "Found enough users, signing ..."),
+QT_TRANSLATE_NOOP("dash-core", "Ignoring duplicate -wallet %s."),
 QT_TRANSLATE_NOOP("dash-core", "Importing..."),
 QT_TRANSLATE_NOOP("dash-core", "Incompatible mode."),
 QT_TRANSLATE_NOOP("dash-core", "Incompatible version."),
@@ -251,6 +247,10 @@ QT_TRANSLATE_NOOP("dash-core", "Pruning blockstore..."),
 QT_TRANSLATE_NOOP("dash-core", "Reducing -maxconnections from %d to %d, because of system limitations."),
 QT_TRANSLATE_NOOP("dash-core", "Replaying blocks..."),
 QT_TRANSLATE_NOOP("dash-core", "Rescanning..."),
+QT_TRANSLATE_NOOP("dash-core", "SQLiteDatabase: Failed to execute statement to verify database: %s"),
+QT_TRANSLATE_NOOP("dash-core", "SQLiteDatabase: Failed to prepare statement to verify database: %s"),
+QT_TRANSLATE_NOOP("dash-core", "SQLiteDatabase: Failed to read database verification error: %s"),
+QT_TRANSLATE_NOOP("dash-core", "SQLiteDatabase: Unexpected application id. Expected %u, got %u"),
 QT_TRANSLATE_NOOP("dash-core", "Section [%s] is not recognized."),
 QT_TRANSLATE_NOOP("dash-core", "Session not complete!"),
 QT_TRANSLATE_NOOP("dash-core", "Session timed out."),
@@ -313,7 +313,6 @@ QT_TRANSLATE_NOOP("dash-core", "You can not start a masternode with wallet enabl
 QT_TRANSLATE_NOOP("dash-core", "You need to rebuild the database using -reindex to change -addressindex"),
 QT_TRANSLATE_NOOP("dash-core", "You need to rebuild the database using -reindex to change -spentindex"),
 QT_TRANSLATE_NOOP("dash-core", "Your entries added successfully."),
-QT_TRANSLATE_NOOP("dash-core", "Zapping all transactions from wallet..."),
 QT_TRANSLATE_NOOP("dash-core", "no mixing available."),
 QT_TRANSLATE_NOOP("dash-core", "see debug.log for details."),
 };

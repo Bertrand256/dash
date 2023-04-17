@@ -1,5 +1,4 @@
-Dash Core version v18.0.1
-=========================
+# Dash Core version v19.0.0
 
 Release is now available from:
 
@@ -10,16 +9,14 @@ and other improvements.
 
 This release is mandatory for all nodes.
 
-Please report bugs using the issue tracker at github:
+Please report bugs using the issue tracker at GitHub:
 
   <https://github.com/dashpay/dash/issues>
 
 
-Upgrading and downgrading
-=========================
+# Upgrading and downgrading
 
-How to Upgrade
---------------
+## How to Upgrade
 
 If you are running an older version, shut it down. Wait until it has completely
 shut down (which might take a few minutes for older versions), then run the
@@ -31,272 +28,207 @@ from version 0.13 should not require any additional actions.
 
 When upgrading from a version prior to 18.0.1, the
 first startup of Dash Core will run a migration process which can take anywhere
-from a few minutes to thirty minutes to finish. After the migration, a 
-downgrade to an older version is only possible with a reindex 
+from a few minutes to thirty minutes to finish. After the migration, a
+downgrade to an older version is only possible with a reindex
 (or reindex-chainstate).
 
-Downgrade warning
------------------
+## Downgrade warning
 
-### Downgrade to a version < v18.0.1
+### Downgrade to a version < v19.0.0
+Downgrading to a version older than v19.0.0 is not supported due to changes in the evodb database. If you need to use an older version, you must either reindex or re-sync the whole chain.
 
-Downgrading to a version older than v18.0.1 is not supported due to changes in
-the indexes database folder. If you need to use an older version, you must
-either reindex or re-sync the whole chain.
+# Notable changes
 
-### Downgrade of masternodes to < v18.0.1
+## High-Performance Masternodes
 
-Starting with the 0.16 release, masternodes verify the protocol version of other
-masternodes. This results in PoSe punishment/banning for outdated masternodes,
-so downgrading even prior to the activation of the introduced hard-fork changes
-is not recommended.
+In preparation for the release of Dash Platform to mainnet, a new masternode type has been added. High-performance masternodes will be responsible for hosting Dash Platform services (once they are on mainnet) in addition to the existing responsibilities like ChainLocks and InstantSend.
 
-Notable changes
-===============
+Activation of the DashCore v19.0 hard fork will enable registration of the new 4000 DASH collateral masternodes. Until Dash Platform is released to mainnet, high-performance masternodes will provide the same services as regular masternodes with one small exception. Regular masternodes will no longer participate in the Platform-specific LLMQ after the hard fork since they will not be responsible for hosting Dash Platform.
 
-Quorum rotation
---------------
-InstantSend quorums will now use a new quorum type and a new algorithm for
-establishing quorums. The upcoming DIP-0024 will provide comprehensive details.
+Note: In DashCore v19.0 the relative rewards and voting power are equivalent between regular and high-performance masternodes. Masternodes effectively receive one payout and one governance vote per 1000 DASH collateral. So, there is no difference in reward amount for running four regular masternodes or one high-performance masternode. In v19.0, high-performance masternodes simply receive payments in four consecutive blocks when they are selected for payout. Some frequently asked questions may be found at https://www.dash.org/hpmn-faq/.
 
-Quorum rotation is activated via a BIP9 style hard fork that will begin
-signalling on August 15, 2022 using bit 7. New quorums will start forming in
-1152-1440 block range after the activation. Any nodes that do not upgrade by
-that time will diverge from the rest of the network.
+## BLS Scheme Upgrade
 
-Deterministic InstantSend
--------------------------
-Deterministically verifying InstantSend locks at any point in the future has
-been added to support Dash Platform. This update introduces versioning to
-InstantSend messages and adds quorum information to them. While the previous
-design was sufficient for core chain payments, the platform chain will benefit
-from this enhanced verification capability. Details about deterministic
-InstantSend are provided in [DIP-0022](https://github.com/dashpay/dips/blob/master/dip-0022.md).
+Once the v19 hard fork is activated, all remaining messages containing BLS public keys or signatures will serialise them using the new basic BLS scheme.
+The motivation behind this change is the need to be aligned with IETF standards.
 
-Deterministic InstantSend will be activated with the DIP0024 hard fork.
+List of affected messages:
+`dsq`, `dstx`, `mnauth`, `govobj`, `govobjvote`, `qrinfo`, `qsigshare`, `qsigrec`, `isdlock`, `clsig`, and all DKG messages (`qfcommit`, `qcontrib`, `qcomplaint`, `qjustify`, `qpcommit`).
 
-Governance
-----------
-Several improvements have been made to Dash’s DAO governance system.
-The governance proposal fee has been reduced from 5 Dash to 1 Dash following
-a vote by masternode owners to do so. For improved security and flexibility,
-proposal payouts to pay-to-script-hash (P2SH) addresses are now supported.
+### `qfcommit`
 
-These changes will be activated with the DIP0024 hard fork.
+Once the v19 hard fork is activated, `quorumPublicKey` will be serialised using the basic BLS scheme.
+To support syncing of older blocks containing the transactions using the legacy BLS scheme, the `version` field indicates which scheme to use for serialisation of `quorumPublicKey`.
 
-Governance proposals can now be viewed in GUI Governance tab (must be enabled
-in Preferences first).
+| Version | Version Description                                    | Includes `quorumIndex` field |
+|---------|--------------------------------------------------------|------------------------------|
+| 1       | Non-rotated qfcommit serialised using legacy BLS scheme | No                           |
+| 2       | Rotated qfcommit serialised using legacy BLS scheme     | Yes                          |
+| 3       | Non-rotated qfcommit serialised using basic BLS scheme  | No                           |
+| 4       | Rotated qfcommit serialised using basic BLS scheme      | Yes                          |
 
-Initial Enhanced Hard Fork support
-----------------------------------
-The masternode hard fork signal special transaction has been added as the first
-step in enabling an improved hard fork mechanism. This enhancement enables
-future hard forks to be activated quickly and safely without any
-“race conditions” if miners and masternodes update at significantly different
-speeds. Effectively there will be a masternode signal on chain in addition to
-the miner one to ensure smooth transitions. Details of the enhanced hard fork
-system are provided in [DIP-0023](https://github.com/dashpay/dips/blob/master/dip-0023.md).
+### `MNLISTDIFF` P2P message
 
-Network improvements
---------------------
-We implemented and backported implementations of several improvement proposals.
-You can read more about implemented changes in the following documents:
-- [`DIP-0025`](https://gist.github.com/thephez/6c4c2a7747298e8b3e528c0c4e98a68c): Compressed headers.
-- [`BIP 155`](https://github.com/bitcoin/bips/blob/master/bip-0155.mediawiki): The 'addrv2' and 'sendaddrv2' messages which enable relay of Tor V3 addresses (and other networks).
-- [`BIP 158`](https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki): Compact Block Filters for Light Clients.
+Starting with protocol version 70225, the following field is added to the `MNLISTDIFF` message between `cbTx` and `deletedQuorumsCount`.
 
-KeePass support removed
------------------------
-Please make sure to move your coins to a wallet with a regular passphrase.
+| Field               | Type | Size | Description                       |
+|---------------------| ---- | ---- |-----------------------------------|
+| version             | uint16_t | 2 | Version of the `MNLISTDIFF` reply |
 
-Wallet changes
---------------
-We continued backporting wallet functionality updates. Most notable changes
-are:
-- Added support for empty, encrypted-on-creation and watch-only wallets.
-- Wallets can now be created, opened and closed via a GUI menu.
-- No more `salvagewallet` option in cmd-line and Repair tab in GUI. Check the
-`salvage` command in the `dash-wallet` tool.
+The `version` field indicates which BLS scheme is used to serialise the `pubKeyOperator` field for all SML entries of `mnList`.
 
-Indexes
--------
-The transaction index is moved into `indexes/` folder. The migration of the old
-data is done on the first run and does not require reindexing. Note that the data
-in the old path is removed which means that this change is not backwards
-compatible and you'll have to reindex the whole blockchain if you decide to
-downgrade to a pre-v18.0.1 version.
+| Version | Version Description                                       |
+|---------|-----------------------------------------------------------|
+| 1       | Serialisation of `pubKeyOperator` using legacy BLS scheme |
+| 2       | Serialisation of `pubKeyOperator` using basic BLS scheme  |
 
-Remote Procedure Call (RPC) Changes
------------------------------------
-Most changes here were introduced through Bitcoin backports mostly related to
-the deprecation of wallet accounts in DashCore v0.17 and introduction of PSBT
-format.
+### `ProTx` txs family
 
-The new RPCs are:
-- `combinepsbt`
-- `converttopsbt`
-- `createpsbt`
-- `decodepsbt`
-- `deriveaddresses`
-- `finalizepsbt`
-- `getblockfilter`
-- `getdescriptorinfo`
-- `getnodeaddresses`
-- `getrpcinfo`
-- `joinpsbts`
-- `listwalletdir`
-- `quorum rotationinfo`
-- `scantxoutset`
-- `submitheader`
-- `testmempoolaccept`
-- `utxoupdatepsbt`
-- `walletcreatefundedpsbt`
-- `walletprocesspsbt`
+`proregtx` and `proupregtx` will support a new `version` value:
 
-The removed RPCs are:
-- `estimatefee`
-- `getinfo`
-- `getreceivedbyaccount`
-- `keepass`
-- `listaccounts`
-- `listreceivedbyaccount`
-- `move`
-- `resendwallettransactions`
-- `sendfrom`
-- `signrawtransaction`
+| Version | Version Description                                       |
+|---------|-----------------------------------------------------------|
+| 1       | Serialisation of `pubKeyOperator` using legacy BLS scheme |
+| 2       | Serialisation of `pubKeyOperator` using basic BLS scheme  |
 
-Changes in existing RPCs introduced through bitcoin backports:
-- The `testnet` field in `dash-cli -getinfo` has been renamed to `chain` and
-now returns the current network name as defined in BIP70 (main, test, regtest).
-- Added `window_final_block_height` in `getchaintxstats`
-- Added `feerate_percentiles` object with feerates at the 10th, 25th, 50th,
-75th, and 90th percentile weight unit instead of `medianfeerate` in
-`getblockstats`
-- In `getmempoolancestors`, `getmempooldescendants`, `getmempoolentry` and
-`getrawmempool` RPCs, to be consistent with the returned value and other RPCs
-such as `getrawtransaction`, `vsize` has been added and `size` is now
-deprecated. `size` will only be returned if `dashd` is started with
-`-deprecatedrpc=size`.
-- Added `loaded` in mempool related RPCs indicates whether the mempool is fully
-loaded or not
-- Added `localservicesnames` in `getnetworkinfo` list the services the node
-offers to the network, in human-readable form (in addition to an already
-existing `localservices` hex string)
-- Added `hwm` in `getzmqnotifications`
-- `createwallet` can create blank, encrypted or watch-only wallets now.
-- Added `private_keys_enabled` in `getwalletinfo`
-- Added `solvable`, `desc`, `ischange` and `hdmasterfingerprint` in `getaddressinfo`
-- Added `desc` in `listunspent`
+`proupservtx` and `prouprevtx` will support a new `version` value:
 
-Dash-specific changes in existing RPCs:
-- Added `quorumIndex` in `quorum getinfo` and `quorum memberof`
-- In rpc `masternodelist` with parameters `full`, `info` and `json` the PoS penalty score of the MN will be returned. For `json` parameter, the field `pospenaltyscore` was added.
+| Version | Version Description                            |
+|---------|------------------------------------------------|
+| 1       | Serialisation of `sig` using legacy BLS scheme |
+| 2       | Serialisation of `sig` using basic BLS scheme  |
+
+### `MNHFTx`
+
+`MNHFTx` will support a new `version` value:
+
+| Version | Version Description                            |
+|---------|------------------------------------------------|
+| 1       | Serialisation of `sig` using legacy BLS scheme |
+| 2       | Serialisation of `sig` using basic BLS scheme  |
+
+## Wallet
+
+## Automatic wallet creation removed
+
+Dash Core will no longer automatically create new wallets on startup. It will
+load existing wallets specified by -wallet options on the command line or in
+dash.conf or settings.json files. And by default it will also load a
+top-level unnamed ("") wallet. However, if specified wallets don't exist,
+Dash Core will now just log warnings instead of creating new wallets with
+new keys and addresses like previous releases did.
+
+New wallets can be created through the GUI (which has a more prominent create
+wallet option), through the dash-wallet create command or the createwallet RPC.
+
+## P2P and Network Changes
+
+## Removal of reject network messages from Dash Core (BIP61)
+
+The command line option to enable BIP61 (-enablebip61) has been removed.
+
+Nodes on the network can not generally be trusted to send valid ("reject")
+messages, so this should only ever be used when connected to a trusted node.
+Please use the recommended alternatives if you rely on this deprecated feature:
+
+- Testing or debugging of implementations of the Dash P2P network protocol
+should be done by inspecting the log messages that are produced by a recent
+version of Dash Core. Dash Core logs debug messages
+(-debug=<category>) to a stream (-printtoconsole) or to a file
+(-debuglogfile=<debug.log>).
+
+- Testing the validity of a block can be achieved by specific RPCs:
+    - submitblock
+    - getblocktemplate with 'mode' set to 'proposal' for blocks with
+    - potentially invalid POW
+    - Testing the validity of a transaction can be achieved by specific RPCs:
+      - sendrawtransaction
+      - testmempoolaccept
+
+## CoinJoin update
+
+A minor update in several CoinJoin-related network messages improves support
+for mixing from SPV clients. These changes make it easier for SPV clients to
+participate in the CoinJoin process by using masternode information they can
+readily obtain and verify via [DIP-0004](https://github.com/dashpay/dips/blob/master/dip-0004.md).
+
+## Remote Procedure Call (RPC) Changes
+
+### The new RPCs are:
+- In order to support BLS public keys encoded in the legacy BLS scheme, `protx register_legacy`, `protx register_fund_legacy`, and `protx register_prepare_legacy` were added.
+- `cleardiscouraged` clears all the already discouraged peers.
+- The following RPCs were added: `protx register_hpmn`, `protx register_fund_hpmn`, `protx register_prepare_hpmn` and `protx update_service_hpmn`.
+  These HPMN RPCs correspond to the standard masternode RPCs but have the following additional mandatory arguments: `platformNodeID`, `platformP2PPort` and `platformHTTPPort`.
+- `upgradewallet`
+
+### The removed RPCs are:
+
+None
+
+### Changes in existing RPCs introduced through bitcoin backports:
+
+- The `utxoupdatepsbt` RPC method has been updated to take a descriptors
+argument. When provided, input and output scripts and keys will be filled in
+when known. See the RPC help text for full details.
+
+
+### Dash-specific changes in existing RPCs:
+
+- `masternodelist`: New mode `recent` was added in order to hide banned masternodes for more than one `SuperblockCycle`. If the mode `recent` is used, then the reply mode is JSON (can be additionally filtered)
+- `quorum info`: The new `previousConsecutiveDKGFailures` field will be returned for rotated LLMQs. This field will hold the number of previous consecutive DKG failures for the corresponding quorumIndex before the currently active one. Note: If no previous commitments were found then 0 will be returned for `previousConsecutiveDKGFailures`.
+- `bls generate` and `bls fromsecret`: The new `scheme` field will be returned indicating which scheme was used to serialise the public key. Valid returned values are `legacy` and`basic`.
+- `bls generate` and `bls fromsecret`: Both RPCs accept an incoming optional boolean argument `legacy` that enforces the use of legacy BLS scheme for the serialisation of the reply even if v19 is active.
+- `masternode status`: now returns the type of the masternode.
+- `masternode count`: now returns a detailed summary of total and enabled masternodes per type.
+- `gobject getcurrentvotes`: reply is enriched by adding the vote weight at the end of each line. Possible values are 1 or 4. Example: "7cb20c883c6093b8489f795b3ec0aad0d9c2c2821610ae9ed938baaf42fec66d": "277e6345359071410ab691c21a3a16f8f46c9229c2f8ec8f028c9a95c0f1c0e7-1:1670019339:yes:funding:4"
+- Once the v19 hard fork is activated, `protx register`, `protx register_fund`, and `protx register_prepare` RPCs will decode BLS operator public keys using the new basic BLS scheme.
 
 Please check `help <command>` for more detailed information on specific RPCs.
 
-Command-line options
---------------------
-Most changes here were introduced through Bitcoin backports.
+## Command-line options
+
+A number of command-line option changes were made related to testing and
+removal of BIP61 support.
 
 New cmd-line options:
-- `asmap`
-- `avoidpartialspends`
-- `blockfilterindex`
-- `blocksonly`
-- `llmqinstantsenddip0024`
-- `llmqtestinstantsendparams`
-- `maxuploadtarget`
-- `natpmp`
-- `peerblockfilters`
-- `powtargetspacing`
-- `stdinwalletpassphrase`
-- `zmqpubhashchainlock`
-- `zmqpubrawchainlock`
-
-The option to set the PUB socket's outbound message high water mark
-(SNDHWM) may be set individually for each notification:
-- `-zmqpubhashtxhwm=n`
-- `-zmqpubhashblockhwm=n`
-- `-zmqpubhashchainlockhwm=n`
-- `-zmqpubhashtxlockhwm=n`
-- `-zmqpubhashgovernancevotehwm=n`
-- `-zmqpubhashgovernanceobjecthwm=n`
-- `-zmqpubhashinstantsenddoublespendhwm=n`
-- `-zmqpubhashrecoveredsighwm=n`
-- `-zmqpubrawblockhwm=n`
-- `-zmqpubrawtxhwm=n`
-- `-zmqpubrawchainlockhwm=n`
-- `-zmqpubrawchainlocksighwm=n`
-- `-zmqpubrawtxlockhwm=n`
-- `-zmqpubrawtxlocksighwm=n`
-- `-zmqpubrawgovernancevotehwm=n`
-- `-zmqpubrawgovernanceobjecthwm=n`
-- `-zmqpubrawinstantsenddoublespendhwm=n`
-- `-zmqpubrawrecoveredsighwm=n`
+- `llmqplatform` (devnet only)
+- `unsafesqlitesync`
 
 Removed cmd-line options:
-- `keepass`
-- `keepassport`
-- `keepasskey`
-- `keepassid`
-- `keepassname`
-- `salvagewallet`
+- `enablebip61`
+- `upgradewallet`
 
 Changes in existing cmd-line options:
+- `llmqinstantsend` and `llmqinstantsenddip0024` can be used in regtest now
+- Passing an invalid `-rpcauth` argument now cause dashd to fail to start.
 
 Please check `Help -> Command-line options` in Qt wallet or `dashd --help` for
 more information.
 
-Backports from Bitcoin Core
----------------------------
-This release introduces over 1000 updates from Bitcoin v0.18/v0.19/v0.20 as well as numerous updates from Bitcoin v0.21 and more recent versions. This includes multi-wallet support in the GUI, support for partially signed transactions (PSBT), Tor version 3 support, and a number of other updates that will benefit Dash users. Bitcoin changes that do not align with Dash’s product needs, such as SegWit and RBF, are excluded from our backporting. For additional detail on what’s included in Bitcoin, please refer to their release notes – v0.18, v0.19, v0.20.
+## Backports from Bitcoin Core
 
-Miscellaneous
--------------
-A lot of refactoring, code cleanups and other small fixes were done in this release.
+This release introduces many updates from Bitcoin v0.18-v0.21 as well as numerous updates from Bitcoin v22 and more recent versions. Bitcoin changes that do not align with Dash’s product needs, such as SegWit and RBF, are excluded from our backporting. For additional detail on what’s included in Bitcoin, please refer to their release notes.
 
-v18.0.1 Change log
-==================
+# v19.0.0 Change log
 
-See detailed [set of changes](https://github.com/dashpay/dash/compare/v0.17.0.3...dashpay:v18.0.1).
+See detailed [set of changes](https://github.com/dashpay/dash/compare/v18.2.2...dashpay:v19.0.0).
 
-Credits
-=======
+# Credits
 
 Thanks to everyone who directly contributed to this release:
 
-- AJ ONeal (coolaj86)
-- Christian Fifi Culp (christiancfifi)
-- dustinface (xdustinface)
-- gabriel-bjg
-- Holger Schinzel (schinzelh)
-- humbleDasher
 - Kittywhiskers Van Gogh (kittywhiskers)
 - Konstantin Akimov (knst)
-- ktechmidas
-- linuxsh2
-- Munkybooty
-- Nathan Marley (nmarley)
 - Odysseas Gabrielides (ogabrielides)
+- Oleg Girko (OlegGirko)
 - PastaPastaPasta
-- pravblockc
-- rkarthik2k21
-- Stefan (5tefan)
-- strophy
-- TheLazieR Yip (thelazier)
 - thephez
 - UdjinM6
-- Vijay (vijaydasmp)
-- Vlad K (dzutto)
+- Vijay Das Manikpuri (vijaydasmp)
 
-As well as everyone that submitted issues, reviewed pull requests, helped debug the release candidates, and write DIPs that were implemented in this release. Notable mentions include:
+As well as everyone that submitted issues, reviewed pull requests, helped debug the release candidates, and write DIPs that were implemented in this release.
 
-- Samuel Westrich (quantumexplorer)
-- Virgile Bartolo
-- xkcd
-
-Older releases
-==============
+# Older releases
 
 Dash was previously known as Darkcoin.
 
@@ -318,6 +250,13 @@ Dash Core tree 0.12.1.x was a fork of Bitcoin Core tree 0.12.
 
 These release are considered obsolete. Old release notes can be found here:
 
+- [v18.2.2](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-18.2.2.md) released Mar/21/2023
+- [v18.2.1](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-18.2.1.md) released Jan/17/2023
+- [v18.2.0](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-18.2.0.md) released Jan/01/2023
+- [v18.1.1](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-18.1.1.md) released January/08/2023
+- [v18.1.0](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-18.1.0.md) released October/09/2022
+- [v18.0.2](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-18.0.2.md) released October/09/2022
+- [v18.0.1](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-18.0.1.md) released August/17/2022
 - [v0.17.0.3](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-0.17.0.3.md) released June/07/2021
 - [v0.17.0.2](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-0.17.0.2.md) released May/19/2021
 - [v0.16.1.1](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-0.16.1.1.md) released November/17/2020

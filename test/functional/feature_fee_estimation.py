@@ -13,7 +13,6 @@ from test_framework.util import (
     assert_equal,
     assert_greater_than,
     assert_greater_than_or_equal,
-    connect_nodes,
     satoshi_round,
 )
 
@@ -126,9 +125,9 @@ class EstimateFeeTest(BitcoinTestFramework):
         self.num_nodes = 3
         # mine non-standard txs (e.g. txs with "dust" outputs)
         self.extra_args = [
-            ["-acceptnonstdtxn=1", "-maxorphantxsize=1000", "-whitelist=127.0.0.1"],
-            ["-acceptnonstdtxn=1", "-blockmaxsize=17000", "-maxorphantxsize=1000", "-whitelist=127.0.0.1"],
-            ["-acceptnonstdtxn=1", "-blockmaxsize=8000", "-maxorphantxsize=1000", "-whitelist=127.0.0.1"]
+            ["-acceptnonstdtxn=1", "-maxorphantxsize=1000", "-whitelist=noban@127.0.0.1"],
+            ["-acceptnonstdtxn=1", "-blockmaxsize=17000", "-maxorphantxsize=1000", "-whitelist=noban@127.0.0.1"],
+            ["-acceptnonstdtxn=1", "-blockmaxsize=8000", "-maxorphantxsize=1000", "-whitelist=noban@127.0.0.1"]
         ]
 
     def skip_test_if_missing_module(self):
@@ -147,6 +146,9 @@ class EstimateFeeTest(BitcoinTestFramework):
         # (17k is room enough for 110 or so transactions)
         # Node2 is a stingy miner, that
         # produces too small blocks (room for only 55 or so transactions)
+        self.start_nodes()
+        self.import_deterministic_coinbase_privkeys()
+        self.stop_nodes()
 
     def transact_and_mine(self, numblocks, mining_node):
         min_fee = Decimal("0.0001")
@@ -173,11 +175,6 @@ class EstimateFeeTest(BitcoinTestFramework):
                 else:
                     newmem.append(utx)
             self.memutxo = newmem
-
-    def import_deterministic_coinbase_privkeys(self):
-        self.start_nodes()
-        super().import_deterministic_coinbase_privkeys()
-        self.stop_nodes()
 
     def run_test(self):
         self.log.info("This test is time consuming, please be patient")
@@ -215,9 +212,9 @@ class EstimateFeeTest(BitcoinTestFramework):
         # so the estimates would not be affected by the splitting transactions
         self.start_node(1)
         self.start_node(2)
-        connect_nodes(self.nodes[1], 0)
-        connect_nodes(self.nodes[0], 2)
-        connect_nodes(self.nodes[2], 1)
+        self.connect_nodes(1, 0)
+        self.connect_nodes(0, 2)
+        self.connect_nodes(2, 1)
 
         self.sync_all()
 

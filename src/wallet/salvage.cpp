@@ -6,6 +6,7 @@
 #include <fs.h>
 #include <streams.h>
 #include <util/translation.h>
+#include <wallet/bdb.h>
 #include <wallet/salvage.h>
 #include <wallet/wallet.h>
 #include <wallet/walletdb.h>
@@ -16,14 +17,26 @@ static const char *HEADER_END = "HEADER=END";
 static const char *DATA_END = "DATA=END";
 typedef std::pair<std::vector<unsigned char>, std::vector<unsigned char> > KeyValPair;
 
-bool RecoverDatabaseFile(const fs::path& file_path)
+static bool KeyFilter(const std::string& type)
 {
-    std::string filename;
-    std::shared_ptr<BerkeleyEnvironment> env = GetWalletEnv(file_path, filename);
+    return WalletBatch::IsKeyType(type) || type == DBKeys::HDCHAIN;
+}
 
-    bilingual_str open_err;
-    if (!env->Open(open_err)) {
-        tfm::format(std::cerr, "%s\n", open_err.original);
+bool RecoverDatabaseFile(const fs::path& file_path, bilingual_str& error, std::vector<bilingual_str>& warnings)
+{
+    DatabaseOptions options;
+    DatabaseStatus status;
+    options.require_existing = true;
+    options.verify = false;
+    options.require_format = DatabaseFormat::BERKELEY;
+    std::unique_ptr<WalletDatabase> database = MakeDatabase(file_path, options, status, error);
+    if (!database) return false;
+
+    BerkeleyDatabase& berkeley_database = static_cast<BerkeleyDatabase&>(*database);
+    std::string filename = berkeley_database.Filename();
+    std::shared_ptr<BerkeleyEnvironment> env = berkeley_database.env;
+
+    if (!env->Open(error)) {
         return false;
     }
 
@@ -39,11 +52,9 @@ bool RecoverDatabaseFile(const fs::path& file_path)
 
     int result = env->dbenv->dbrename(nullptr, filename.c_str(), nullptr,
                                        newFilename.c_str(), DB_AUTO_COMMIT);
-    if (result == 0)
-        LogPrintf("Renamed %s to %s\n", filename, newFilename);
-    else
+    if (result != 0)
     {
-        LogPrintf("Failed to rename %s to %s\n", filename, newFilename);
+        error = strprintf(Untranslated("Failed to rename %s to %s"), filename, newFilename);
         return false;
     }
 
@@ -60,10 +71,10 @@ bool RecoverDatabaseFile(const fs::path& file_path)
     Db db(env->dbenv.get(), 0);
     result = db.verify(newFilename.c_str(), nullptr, &strDump, DB_SALVAGE | DB_AGGRESSIVE);
     if (result == DB_VERIFY_BAD) {
-        LogPrintf("Salvage: Database salvage found errors, all data may not be recoverable.\n");
+        warnings.push_back(Untranslated("Salvage: Database salvage found errors, all data may not be recoverable."));
     }
     if (result != 0 && result != DB_VERIFY_BAD) {
-        LogPrintf("Salvage: Database salvage failed with result %d.\n", result);
+        error = strprintf(Untranslated("Salvage: Database salvage failed with result %d."), result);
         return false;
     }
 
@@ -87,7 +98,7 @@ bool RecoverDatabaseFile(const fs::path& file_path)
                 break;
             getline(strDump, valueHex);
             if (valueHex == DATA_END) {
-                LogPrintf("Salvage: WARNING: Number of keys in data does not match number of values.\n");
+                warnings.push_back(Untranslated("Salvage: WARNING: Number of keys in data does not match number of values."));
                 break;
             }
             salvagedData.push_back(make_pair(ParseHex(keyHex), ParseHex(valueHex)));
@@ -96,7 +107,7 @@ bool RecoverDatabaseFile(const fs::path& file_path)
 
     bool fSuccess;
     if (keyHex != DATA_END) {
-        LogPrintf("Salvage: WARNING: Unexpected end of file while reading salvage output.\n");
+        warnings.push_back(Untranslated("Salvage: WARNING: Unexpected end of file while reading salvage output."));
         fSuccess = false;
     } else {
         fSuccess = (result == 0);
@@ -104,12 +115,11 @@ bool RecoverDatabaseFile(const fs::path& file_path)
 
     if (salvagedData.empty())
     {
-        LogPrintf("Salvage(aggressive) found no records in %s.\n", newFilename);
+        error = strprintf(Untranslated("Salvage(aggressive) found no records in %s."), newFilename);
         return false;
     }
-    LogPrintf("Salvage(aggressive) found %u records\n", salvagedData.size());
 
-    std::unique_ptr<Db> pdbCopy = MakeUnique<Db>(env->dbenv.get(), 0);
+    std::unique_ptr<Db> pdbCopy = std::make_unique<Db>(env->dbenv.get(), 0);
     int ret = pdbCopy->open(nullptr,               // Txn pointer
                             filename.c_str(),   // Filename
                             "main",             // Logical db name
@@ -117,14 +127,13 @@ bool RecoverDatabaseFile(const fs::path& file_path)
                             DB_CREATE,          // Flags
                             0);
     if (ret > 0) {
-        LogPrintf("Cannot create database file %s\n", filename);
+        error = strprintf(Untranslated("Cannot create database file %s"), filename);
         pdbCopy->close(0);
         return false;
     }
 
-    auto chain = interfaces::MakeChain();
     DbTxn* ptxn = env->TxnBegin();
-    CWallet dummyWallet(*chain, WalletLocation(), CreateDummyWalletDatabase());
+    CWallet dummyWallet(nullptr, "", CreateDummyWalletDatabase());
     for (KeyValPair& row : salvagedData)
     {
         /* Filter for only private key type KV pairs to be added to the salvaged wallet */
@@ -135,14 +144,14 @@ bool RecoverDatabaseFile(const fs::path& file_path)
         {
             // Required in LoadKeyMetadata():
             LOCK(dummyWallet.cs_wallet);
-            fReadOK = ReadKeyValue(&dummyWallet, ssKey, ssValue, strType, strErr);
+            fReadOK = ReadKeyValue(&dummyWallet, ssKey, ssValue, strType, strErr, KeyFilter);
         }
-        if (!WalletBatch::IsKeyType(strType) && strType != DBKeys::HDCHAIN) {
+        if (!KeyFilter(strType)) {
             continue;
         }
         if (!fReadOK)
         {
-            LogPrintf("WARNING: WalletBatch::Recover skipping %s: %s\n", strType, strErr);
+            warnings.push_back(strprintf(Untranslated("WARNING: WalletBatch::Recover skipping %s: %s"), strType, strErr));
             continue;
         }
         Dbt datKey(&row.first[0], row.first.size());

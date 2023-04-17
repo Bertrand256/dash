@@ -87,7 +87,7 @@ class LLMQCoinbaseCommitmentsTest(DashTestFramework):
         self.nodes[0].generate(1)
         oldhash = self.nodes[0].getbestblockhash()
         # Have to disable ChainLocks here because they won't let you to invalidate already locked blocks
-        self.nodes[0].spork("SPORK_19_CHAINLOCKS_ENABLED", 4070908800)
+        self.nodes[0].sporkupdate("SPORK_19_CHAINLOCKS_ENABLED", 4070908800)
         self.wait_for_sporks_same()
         # Test DIP8 activation once with a pre-existing quorum and once without (we don't know in which order it will activate on mainnet)
         self.test_dip8_quorum_merkle_root_activation(True)
@@ -97,13 +97,13 @@ class LLMQCoinbaseCommitmentsTest(DashTestFramework):
         first_quorum = self.test_dip8_quorum_merkle_root_activation(False, True)
 
         # Re-enable ChainLocks again
-        self.nodes[0].spork("SPORK_19_CHAINLOCKS_ENABLED", 0)
-        self.nodes[0].spork("SPORK_17_QUORUM_DKG_ENABLED", 0)
+        self.nodes[0].sporkupdate("SPORK_19_CHAINLOCKS_ENABLED", 0)
+        self.nodes[0].sporkupdate("SPORK_17_QUORUM_DKG_ENABLED", 0)
         self.wait_for_sporks_same()
 
         # Verify that the first quorum appears in MNLISTDIFF
         expectedDeleted = []
-        expectedNew = [QuorumId(100, int(first_quorum, 16)), QuorumId(104, int(first_quorum, 16))]
+        expectedNew = [QuorumId(100, int(first_quorum, 16)), QuorumId(104, int(first_quorum, 16)), QuorumId(106, int(first_quorum, 16))]
         quorumList = self.test_getmnlistdiff_quorums(null_hash, self.nodes[0].getbestblockhash(), {}, expectedDeleted, expectedNew)
         baseBlockHash = self.nodes[0].getbestblockhash()
 
@@ -111,20 +111,20 @@ class LLMQCoinbaseCommitmentsTest(DashTestFramework):
 
         # Verify that the second quorum appears in MNLISTDIFF
         expectedDeleted = []
-        expectedNew = [QuorumId(100, int(second_quorum, 16)), QuorumId(104, int(second_quorum, 16))]
+        expectedNew = [QuorumId(100, int(second_quorum, 16)), QuorumId(104, int(second_quorum, 16)), QuorumId(106, int(second_quorum, 16))]
         quorums_before_third = self.test_getmnlistdiff_quorums(baseBlockHash, self.nodes[0].getbestblockhash(), quorumList, expectedDeleted, expectedNew)
         block_before_third = self.nodes[0].getbestblockhash()
 
         third_quorum = self.mine_quorum()
 
         # Verify that the first quorum is deleted and the third quorum is added in MNLISTDIFF (the first got inactive)
-        expectedDeleted = [QuorumId(100, int(first_quorum, 16)), QuorumId(104, int(first_quorum, 16))]
-        expectedNew = [QuorumId(100, int(third_quorum, 16)), QuorumId(104, int(third_quorum, 16))]
+        expectedDeleted = [QuorumId(100, int(first_quorum, 16)), QuorumId(104, int(first_quorum, 16)), QuorumId(106, int(first_quorum, 16))]
+        expectedNew = [QuorumId(100, int(third_quorum, 16)), QuorumId(104, int(third_quorum, 16)), QuorumId(106, int(third_quorum, 16))]
         self.test_getmnlistdiff_quorums(block_before_third, self.nodes[0].getbestblockhash(), quorums_before_third, expectedDeleted, expectedNew)
 
         # Verify that the diff between genesis and best block is the current active set (second and third quorum)
         expectedDeleted = []
-        expectedNew = [QuorumId(100, int(second_quorum, 16)), QuorumId(104, int(second_quorum, 16)), QuorumId(100, int(third_quorum, 16)), QuorumId(104, int(third_quorum, 16))]
+        expectedNew = [QuorumId(100, int(second_quorum, 16)), QuorumId(104, int(second_quorum, 16)), QuorumId(106, int(second_quorum, 16)), QuorumId(100, int(third_quorum, 16)), QuorumId(104, int(third_quorum, 16)), QuorumId(106, int(third_quorum, 16))]
         self.test_getmnlistdiff_quorums(null_hash, self.nodes[0].getbestblockhash(), {}, expectedDeleted, expectedNew)
 
         # Now verify that diffs are correct around the block that mined the third quorum.
@@ -141,8 +141,8 @@ class LLMQCoinbaseCommitmentsTest(DashTestFramework):
         self.test_getmnlistdiff_quorums(block_before_third, prev_block2, quorums_before_third, expectedDeleted, expectedNew)
         self.test_getmnlistdiff_quorums(block_before_third, prev_block, quorums_before_third, expectedDeleted, expectedNew)
         # The block in which the quorum was mined and the 2 after that should all give the same diff
-        expectedDeleted = [QuorumId(100, int(first_quorum, 16)), QuorumId(104, int(first_quorum, 16))]
-        expectedNew = [QuorumId(100, int(third_quorum, 16)), QuorumId(104, int(third_quorum, 16))]
+        expectedDeleted = [QuorumId(100, int(first_quorum, 16)), QuorumId(104, int(first_quorum, 16)), QuorumId(106, int(first_quorum, 16))]
+        expectedNew = [QuorumId(100, int(third_quorum, 16)), QuorumId(104, int(third_quorum, 16)), QuorumId(106, int(third_quorum, 16))]
         quorums_with_third = self.test_getmnlistdiff_quorums(block_before_third, mined_in_block, quorums_before_third, expectedDeleted, expectedNew)
         self.test_getmnlistdiff_quorums(block_before_third, next_block, quorums_before_third, expectedDeleted, expectedNew)
         self.test_getmnlistdiff_quorums(block_before_third, next_block2, quorums_before_third, expectedDeleted, expectedNew)
@@ -243,13 +243,13 @@ class LLMQCoinbaseCommitmentsTest(DashTestFramework):
 
     def test_dip8_quorum_merkle_root_activation(self, with_initial_quorum, slow_mode=False):
         if with_initial_quorum:
-            self.nodes[0].spork("SPORK_17_QUORUM_DKG_ENABLED", 0)
+            self.nodes[0].sporkupdate("SPORK_17_QUORUM_DKG_ENABLED", 0)
             self.wait_for_sporks_same()
 
             # Mine one quorum before dip8 is activated
             self.mine_quorum()
 
-        self.nodes[0].spork("SPORK_17_QUORUM_DKG_ENABLED", 4070908800)
+        self.nodes[0].sporkupdate("SPORK_17_QUORUM_DKG_ENABLED", 4070908800)
         self.wait_for_sporks_same()
 
         cbtx = self.nodes[0].getblock(self.nodes[0].getbestblockhash(), 2)["tx"][0]
@@ -269,7 +269,7 @@ class LLMQCoinbaseCommitmentsTest(DashTestFramework):
             assert_equal(merkleRootQuorums, 0)
 
         self.bump_mocktime(1)
-        self.nodes[0].spork("SPORK_17_QUORUM_DKG_ENABLED", 0)
+        self.nodes[0].sporkupdate("SPORK_17_QUORUM_DKG_ENABLED", 0)
         self.wait_for_sporks_same()
 
         # Mine quorum and verify that merkleRootQuorums has changed

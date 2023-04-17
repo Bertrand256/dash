@@ -1,3 +1,7 @@
+// Copyright (c) 2021-2022 The Dash Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include <qt/forms/ui_governancelist.h>
 #include <qt/governancelist.h>
 
@@ -22,7 +26,7 @@
 /// Proposal wrapper
 ///
 
-Proposal::Proposal(const CGovernanceObject _govObj, QObject* parent) :
+Proposal::Proposal(const CGovernanceObject& _govObj, QObject* parent) :
     QObject(parent),
     govObj(_govObj)
 {
@@ -64,8 +68,8 @@ QString Proposal::url() const { return m_url; }
 
 bool Proposal::isActive() const
 {
-    std::string strError;
     LOCK(cs_main);
+    std::string strError;
     return govObj.IsValidLocally(strError, false);
 }
 
@@ -312,7 +316,6 @@ GovernanceList::GovernanceList(QWidget* parent) :
 
     // Set up filtering.
     proposalModelProxy->setFilterKeyColumn(ProposalModel::Column::TITLE); // filter by title column...
-    ui->filterLineEdit->setPlaceholderText(tr("Filter by Title"));
     connect(ui->filterLineEdit, &QLineEdit::textChanged, proposalModelProxy, &QSortFilterProxyModel::setFilterFixedString);
 
     // Changes to number of rows should update proposal count display.
@@ -341,14 +344,15 @@ void GovernanceList::setClientModel(ClientModel* model)
 void GovernanceList::updateProposalList()
 {
     if (this->clientModel) {
-        // A proposal is considered passing if (YES votes - NO votes) >= (Total Number of Masternodes / 10),
+        // A proposal is considered passing if (YES votes - NO votes) >= (Total Weight of Masternodes / 10),
         // count total valid (ENABLED) masternodes to determine passing threshold.
         // Need to query number of masternodes here with access to clientModel.
-        const int nMnCount = clientModel->getMasternodeList().GetValidMNsCount();
-        const int nAbsVoteReq = std::max(Params().GetConsensus().nGovernanceMinQuorum, nMnCount / 10);
+        const int nWeightedMnCount = clientModel->getMasternodeList().GetValidWeightedMNsCount();
+        const int nAbsVoteReq = std::max(Params().GetConsensus().nGovernanceMinQuorum, nWeightedMnCount / 10);
         proposalModel->setVotingParams(nAbsVoteReq);
 
-        const std::vector<CGovernanceObject> govObjList = clientModel->getAllGovernanceObjects();
+        std::vector<CGovernanceObject> govObjList;
+        clientModel->getAllGovernanceObjects(govObjList);
         std::vector<const Proposal*> newProposals;
         for (const auto& govObj : govObjList) {
             if (govObj.GetObjectType() != GOVERNANCE_OBJECT_PROPOSAL) {

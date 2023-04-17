@@ -1,3 +1,7 @@
+// Copyright (c) 2021-2022 The Dash Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #ifndef BITCOIN_QT_GOVERNANCELIST_H
 #define BITCOIN_QT_GOVERNANCELIST_H
 
@@ -63,7 +67,7 @@ private:
     QString m_url;
 
 public:
-    explicit Proposal(const CGovernanceObject _govObj, QObject* parent = nullptr);
+    explicit Proposal(const CGovernanceObject& _govObj, QObject* parent = nullptr);
     QString title() const;
     QString hash() const;
     QDateTime startDate() const;

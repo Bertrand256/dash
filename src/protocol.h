@@ -36,7 +36,7 @@ public:
     static constexpr size_t HEADER_SIZE = MESSAGE_START_SIZE + COMMAND_SIZE + MESSAGE_SIZE_SIZE + CHECKSUM_SIZE;
     typedef unsigned char MessageStartChars[MESSAGE_START_SIZE];
 
-    explicit CMessageHeader(const MessageStartChars& pchMessageStartIn);
+    explicit CMessageHeader();
 
     /** Construct a P2P message header from message-start characters, a command and the size of the message.
      * @note Passing in a `pszCommand` longer than COMMAND_SIZE will result in a run-time assertion error.
@@ -44,7 +44,7 @@ public:
     CMessageHeader(const MessageStartChars& pchMessageStartIn, const char* pszCommand, unsigned int nMessageSizeIn);
 
     std::string GetCommand() const;
-    bool IsValid(const MessageStartChars& messageStart) const;
+    bool IsCommandValid() const;
 
     SERIALIZE_METHODS(CMessageHeader, obj) { READWRITE(obj.pchMessageStart, obj.pchCommand, obj.nMessageSize, obj.pchChecksum); }
 
@@ -180,13 +180,6 @@ extern const char *FILTERADD;
  */
 extern const char *FILTERCLEAR;
 /**
- * The reject message informs the receiving node that one of its previous
- * messages has been rejected.
- * @since protocol version 70002 as described by BIP61.
- * @see https://bitcoin.org/en/developer-reference#reject
- */
-extern const char *REJECT;
-/**
  * Indicates that a node prefers to receive new block announcements via a
  * "headers" message rather than an "inv".
  * @since protocol version 70012 as described by BIP130.
@@ -305,6 +298,9 @@ extern const char *QUORUMROTATIONINFO;
 
 /* Get a vector of all valid message types (see above) */
 const std::vector<std::string> &getAllNetMessageTypes();
+
+/* Whether the message type violates blocks-relay-only policy */
+bool NetMessageViolatesBlocksOnly(const std::string& msg_type);
 
 /** nServices flags */
 enum ServiceFlags : uint64_t {

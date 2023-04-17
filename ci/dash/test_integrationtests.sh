@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright (c) 2018-2022 The Dash Core developers
+# Distributed under the MIT software license, see the accompanying
+# file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #
 # This script is executed inside the builder image
 
@@ -10,12 +13,12 @@ PASS_ARGS="$*"
 
 source ./ci/dash/matrix.sh
 
-if [ "$RUN_INTEGRATIONTESTS" != "true" ]; then
+if [ "$RUN_INTEGRATION_TESTS" != "true" ]; then
   echo "Skipping integration tests"
   exit 0
 fi
 
-export LD_LIBRARY_PATH=$BUILD_DIR/depends/$HOST/lib
+export LD_LIBRARY_PATH=$BASE_BUILD_DIR/depends/$HOST/lib
 
 cd build-ci/dashcore-$BUILD_TARGET
 

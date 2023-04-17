@@ -13,7 +13,6 @@ from test_framework.util import (
     assert_greater_than_or_equal,
     assert_greater_than,
     assert_raises_rpc_error,
-    connect_nodes,
     p2p_port,
     wait_until,
 )
@@ -50,6 +49,7 @@ def assert_net_servicesnames(servicesflag, servicenames):
 class NetTest(DashTestFramework):
     def set_test_params(self):
         self.set_dash_test_params(3, 1, fast_dip3_enforcement=True)
+        self.supports_cli = False
 
     def run_test(self):
         # Wait for one ping/pong to finish so that we can be sure that there is no chatter between nodes for some time
@@ -57,8 +57,9 @@ class NetTest(DashTestFramework):
         self.nodes[0].ping()
         wait_until(lambda: all(['pingtime' in n for n in self.nodes[0].getpeerinfo()]))
         self.log.info('Connect nodes both way')
-        connect_nodes(self.nodes[0], 1)
-        connect_nodes(self.nodes[1], 0)
+        self.connect_nodes(0, 1)
+        self.connect_nodes(1, 0)
+        self.sync_all()
 
         self._test_connection_count()
         self._test_getnettotals()
@@ -116,8 +117,8 @@ class NetTest(DashTestFramework):
 
         self.nodes[0].setnetworkactive(state=True)
         self.log.info('Connect nodes both way')
-        connect_nodes(self.nodes[0], 1)
-        connect_nodes(self.nodes[1], 0)
+        self.connect_nodes(0, 1)
+        self.connect_nodes(1, 0)
 
         assert_equal(self.nodes[0].getnetworkinfo()['networkactive'], True)
         assert_equal(self.nodes[0].getnetworkinfo()['connections'], 2)
@@ -128,7 +129,7 @@ class NetTest(DashTestFramework):
             assert_net_servicesnames(int(info["localservices"], 16), info["localservicesnames"])
 
         self.log.info('Test extended connections info')
-        connect_nodes(self.nodes[1], 2)
+        self.connect_nodes(1, 2)
         self.nodes[1].ping()
         wait_until(lambda: all(['pingtime' in n for n in self.nodes[1].getpeerinfo()]))
         assert_equal(self.nodes[1].getnetworkinfo()['connections'], 3)
@@ -147,6 +148,13 @@ class NetTest(DashTestFramework):
         added_nodes = self.nodes[0].getaddednodeinfo(ip_port)
         assert_equal(len(added_nodes), 1)
         assert_equal(added_nodes[0]['addednode'], ip_port)
+        # check that node cannot be added again
+        assert_raises_rpc_error(-23, "Node already added", self.nodes[0].addnode, node=ip_port, command='add')
+        # check that node can be removed
+        self.nodes[0].addnode(node=ip_port, command='remove')
+        assert_equal(self.nodes[0].getaddednodeinfo(), [])
+        # check that trying to remove the node again returns an error
+        assert_raises_rpc_error(-24, "Node could not be removed", self.nodes[0].addnode, node=ip_port, command='remove')
         # check that a non-existent node returns an error
         assert_raises_rpc_error(-24, "Node has not been added", self.nodes[0].getaddednodeinfo, '1.1.1.1')
 

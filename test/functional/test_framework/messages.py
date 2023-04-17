@@ -27,12 +27,12 @@ import struct
 import time
 
 from test_framework.siphash import siphash256
-from test_framework.util import hex_str_to_bytes
+from test_framework.util import hex_str_to_bytes, assert_equal
 
 import dash_hash
 
 MIN_VERSION_SUPPORTED = 60001
-MY_VERSION = 70223  # ADDRV2_PROTO_VERSION
+MY_VERSION = 70227  # DMN_TYPE_PROTO_VERSION
 MY_SUBVERSION = b"/python-mininode-tester:0.0.3%s/"
 MY_RELAY = 1 # from version 70001 onwards, fRelay should be appended to version messages (BIP37)
 
@@ -40,6 +40,7 @@ MAX_LOCATOR_SZ = 101
 MAX_BLOCK_SIZE = 1000000
 
 COIN = 100000000  # 1 btc in satoshis
+MAX_MONEY = 21000000 * COIN
 
 BIP125_SEQUENCE_NUMBER = 0xfffffffd  # Sequence number that is BIP 125 opt-in and BIP 68-opt-out
 
@@ -49,6 +50,11 @@ NODE_BLOOM = (1 << 2)
 NODE_COMPACT_FILTERS = (1 << 6)
 NODE_NETWORK_LIMITED = (1 << 10)
 NODE_HEADERS_COMPRESSED = (1 << 11)
+
+MSG_TX = 1
+MSG_BLOCK = 2
+MSG_CMPCT_BLOCK = 20
+MSG_TYPE_MASK = 0xffffffff >> 2
 
 FILTER_TYPE_BASIC = 0
 
@@ -571,6 +577,8 @@ class CBlockHeader:
                % (self.nVersion, self.hashPrevBlock, self.hashMerkleRoot,
                   time.ctime(self.nTime), self.nBits, self.nNonce)
 
+BLOCK_HEADER_SIZE = len(CBlockHeader().serialize())
+assert_equal(BLOCK_HEADER_SIZE, 80)
 
 class CBlock(CBlockHeader):
     __slots__ = ("vtx",)
@@ -1070,7 +1078,7 @@ class CCbTx:
 
 
 class CSimplifiedMNListEntry:
-    __slots__ = ("proRegTxHash", "confirmedHash", "service", "pubKeyOperator", "keyIDVoting", "isValid")
+    __slots__ = ("proRegTxHash", "confirmedHash", "service", "pubKeyOperator", "keyIDVoting", "isValid", "version", "type", "platformHTTPPort", "platformNodeID")
 
     def __init__(self):
         self.set_null()
@@ -1079,17 +1087,27 @@ class CSimplifiedMNListEntry:
         self.proRegTxHash = 0
         self.confirmedHash = 0
         self.service = CService()
-        self.pubKeyOperator = b'\\x0' * 48
+        self.pubKeyOperator = b'\x00' * 48
         self.keyIDVoting = 0
         self.isValid = False
+        self.version = 0
+        self.type = 0
+        self.platformHTTPPort = 0
+        self.platformNodeID = b'\x00' * 20
 
-    def deserialize(self, f):
+    def deserialize(self, f, version):
+        self.version = version # memory only
         self.proRegTxHash = deser_uint256(f)
         self.confirmedHash = deser_uint256(f)
         self.service.deserialize(f)
         self.pubKeyOperator = f.read(48)
         self.keyIDVoting = f.read(20)
         self.isValid = struct.unpack("<?", f.read(1))[0]
+        if self.version == 2:
+            self.type = struct.unpack("<H", f.read(2))[0]
+            if self.type == 1:
+                self.platformHTTPPort = struct.unpack("<H", f.read(2))[0]
+                self.platformNodeID = f.read(20)
 
     def serialize(self):
         r = b""
@@ -1099,6 +1117,11 @@ class CSimplifiedMNListEntry:
         r += self.pubKeyOperator
         r += self.keyIDVoting
         r += struct.pack("<?", self.isValid)
+        if self.version == 2:
+            r += struct.pack("<H", self.type)
+            if self.type == 1:
+                r += struct.pack("<H", self.platformHTTPPort)
+                r += self.platformNodeID
         return r
 
 
@@ -1116,16 +1139,16 @@ class CFinalCommitment:
         self.quorumIndex = 0
         self.signers = []
         self.validMembers = []
-        self.quorumPublicKey = b'\\x0' * 48
+        self.quorumPublicKey = b'\x00' * 48
         self.quorumVvecHash = 0
-        self.quorumSig = b'\\x0' * 96
-        self.membersSig = b'\\x0' * 96
+        self.quorumSig = b'\x00' * 96
+        self.membersSig = b'\x00' * 96
 
     def deserialize(self, f):
         self.nVersion = struct.unpack("<H", f.read(2))[0]
         self.llmqType = struct.unpack("<B", f.read(1))[0]
         self.quorumHash = deser_uint256(f)
-        if self.nVersion == 2:
+        if self.nVersion == 2 or self.nVersion == 4:
             self.quorumIndex = struct.unpack("<H", f.read(2))[0]
         self.signers = deser_dyn_bitset(f, False)
         self.validMembers = deser_dyn_bitset(f, False)
@@ -1139,7 +1162,7 @@ class CFinalCommitment:
         r += struct.pack("<H", self.nVersion)
         r += struct.pack("<B", self.llmqType)
         r += ser_uint256(self.quorumHash)
-        if self.nVersion == 2:
+        if self.nVersion == 2 or self.nVersion == 4:
             r += struct.pack("<H", self.quorumIndex)
         r += ser_dyn_bitset(self.signers, False)
         r += ser_dyn_bitset(self.validMembers, False)
@@ -1239,7 +1262,7 @@ class CRecoveredSig:
         self.quorumHash = 0
         self.id = 0
         self.msgHash = 0
-        self.sig = b'\\x0' * 96
+        self.sig = b'\x00' * 96
 
     def deserialize(self, f):
         self.llmqType = struct.unpack("<B", f.read(1))[0]
@@ -1267,7 +1290,7 @@ class CSigShare:
         self.quorumMember = 0
         self.id = 0
         self.msgHash = 0
-        self.sigShare = b'\\x0' * 96
+        self.sigShare = b'\x00' * 96
 
     def deserialize(self, f):
         self.llmqType = struct.unpack("<B", f.read(1))[0]
@@ -1292,7 +1315,7 @@ class CBLSPublicKey:
     __slots__ = ("data")
 
     def __init__(self):
-        self.data = b'\\x0' * 48
+        self.data = b'\x00' * 48
 
     def deserialize(self, f):
         self.data = f.read(48)
@@ -1307,9 +1330,9 @@ class CBLSIESEncryptedSecretKey:
     __slots__ = ("ephemeral_pubKey", "iv", "data")
 
     def __init__(self):
-        self.ephemeral_pubKey = b'\\x0' * 48
-        self.iv = b'\\x0' * 32
-        self.data = b'\\x0' * 32
+        self.ephemeral_pubKey = b'\x00' * 48
+        self.iv = b'\x00' * 32
+        self.data = b'\x00' * 32
 
     def deserialize(self, f):
         self.ephemeral_pubKey = f.read(48)
@@ -1792,39 +1815,6 @@ class msg_headers2:
         return "msg_headers2(headers=%s)" % repr(self.headers)
 
 
-class msg_reject:
-    __slots__ = ("code", "data", "message", "reason")
-    command = b"reject"
-    REJECT_MALFORMED = 1
-
-    def __init__(self):
-        self.message = b""
-        self.code = 0
-        self.reason = b""
-        self.data = 0
-
-    def deserialize(self, f):
-        self.message = deser_string(f)
-        self.code = struct.unpack("<B", f.read(1))[0]
-        self.reason = deser_string(f)
-        if (self.code != self.REJECT_MALFORMED and
-                (self.message == b"block" or self.message == b"tx")):
-            self.data = deser_uint256(f)
-
-    def serialize(self):
-        r = ser_string(self.message)
-        r += struct.pack("<B", self.code)
-        r += ser_string(self.reason)
-        if (self.code != self.REJECT_MALFORMED and
-                (self.message == b"block" or self.message == b"tx")):
-            r += ser_uint256(self.data)
-        return r
-
-    def __repr__(self):
-        return "msg_reject: %s %d %s [%064x]" \
-               % (self.message, self.code, self.reason, self.data)
-
-
 class msg_sendcmpct:
     __slots__ = ("announce", "version")
     command = b"sendcmpct"
@@ -1930,7 +1920,7 @@ class msg_getmnlistd:
 QuorumId = namedtuple('QuorumId', ['llmqType', 'quorumHash'])
 
 class msg_mnlistdiff:
-    __slots__ = ("baseBlockHash", "blockHash", "merkleProof", "cbTx", "deletedMNs", "mnList", "deletedQuorums", "newQuorums",)
+    __slots__ = ("baseBlockHash", "blockHash", "merkleProof", "cbTx", "version", "deletedMNs", "mnList", "deletedQuorums", "newQuorums",)
     command = b"mnlistdiff"
 
     def __init__(self):
@@ -1938,6 +1928,7 @@ class msg_mnlistdiff:
         self.blockHash = 0
         self.merkleProof = CPartialMerkleTree()
         self.cbTx = None
+        self.version = 0
         self.deletedMNs = []
         self.mnList = []
         self.deletedQuorums = []
@@ -1950,11 +1941,12 @@ class msg_mnlistdiff:
         self.cbTx = CTransaction()
         self.cbTx.deserialize(f)
         self.cbTx.rehash()
+        self.version = struct.unpack("<H", f.read(2))[0]
         self.deletedMNs = deser_uint256_vector(f)
         self.mnList = []
         for i in range(deser_compact_size(f)):
             e = CSimplifiedMNListEntry()
-            e.deserialize(f)
+            e.deserialize(f, self.version)
             self.mnList.append(e)
 
         self.deletedQuorums = []
@@ -1976,7 +1968,7 @@ class msg_clsig:
     __slots__ = ("height", "blockHash", "sig",)
     command = b"clsig"
 
-    def __init__(self, height=0, blockHash=0, sig=b'\\x0' * 96):
+    def __init__(self, height=0, blockHash=0, sig=b'\x00' * 96):
         self.height = height
         self.blockHash = blockHash
         self.sig = sig
@@ -2001,7 +1993,7 @@ class msg_islock:
     __slots__ = ("inputs", "txid", "sig",)
     command = b"islock"
 
-    def __init__(self, inputs=[], txid=0, sig=b'\\x0' * 96):
+    def __init__(self, inputs=[], txid=0, sig=b'\x00' * 96):
         self.inputs = inputs
         self.txid = txid
         self.sig = sig
@@ -2026,7 +2018,7 @@ class msg_isdlock:
     __slots__ = ("nVersion", "inputs", "txid", "cycleHash", "sig")
     command = b"isdlock"
 
-    def __init__(self, nVersion=1, inputs=[], txid=0, cycleHash=0, sig=b'\\x0' * 96):
+    def __init__(self, nVersion=1, inputs=[], txid=0, cycleHash=0, sig=b'\x00' * 96):
         self.nVersion = nVersion
         self.inputs = inputs
         self.txid = txid

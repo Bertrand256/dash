@@ -60,7 +60,9 @@ public:
 
     const Consensus::Params& GetConsensus() const { return consensus; }
     const CMessageHeader::MessageStartChars& MessageStart() const { return pchMessageStart; }
-    int GetDefaultPort() const { return nDefaultPort; }
+    uint16_t GetDefaultPort() const { return nDefaultPort; }
+    uint16_t GetDefaultPlatformP2PPort() const { return nDefaultPlatformP2PPort; }
+    uint16_t GetDefaultPlatformHTTPPort() const { return nDefaultPlatformHTTPPort; }
 
     const CBlock& GenesisBlock() const { return genesis; }
     const CBlock& DevNetGenesisBlock() const { return devnetGenesis; }
@@ -70,6 +72,8 @@ public:
     bool RequireStandard() const { return fRequireStandard; }
     /** Require addresses specified with "-externalip" parameter to be routable */
     bool RequireRoutableExternalIP() const { return fRequireRoutableExternalIP; }
+    /** If this chain allows time to be mocked */
+    bool IsMockableChain() const { return m_is_mockable_chain; }
     /** If this chain is exclusively used for testing */
     bool IsTestChain() const { return m_is_test_chain; }
     uint64_t PruneAfterHeight() const { return nPruneAfterHeight; }
@@ -85,7 +89,7 @@ public:
     bool AllowMultiplePorts() const { return fAllowMultiplePorts; }
     /** How long to wait until we allow retrying of a LLMQ connection  */
     int LLMQConnectionRetryTimeout() const { return nLLMQConnectionRetryTimeout; }
-    /** Return the BIP70 network string (main, test or regtest) */
+    /** Return the network string */
     std::string NetworkIDString() const { return strNetworkID; }
     /** Return the list of hostnames to look up for DNS seeds */
     const std::vector<std::string>& DNSSeeds() const { return vSeeds; }
@@ -108,15 +112,14 @@ public:
     const std::vector<std::string>& SporkAddresses() const { return vSporkAddresses; }
     int MinSporkKeys() const { return nMinSporkKeys; }
     bool BIP9CheckMasternodesUpgraded() const { return fBIP9CheckMasternodesUpgraded; }
-    const Consensus::LLMQParams& GetLLMQ(Consensus::LLMQType llmqType) const;
-    bool HasLLMQ(Consensus::LLMQType llmqType) const;
+    std::optional<Consensus::LLMQParams> GetLLMQ(Consensus::LLMQType llmqType) const;
 
 protected:
     CChainParams() {}
 
     Consensus::Params consensus;
     CMessageHeader::MessageStartChars pchMessageStart;
-    int nDefaultPort;
+    uint16_t nDefaultPort;
     uint64_t nPruneAfterHeight;
     uint64_t m_assumed_blockchain_size;
     uint64_t m_assumed_chain_state_size;
@@ -133,6 +136,7 @@ protected:
     bool m_is_test_chain;
     bool fAllowMultipleAddressesFromGroup;
     bool fAllowMultiplePorts;
+    bool m_is_mockable_chain;
     int nLLMQConnectionRetryTimeout;
     CCheckpointData checkpointData;
     ChainTxData chainTxData;
@@ -142,6 +146,8 @@ protected:
     std::vector<std::string> vSporkAddresses;
     int nMinSporkKeys;
     bool fBIP9CheckMasternodesUpgraded;
+    uint16_t nDefaultPlatformP2PPort;
+    uint16_t nDefaultPlatformHTTPPort;
 
     void AddLLMQ(Consensus::LLMQType llmqType);
 };
@@ -160,7 +166,7 @@ std::unique_ptr<const CChainParams> CreateChainParams(const std::string& chain);
 const CChainParams &Params();
 
 /**
- * Sets the params returned by Params() to those for the given BIP70 chain name.
+ * Sets the params returned by Params() to those for the given chain name.
  * @throws std::runtime_error when the chain is not supported.
  */
 void SelectParams(const std::string& chain);

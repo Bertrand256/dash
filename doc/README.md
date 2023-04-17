@@ -33,6 +33,7 @@ Building
 ---------------------
 The following are developer notes on how to build Dash Core on your native platform. They are not complete guides, but include notes on the necessary libraries, compile flags, etc.
 
+- [Dependencies](dependencies.md)
 - [macOS Build Notes](build-osx.md)
 - [Unix Build Notes](build-unix.md)
 - [Windows Build Notes](build-windows.md)
@@ -81,5 +82,3 @@ The Dash Core repo's [root README](/README.md) contains relevant information on 
 License
 ---------------------
 Distributed under the [MIT software license](/COPYING).
-This product includes software developed by the OpenSSL Project for use in the [OpenSSL Toolkit](https://www.openssl.org/). This product includes
-cryptographic software written by Eric Young ([eay@cryptsoft.com](mailto:eay@cryptsoft.com)), and UPnP software written by Thomas Bernard.

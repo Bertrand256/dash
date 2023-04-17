@@ -21,7 +21,6 @@ happened previously.
 
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import (
-    connect_nodes,
     assert_equal,
     set_node_times,
 )
@@ -37,7 +36,6 @@ Rescan = enum.Enum("Rescan", "no yes late_timestamp")
 
 class Variant(collections.namedtuple("Variant", "call data rescan prune")):
     """Helper for importing one key and verifying scanned transactions."""
-
     def do_import(self, timestamp):
         """Call one key import RPC."""
         rescan = self.rescan == Rescan.yes
@@ -120,6 +118,8 @@ TIMESTAMP_WINDOW = 2 * 60 * 60
 class ImportRescanTest(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 2 + len(IMPORT_NODES)
+        self.supports_cli = False
+        self.rpc_timeout = 120
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()
@@ -135,15 +135,12 @@ class ImportRescanTest(BitcoinTestFramework):
 
         # Import keys with pruning disabled
         self.start_nodes(extra_args=[[]] * self.num_nodes)
-        super().import_deterministic_coinbase_privkeys()
+        self.import_deterministic_coinbase_privkeys()
         self.stop_nodes()
 
         self.start_nodes()
         for i in range(1, self.num_nodes):
-            connect_nodes(self.nodes[i], 0)
-
-    def import_deterministic_coinbase_privkeys(self):
-        pass
+            self.connect_nodes(i, 0)
 
     def run_test(self):
         # Create one transaction on node 0 with a unique amount for
@@ -199,6 +196,7 @@ class ImportRescanTest(BitcoinTestFramework):
         for i, import_node in enumerate(IMPORT_NODES, 2):
             if import_node.prune:
                 self.stop_node(i, expected_stderr='Warning: You are starting with governance validation disabled. This is expected because you are running a pruned node.')
+
 
 
 if __name__ == "__main__":

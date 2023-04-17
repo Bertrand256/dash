@@ -13,7 +13,7 @@ Checks LLMQs signing sessions
 from test_framework.messages import CSigShare, msg_qsigshare, uint256_to_string
 from test_framework.mininode import P2PInterface
 from test_framework.test_framework import DashTestFramework
-from test_framework.util import assert_equal, assert_raises_rpc_error, connect_nodes, force_finish_mnsync, hex_str_to_bytes, wait_until
+from test_framework.util import assert_equal, assert_raises_rpc_error, force_finish_mnsync, hex_str_to_bytes, wait_until
 
 
 class LLMQSigningTest(DashTestFramework):
@@ -27,9 +27,9 @@ class LLMQSigningTest(DashTestFramework):
 
     def run_test(self):
 
-        self.nodes[0].spork("SPORK_17_QUORUM_DKG_ENABLED", 0)
+        self.nodes[0].sporkupdate("SPORK_17_QUORUM_DKG_ENABLED", 0)
         if self.options.spork21:
-            self.nodes[0].spork("SPORK_21_QUORUM_ALL_CONNECTED", 0)
+            self.nodes[0].sporkupdate("SPORK_21_QUORUM_ALL_CONNECTED", 0)
         self.wait_for_sporks_same()
 
         self.mine_quorum()
@@ -184,7 +184,7 @@ class LLMQSigningTest(DashTestFramework):
             assert_sigs_nochange(False, False, False, 3)
             # Need to re-connect so that it later gets the recovered sig
             mn.node.setnetworkactive(True)
-            connect_nodes(mn.node, 0)
+            self.connect_nodes(mn.node.index, 0)
             force_finish_mnsync(mn.node)
             # Make sure intra-quorum connections were also restored
             self.bump_mocktime(1)  # need this to bypass quorum connection retry timeout

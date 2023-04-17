@@ -14,7 +14,6 @@ from test_framework.test_framework import DashTestFramework
 from test_framework.util import (
     assert_equal,
     assert_raises_rpc_error,
-    connect_nodes,
     force_finish_mnsync,
     wait_until,
 )
@@ -127,12 +126,12 @@ class QuorumDataMessagesTest(DashTestFramework):
         self.set_dash_test_params(4, 3, fast_dip3_enforcement=True, extra_args=extra_args)
 
     def restart_mn(self, mn, reindex=False):
-        args = self.extra_args[mn.nodeIdx] + ['-masternodeblsprivkey=%s' % mn.keyOperator]
+        args = self.extra_args[mn.node.index] + ['-masternodeblsprivkey=%s' % mn.keyOperator]
         if reindex:
             args.append('-reindex')
-        self.restart_node(mn.nodeIdx, args)
+        self.restart_node(mn.node.index, args)
         force_finish_mnsync(mn.node)
-        connect_nodes(mn.node, 0)
+        self.connect_nodes(mn.node.index, 0)
         self.sync_blocks()
 
     def run_test(self):
@@ -371,7 +370,7 @@ class QuorumDataMessagesTest(DashTestFramework):
             for extra_args in [[], ["-watchquorums"]]:
                 self.restart_node(0, self.extra_args[0] + extra_args)
                 for i in range(self.num_nodes - 1):
-                    connect_nodes(node0, i + 1)
+                    self.connect_nodes(0, i + 1)
                 p2p_node0 = p2p_connection(node0)
                 p2p_mn2 = p2p_connection(mn2.node)
                 id_p2p_node0 = get_mininode_id(node0)
@@ -395,8 +394,8 @@ class QuorumDataMessagesTest(DashTestFramework):
                                     "0000000000000000000000000000000000000000000000000000000000000000")
 
         # Enable DKG and disable ChainLocks
-        self.nodes[0].spork("SPORK_17_QUORUM_DKG_ENABLED", 0)
-        self.nodes[0].spork("SPORK_19_CHAINLOCKS_ENABLED", 4070908800)
+        self.nodes[0].sporkupdate("SPORK_17_QUORUM_DKG_ENABLED", 0)
+        self.nodes[0].sporkupdate("SPORK_19_CHAINLOCKS_ENABLED", 4070908800)
 
         self.wait_for_sporks_same()
         quorum_hash = self.mine_quorum()

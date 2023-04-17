@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2020-2021 The Dash Core developers
+# Copyright (c) 2020-2022 The Dash Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test that commands submitted by the platform user are filtered."""
@@ -16,6 +16,11 @@ import urllib.parse
 class HTTPBasicsTest(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 1
+        self.supports_cli = False
+
+    def setup_nodes(self):
+        self.add_nodes(self.num_nodes)
+        self.start_nodes()
 
     def setup_chain(self):
         super().setup_chain()
@@ -35,7 +40,6 @@ class HTTPBasicsTest(BitcoinTestFramework):
             f.write(rpcauthoperator+"\n")
 
     def run_test(self):
-
         url = urllib.parse.urlparse(self.nodes[0].url)
 
         def test_command(method, params, auth, expexted_status, should_not_match=False):
@@ -83,8 +87,8 @@ class HTTPBasicsTest(BitcoinTestFramework):
         test_command("getblockhash", [0], rpcuser_authpair_platform, 200)
         test_command("getblockcount", [], rpcuser_authpair_platform, 200)
         test_command("getbestchainlock", [], rpcuser_authpair_platform, 500)
-        test_command("quorum", ["sign", 100], rpcuser_authpair_platform, 500)
-        test_command("quorum", ["sign", 100, "0000000000000000000000000000000000000000000000000000000000000000",
+        test_command("quorum", ["sign", 106], rpcuser_authpair_platform, 500)
+        test_command("quorum", ["sign", 106, "0000000000000000000000000000000000000000000000000000000000000000",
                                 "0000000000000000000000000000000000000000000000000000000000000001"],
                                 rpcuser_authpair_platform, 200)
         test_command("quorum", ["verify"], rpcuser_authpair_platform, 500)

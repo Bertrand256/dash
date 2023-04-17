@@ -5,7 +5,6 @@
 
 #include <protocol.h>
 
-#include <util/strencodings.h>
 #include <util/system.h>
 
 static std::atomic<bool> g_initial_block_download_completed(false);
@@ -36,7 +35,6 @@ MAKE_MSG(NOTFOUND, "notfound");
 MAKE_MSG(FILTERLOAD, "filterload");
 MAKE_MSG(FILTERADD, "filteradd");
 MAKE_MSG(FILTERCLEAR, "filterclear");
-MAKE_MSG(REJECT, "reject");
 MAKE_MSG(SENDHEADERS, "sendheaders");
 MAKE_MSG(SENDCMPCT, "sendcmpct");
 MAKE_MSG(CMPCTBLOCK, "cmpctblock");
@@ -118,7 +116,6 @@ const static std::string allNetMessageTypes[] = {
     NetMsgType::FILTERLOAD,
     NetMsgType::FILTERADD,
     NetMsgType::FILTERCLEAR,
-    NetMsgType::REJECT,
     NetMsgType::SENDHEADERS,
     NetMsgType::SENDCMPCT,
     NetMsgType::CMPCTBLOCK,
@@ -172,11 +169,45 @@ const static std::string allNetMessageTypes[] = {
     NetMsgType::GETHEADERS2,
     NetMsgType::SENDHEADERS2,
     NetMsgType::HEADERS2};
-const static std::vector<std::string> allNetMessageTypesVec(allNetMessageTypes, allNetMessageTypes+ARRAYLEN(allNetMessageTypes));
+const static std::vector<std::string> allNetMessageTypesVec(std::begin(allNetMessageTypes), std::end(allNetMessageTypes));
 
-CMessageHeader::CMessageHeader(const MessageStartChars& pchMessageStartIn)
+/** Message types that are not allowed by blocks-relay-only policy.
+ *  We do not want most of CoinJoin, DKG or LLMQ signing messages to be relayed
+ *  to/from nodes via connections that were established in this mode.
+ *  Make sure to keep this list up to date whenever a new message type is added.
+ *  NOTE: Unlike the list above, this list is sorted alphabetically.
+ */
+const static std::string netMessageTypesViolateBlocksOnly[] = {
+    NetMsgType::DSACCEPT,
+    NetMsgType::DSCOMPLETE,
+    NetMsgType::DSFINALTX,
+    NetMsgType::DSQUEUE,
+    NetMsgType::DSSIGNFINALTX,
+    NetMsgType::DSSTATUSUPDATE,
+    NetMsgType::DSTX,
+    NetMsgType::DSVIN,
+    NetMsgType::LEGACYTXLOCKREQUEST,
+    NetMsgType::QBSIGSHARES,
+    NetMsgType::QCOMPLAINT,
+    NetMsgType::QCONTRIB,
+    NetMsgType::QDATA,
+    NetMsgType::QGETDATA,
+    NetMsgType::QGETSIGSHARES,
+    NetMsgType::QJUSTIFICATION,
+    NetMsgType::QPCOMMITMENT,
+    NetMsgType::QSENDRECSIGS,
+    NetMsgType::QSIGREC,
+    NetMsgType::QSIGSESANN,
+    NetMsgType::QSIGSHARE,
+    NetMsgType::QSIGSHARESINV,
+    NetMsgType::QWATCH,
+    NetMsgType::TX,
+};
+const static std::set<std::string> netMessageTypesViolateBlocksOnlySet(std::begin(netMessageTypesViolateBlocksOnly), std::end(netMessageTypesViolateBlocksOnly));
+
+CMessageHeader::CMessageHeader()
 {
-    memcpy(pchMessageStart, pchMessageStartIn, MESSAGE_START_SIZE);
+    memset(pchMessageStart, 0, MESSAGE_START_SIZE);
     memset(pchCommand, 0, sizeof(pchCommand));
     nMessageSize = -1;
     memset(pchChecksum, 0, CHECKSUM_SIZE);
@@ -201,31 +232,20 @@ std::string CMessageHeader::GetCommand() const
     return std::string(pchCommand, pchCommand + strnlen(pchCommand, COMMAND_SIZE));
 }
 
-bool CMessageHeader::IsValid(const MessageStartChars& pchMessageStartIn) const
+bool CMessageHeader::IsCommandValid() const
 {
-    // Check start string
-    if (memcmp(pchMessageStart, pchMessageStartIn, MESSAGE_START_SIZE) != 0)
-        return false;
-
     // Check the command string for errors
-    for (const char* p1 = pchCommand; p1 < pchCommand + COMMAND_SIZE; p1++)
-    {
-        if (*p1 == 0)
-        {
+    for (const char* p1 = pchCommand; p1 < pchCommand + COMMAND_SIZE; ++p1) {
+        if (*p1 == 0) {
             // Must be all zeros after the first zero
-            for (; p1 < pchCommand + COMMAND_SIZE; p1++)
-                if (*p1 != 0)
+            for (; p1 < pchCommand + COMMAND_SIZE; ++p1) {
+                if (*p1 != 0) {
                     return false;
-        }
-        else if (*p1 < ' ' || *p1 > 0x7E)
+                }
+            }
+        } else if (*p1 < ' ' || *p1 > 0x7E) {
             return false;
-    }
-
-    // Message size
-    if (nMessageSize > MAX_SIZE)
-    {
-        LogPrintf("CMessageHeader::IsValid(): (%s, %u bytes) nMessageSize > MAX_SIZE\n", GetCommand(), nMessageSize);
-        return false;
+        }
     }
 
     return true;
@@ -335,6 +355,11 @@ std::string CInv::ToString() const
 const std::vector<std::string> &getAllNetMessageTypes()
 {
     return allNetMessageTypesVec;
+}
+
+bool NetMessageViolatesBlocksOnly(const std::string& msg_type)
+{
+    return netMessageTypesViolateBlocksOnlySet.find(msg_type) != netMessageTypesViolateBlocksOnlySet.end();
 }
 
 /**

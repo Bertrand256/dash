@@ -12,7 +12,7 @@ from decimal import Decimal
 from test_framework.blocktools import create_block, create_coinbase, get_masternode_payment
 from test_framework.messages import CCbTx, COIN, CTransaction, FromHex, ToHex, uint256_to_string
 from test_framework.test_framework import BitcoinTestFramework
-from test_framework.util import assert_equal, connect_nodes, force_finish_mnsync, get_bip9_status, p2p_port
+from test_framework.util import assert_equal, force_finish_mnsync, get_bip9_status, p2p_port
 
 class Masternode(object):
     pass
@@ -22,6 +22,7 @@ class DIP3Test(BitcoinTestFramework):
         self.num_initial_mn = 11 # Should be >= 11 to make sure quorums are not always the same MNs
         self.num_nodes = 1 + self.num_initial_mn + 2 # +1 for controller, +1 for mn-qt, +1 for mn created after dip3 activation
         self.setup_clean_chain = True
+        self.supports_cli = False
 
         self.extra_args = ["-budgetparams=10:10:10"]
         self.extra_args += ["-sporkkey=cP4EKFyJsHT39LDqgdcB43Y3YXjNyjb5Fuas1GQSeAtjnZWmZEQK"]
@@ -35,13 +36,14 @@ class DIP3Test(BitcoinTestFramework):
         self.disable_mocktime()
         self.add_nodes(1)
         self.start_controller_node()
+        self.import_deterministic_coinbase_privkeys()
 
     def start_controller_node(self):
         self.log.info("starting controller node")
         self.start_node(0, extra_args=self.extra_args)
         for node in self.nodes[1:]:
             if node is not None and node.process is not None:
-                connect_nodes(node, 0)
+                self.connect_nodes(node.index, 0)
 
     def run_test(self):
         self.log.info("funding controller node")
@@ -267,7 +269,7 @@ class DIP3Test(BitcoinTestFramework):
         self.start_node(mn.idx, extra_args = self.extra_args + ['-masternodeblsprivkey=%s' % mn.blsMnkey])
         force_finish_mnsync(self.nodes[mn.idx])
         mn.node = self.nodes[mn.idx]
-        connect_nodes(mn.node, 0)
+        self.connect_nodes(mn.idx, 0)
         self.sync_all()
 
     def spend_mn_collateral(self, mn, with_dummy_input_output=False):

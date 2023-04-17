@@ -4,7 +4,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #if defined(HAVE_CONFIG_H)
-#include <config/dash-config.h>
+#include <config/bitcoin-config.h>
 #endif
 
 #include <qt/optionsmodel.h>
@@ -19,12 +19,13 @@
 #include <netbase.h>
 #include <txdb.h>       // for -dbcache defaults
 #include <validation.h> // For DEFAULT_SCRIPTCHECK_THREADS
+#include <util/string.h>
 
 #ifdef ENABLE_WALLET
 #include <coinjoin/options.h>
 #endif
 
-#include <QNetworkProxy>
+#include <QDebug>
 #include <QSettings>
 #include <QStringList>
 
@@ -146,6 +147,10 @@ void OptionsModel::Init(bool resetSettings)
         settings.setValue("fCoinControlFeatures", false);
     fCoinControlFeatures = settings.value("fCoinControlFeatures", false).toBool();
 
+    if (!settings.contains("fKeepChangeAddress"))
+        settings.setValue("fKeepChangeAddress", false);
+    fKeepChangeAddress = settings.value("fKeepChangeAddress", false).toBool();
+
     if (!settings.contains("digits"))
         settings.setValue("digits", "2");
 
@@ -183,7 +188,7 @@ void OptionsModel::Init(bool resetSettings)
         settings.setValue("nPruneSize", 2);
     // Convert prune size from GB to MiB:
     const uint64_t nPruneSizeMiB = (settings.value("nPruneSize").toInt() * GB_BYTES) >> 20;
-    if (!m_node.softSetArg("-prune", settings.value("bPrune").toBool() ? std::to_string(nPruneSizeMiB) : "0")) {
+    if (!m_node.softSetArg("-prune", settings.value("bPrune").toBool() ? ToString(nPruneSizeMiB) : "0")) {
         addOverriddenOption("-prune");
     }
 
@@ -472,6 +477,8 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
 #ifdef ENABLE_WALLET
         case CoinControlFeatures:
             return fCoinControlFeatures;
+        case KeepChangeAddress:
+            return fKeepChangeAddress;
 #endif // ENABLE_WALLET
         case Prune:
             return settings.value("bPrune");
@@ -694,6 +701,11 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             settings.setValue("fCoinControlFeatures", fCoinControlFeatures);
             Q_EMIT coinControlFeaturesChanged(fCoinControlFeatures);
             break;
+        case KeepChangeAddress:
+            fKeepChangeAddress = value.toBool();
+            settings.setValue("fKeepChangeAddress", fKeepChangeAddress);
+            Q_EMIT keepChangeAddressChanged(fKeepChangeAddress);
+            break;
         case Prune:
             if (settings.value("bPrune") != value) {
                 settings.setValue("bPrune", value);
@@ -745,24 +757,6 @@ void OptionsModel::setDisplayUnit(const QVariant &value)
         settings.setValue("nDisplayUnit", nDisplayUnit);
         Q_EMIT displayUnitChanged(nDisplayUnit);
     }
-}
-
-bool OptionsModel::getProxySettings(QNetworkProxy& proxy) const
-{
-    // Directly query current base proxy, because
-    // GUI settings can be overridden with -proxy.
-    proxyType curProxy;
-    if (m_node.getProxy(NET_IPV4, curProxy)) {
-        proxy.setType(QNetworkProxy::Socks5Proxy);
-        proxy.setHostName(QString::fromStdString(curProxy.proxy.ToStringIP()));
-        proxy.setPort(curProxy.proxy.GetPort());
-
-        return true;
-    }
-    else
-        proxy.setType(QNetworkProxy::NoProxy);
-
-    return false;
 }
 
 void OptionsModel::emitCoinJoinEnabledChanged()

@@ -8,8 +8,9 @@
 #include <evo/dmnstate.h>
 
 #include <arith_uint256.h>
-#include <crypto/common.h>
 #include <consensus/params.h>
+#include <crypto/common.h>
+#include <evo/dmn_types.h>
 #include <evo/evodb.h>
 #include <evo/providertx.h>
 #include <saltedhasher.h>
@@ -18,9 +19,12 @@
 
 #include <immer/map.hpp>
 
+#include <limits>
+#include <numeric>
 #include <unordered_map>
 #include <utility>
 
+class CConnman;
 class CBlock;
 class CBlockIndex;
 class CValidationState;
@@ -39,57 +43,73 @@ private:
     uint64_t internalId{std::numeric_limits<uint64_t>::max()};
 
 public:
+    static constexpr uint16_t CURRENT_MN_FORMAT = 0;
+    static constexpr uint16_t MN_TYPE_FORMAT = 1;
+
     CDeterministicMN() = delete; // no default constructor, must specify internalId
-    explicit CDeterministicMN(uint64_t _internalId) : internalId(_internalId)
+    explicit CDeterministicMN(uint64_t _internalId, MnType mnType = MnType::Regular) :
+        internalId(_internalId),
+        nType(mnType)
     {
         // only non-initial values
         assert(_internalId != std::numeric_limits<uint64_t>::max());
-    }
-    // TODO: can be removed in a future version
-    CDeterministicMN(CDeterministicMN mn, uint64_t _internalId) : CDeterministicMN(std::move(mn)) {
-        // only non-initial values
-        assert(_internalId != std::numeric_limits<uint64_t>::max());
-        internalId = _internalId;
     }
 
     template <typename Stream>
-    CDeterministicMN(deserialize_type, Stream& s)
+    CDeterministicMN(deserialize_type, Stream& s, const uint8_t format_version)
     {
-        s >> *this;
+        SerializationOp(s, CSerActionUnserialize(), format_version);
     }
 
     uint256 proTxHash;
     COutPoint collateralOutpoint;
     uint16_t nOperatorReward{0};
+    MnType nType{MnType::Regular};
     std::shared_ptr<const CDeterministicMNState> pdmnState;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, bool oldFormat)
+    inline void SerializationOp(Stream& s, Operation ser_action, const uint8_t format_version)
     {
         READWRITE(proTxHash);
-        if (!oldFormat) {
-            READWRITE(VARINT(internalId));
-        }
+        READWRITE(VARINT(internalId));
         READWRITE(collateralOutpoint);
         READWRITE(nOperatorReward);
-        READWRITE(pdmnState);
+        // We need to read CDeterministicMNState using the old format only when called with CURRENT_MN_FORMAT on Unserialize()
+        // Serialisation (writing) will be done always using new format
+        if (ser_action.ForRead() && format_version == CURRENT_MN_FORMAT) {
+            CDeterministicMNState_Oldformat old_state;
+            READWRITE(old_state);
+            pdmnState = std::make_shared<const CDeterministicMNState>(old_state);
+        } else {
+            READWRITE(pdmnState);
+        }
+        // We need to read/write nType if:
+        // format_version is set to MN_TYPE_FORMAT (For writing (serialisation) it is always the case) Needed for the MNLISTDIFF Migration in evoDB
+        // We can't know if we are serialising for the Disk or for the Network here (s.GetType() is not accessible)
+        // Therefore if s.GetVersion() == CLIENT_VERSION -> Then we know we are serialising for the Disk
+        // Otherwise, we can safely check with protocol versioning logic so we won't break old clients
+        if (format_version >= MN_TYPE_FORMAT && (s.GetVersion() == CLIENT_VERSION || s.GetVersion() >= DMN_TYPE_PROTO_VERSION)) {
+            READWRITE(nType);
+        } else {
+            nType = MnType::Regular;
+        }
     }
 
     template<typename Stream>
     void Serialize(Stream& s) const
     {
-        const_cast<CDeterministicMN*>(this)->SerializationOp(s, CSerActionSerialize(), false);
+        const_cast<CDeterministicMN*>(this)->SerializationOp(s, CSerActionSerialize(), MN_TYPE_FORMAT);
     }
 
-    template<typename Stream>
-    void Unserialize(Stream& s, bool oldFormat = false)
+    template <typename Stream>
+    void Unserialize(Stream& s, const uint8_t format_version = MN_TYPE_FORMAT)
     {
-        SerializationOp(s, CSerActionUnserialize(), oldFormat);
+        SerializationOp(s, CSerActionUnserialize(), format_version);
     }
 
-    uint64_t GetInternalId() const;
+    [[nodiscard]] uint64_t GetInternalId() const;
 
-    std::string ToString() const;
+    [[nodiscard]] std::string ToString() const;
     void ToJson(UniValue& obj) const;
 };
 using CDeterministicMNCPtr = std::shared_ptr<const CDeterministicMN>;
@@ -184,27 +204,51 @@ public:
     }
 
     template<typename Stream>
-    void Unserialize(Stream& s) {
+    void Unserialize(Stream& s, const uint8_t format_version = CDeterministicMN::MN_TYPE_FORMAT) {
         mnMap = MnMap();
         mnUniquePropertyMap = MnUniquePropertyMap();
         mnInternalIdMap = MnInternalIdMap();
 
         SerializationOpBase(s, CSerActionUnserialize());
 
+        bool evodb_migration = (format_version == CDeterministicMN::CURRENT_MN_FORMAT);
         size_t cnt = ReadCompactSize(s);
         for (size_t i = 0; i < cnt; i++) {
-            AddMN(std::make_shared<CDeterministicMN>(deserialize, s), false);
+            if (evodb_migration) {
+                const auto dmn = std::make_shared<CDeterministicMN>(deserialize, s, format_version);
+                mnMap = mnMap.set(dmn->proTxHash, dmn);
+            } else {
+                AddMN(std::make_shared<CDeterministicMN>(deserialize, s, format_version), false);
+            }
         }
     }
 
-    size_t GetAllMNsCount() const
+    [[nodiscard]] size_t GetAllMNsCount() const
     {
         return mnMap.size();
     }
 
-    size_t GetValidMNsCount() const
+    [[nodiscard]] size_t GetValidMNsCount() const
     {
         return ranges::count_if(mnMap, [](const auto& p){ return IsMNValid(*p.second); });
+    }
+
+    [[nodiscard]] size_t GetAllHPMNsCount() const
+    {
+        return ranges::count_if(mnMap, [](const auto& p) { return p.second->nType == MnType::HighPerformance; });
+    }
+
+    [[nodiscard]] size_t GetValidHPMNsCount() const
+    {
+        return ranges::count_if(mnMap, [](const auto& p) { return p.second->nType == MnType::HighPerformance && IsMNValid(*p.second); });
+    }
+
+    [[nodiscard]] size_t GetValidWeightedMNsCount() const
+    {
+        return std::accumulate(mnMap.begin(), mnMap.end(), 0, [](auto res, const auto& p) {
+                                                                if (!IsMNValid(*p.second)) return res;
+                                                                return res + GetMnType(p.second->nType).voting_weight;
+                                                            });
     }
 
     /**
@@ -240,7 +284,7 @@ public:
         }
     }
 
-    const uint256& GetBlockHash() const
+    [[nodiscard]] const uint256& GetBlockHash() const
     {
         return blockHash;
     }
@@ -248,7 +292,7 @@ public:
     {
         blockHash = _blockHash;
     }
-    int GetHeight() const
+    [[nodiscard]] int GetHeight() const
     {
         return nHeight;
     }
@@ -256,44 +300,44 @@ public:
     {
         nHeight = _height;
     }
-    uint32_t GetTotalRegisteredCount() const
+    [[nodiscard]] uint32_t GetTotalRegisteredCount() const
     {
         return nTotalRegisteredCount;
     }
 
-    bool IsMNValid(const uint256& proTxHash) const;
-    bool IsMNPoSeBanned(const uint256& proTxHash) const;
+    [[nodiscard]] bool IsMNValid(const uint256& proTxHash) const;
+    [[nodiscard]] bool IsMNPoSeBanned(const uint256& proTxHash) const;
     static bool IsMNValid(const CDeterministicMN& dmn);
     static bool IsMNPoSeBanned(const CDeterministicMN& dmn);
 
-    bool HasMN(const uint256& proTxHash) const
+    [[nodiscard]] bool HasMN(const uint256& proTxHash) const
     {
         return GetMN(proTxHash) != nullptr;
     }
-    bool HasMNByCollateral(const COutPoint& collateralOutpoint) const
+    [[nodiscard]] bool HasMNByCollateral(const COutPoint& collateralOutpoint) const
     {
         return GetMNByCollateral(collateralOutpoint) != nullptr;
     }
-    bool HasValidMNByCollateral(const COutPoint& collateralOutpoint) const
+    [[nodiscard]] bool HasValidMNByCollateral(const COutPoint& collateralOutpoint) const
     {
         return GetValidMNByCollateral(collateralOutpoint) != nullptr;
     }
-    CDeterministicMNCPtr GetMN(const uint256& proTxHash) const;
-    CDeterministicMNCPtr GetValidMN(const uint256& proTxHash) const;
-    CDeterministicMNCPtr GetMNByOperatorKey(const CBLSPublicKey& pubKey) const;
-    CDeterministicMNCPtr GetMNByCollateral(const COutPoint& collateralOutpoint) const;
-    CDeterministicMNCPtr GetValidMNByCollateral(const COutPoint& collateralOutpoint) const;
-    CDeterministicMNCPtr GetMNByService(const CService& service) const;
-    CDeterministicMNCPtr GetMNByInternalId(uint64_t internalId) const;
-    CDeterministicMNCPtr GetMNPayee() const;
+    [[nodiscard]] CDeterministicMNCPtr GetMN(const uint256& proTxHash) const;
+    [[nodiscard]] CDeterministicMNCPtr GetValidMN(const uint256& proTxHash) const;
+    [[nodiscard]] CDeterministicMNCPtr GetMNByOperatorKey(const CBLSPublicKey& pubKey) const;
+    [[nodiscard]] CDeterministicMNCPtr GetMNByCollateral(const COutPoint& collateralOutpoint) const;
+    [[nodiscard]] CDeterministicMNCPtr GetValidMNByCollateral(const COutPoint& collateralOutpoint) const;
+    [[nodiscard]] CDeterministicMNCPtr GetMNByService(const CService& service) const;
+    [[nodiscard]] CDeterministicMNCPtr GetMNByInternalId(uint64_t internalId) const;
+    [[nodiscard]] CDeterministicMNCPtr GetMNPayee(const CBlockIndex* pIndex) const;
 
     /**
      * Calculates the projected MN payees for the next *count* blocks. The result is not guaranteed to be correct
      * as PoSe banning might occur later
-     * @param count
+     * @param nCount the number of payees to return. "nCount = max()"" means "all", use it to avoid calling GetValidWeightedMNsCount twice.
      * @return
      */
-    std::vector<CDeterministicMNCPtr> GetProjectedMNPayees(int nCount) const;
+    [[nodiscard]] std::vector<CDeterministicMNCPtr> GetProjectedMNPayees(int nCount = std::numeric_limits<int>::max()) const;
 
     /**
      * Calculate a quorum based on the modifier. The resulting list is deterministically sorted by score
@@ -301,15 +345,15 @@ public:
      * @param modifier
      * @return
      */
-    std::vector<CDeterministicMNCPtr> CalculateQuorum(size_t maxSize, const uint256& modifier) const;
-    std::vector<std::pair<arith_uint256, CDeterministicMNCPtr>> CalculateScores(const uint256& modifier) const;
+    [[nodiscard]] std::vector<CDeterministicMNCPtr> CalculateQuorum(size_t maxSize, const uint256& modifier, const bool onlyHighPerformanceMasternodes = false) const;
+    [[nodiscard]] std::vector<std::pair<arith_uint256, CDeterministicMNCPtr>> CalculateScores(const uint256& modifier, const bool onlyHighPerformanceMasternodes) const;
 
     /**
      * Calculates the maximum penalty which is allowed at the height of this MN list. It is dynamic and might change
      * for every block.
      * @return
      */
-    int CalcMaxPoSePenalty() const;
+    [[nodiscard]] int CalcMaxPoSePenalty() const;
 
     /**
      * Returns a the given percentage from the max penalty for this MN list. Always use this method to calculate the
@@ -319,7 +363,7 @@ public:
      * @param percent
      * @return
      */
-    int CalcPenalty(int percent) const;
+    [[nodiscard]] int CalcPenalty(int percent) const;
 
     /**
      * Punishes a MN for misbehavior. If the resulting penalty score of the MN reaches the max penalty, it is banned.
@@ -337,9 +381,11 @@ public:
      */
     void PoSeDecrease(const uint256& proTxHash);
 
-    CDeterministicMNListDiff BuildDiff(const CDeterministicMNList& to) const;
-    CSimplifiedMNListDiff BuildSimplifiedDiff(const CDeterministicMNList& to) const;
-    CDeterministicMNList ApplyDiff(const CBlockIndex* pindex, const CDeterministicMNListDiff& diff) const;
+    [[nodiscard]] CDeterministicMNListDiff BuildDiff(const CDeterministicMNList& to) const;
+    [[nodiscard]] CSimplifiedMNListDiff BuildSimplifiedDiff(const CDeterministicMNList& to, bool extended) const;
+    [[nodiscard]] CDeterministicMNList ApplyDiff(const CBlockIndex* pindex, const CDeterministicMNListDiff& diff) const;
+
+    void RepopulateUniquePropertyMap();
 
     void AddMN(const CDeterministicMNCPtr& dmn, bool fBumpTotalCount = true);
     void UpdateMN(const CDeterministicMN& oldDmn, const std::shared_ptr<const CDeterministicMNState>& pdmnState);
@@ -348,12 +394,12 @@ public:
     void RemoveMN(const uint256& proTxHash);
 
     template <typename T>
-    bool HasUniqueProperty(const T& v) const
+    [[nodiscard]] bool HasUniqueProperty(const T& v) const
     {
         return mnUniquePropertyMap.count(::SerializeHash(v)) != 0;
     }
     template <typename T>
-    CDeterministicMNCPtr GetUniquePropertyMN(const T& v) const
+    [[nodiscard]] CDeterministicMNCPtr GetUniquePropertyMN(const T& v) const
     {
         auto p = mnUniquePropertyMap.find(::SerializeHash(v));
         if (!p) {
@@ -429,7 +475,7 @@ public:
 
     std::vector<CDeterministicMNCPtr> addedMNs;
     // keys are all relating to the internalId of MNs
-    std::map<uint64_t, CDeterministicMNStateDiff> updatedMNs;
+    std::unordered_map<uint64_t, CDeterministicMNStateDiff> updatedMNs;
     std::set<uint64_t> removedMns;
 
     template<typename Stream>
@@ -447,18 +493,29 @@ public:
         }
     }
 
-    template<typename Stream>
-    void Unserialize(Stream& s)
+    template <typename Stream>
+    void Unserialize(Stream& s, const uint8_t format_version = CDeterministicMN::MN_TYPE_FORMAT)
     {
         updatedMNs.clear();
         removedMns.clear();
 
         size_t tmp;
         uint64_t tmp2;
-        s >> addedMNs;
+        tmp = ReadCompactSize(s);
+        for (size_t i = 0; i < tmp; i++) {
+            CDeterministicMN mn(0);
+            // Unserialise CDeterministicMN using CURRENT_MN_FORMAT and set it's type to the default value TYPE_REGULAR_MASTERNODE
+            // It will be later written with format MN_TYPE_FORMAT which includes the type field.
+            mn.Unserialize(s, format_version);
+            auto dmn = std::make_shared<CDeterministicMN>(mn);
+            addedMNs.push_back(dmn);
+        }
         tmp = ReadCompactSize(s);
         for (size_t i = 0; i < tmp; i++) {
             CDeterministicMNStateDiff diff;
+            // CDeterministicMNState hold new fields {nConsecutivePayments, platformNodeID, platformP2PPort, platformHTTPPort} but no migration is needed here since:
+            // CDeterministicMNStateDiff is always serialised using a bitmask.
+            // Because the new field have a new bit guide value then we are good to continue
             tmp2 = ReadVarInt<Stream, VarIntMode::DEFAULT, uint64_t>(s);
             s >> diff;
             updatedMNs.emplace(tmp2, std::move(diff));
@@ -476,38 +533,6 @@ public:
     }
 };
 
-// TODO can be removed in a future version
-class CDeterministicMNListDiff_OldFormat
-{
-public:
-    uint256 prevBlockHash;
-    uint256 blockHash;
-    int nHeight{-1};
-    std::map<uint256, CDeterministicMNCPtr> addedMNs;
-    std::map<uint256, std::shared_ptr<const CDeterministicMNState>> updatedMNs;
-    std::set<uint256> removedMns;
-
-    template<typename Stream>
-    void Unserialize(Stream& s) {
-        addedMNs.clear();
-        s >> prevBlockHash;
-        s >> blockHash;
-        s >> nHeight;
-        size_t cnt = ReadCompactSize(s);
-        for (size_t i = 0; i < cnt; i++) {
-            uint256 proTxHash;
-            // NOTE: This is a hack and "0" is just a dummy id. The actual internalId is assigned to a copy
-            // of this dmn via corresponding ctor when we convert the diff format to a new one in UpgradeDiff
-            // thus the logic that we must set internalId before dmn is used in any meaningful way is preserved.
-            auto dmn = std::make_shared<CDeterministicMN>(0);
-            s >> proTxHash;
-            dmn->Unserialize(s, true);
-            addedMNs.emplace(proTxHash, dmn);
-        }
-        s >> updatedMNs;
-        s >> removedMns;
-    }
-};
 
 class CDeterministicMNManager
 {
@@ -526,14 +551,16 @@ private:
     // Main thread has indicated we should perform cleanup up to this height
     std::atomic<int> to_cleanup {0};
 
-    CEvoDB& evoDb;
+    CEvoDB& m_evoDb;
+    CConnman& connman;
 
     std::unordered_map<uint256, CDeterministicMNList, StaticSaltedHasher> mnListsCache GUARDED_BY(cs);
     std::unordered_map<uint256, CDeterministicMNListDiff, StaticSaltedHasher> mnListDiffsCache GUARDED_BY(cs);
     const CBlockIndex* tipIndex GUARDED_BY(cs) {nullptr};
 
 public:
-    explicit CDeterministicMNManager(CEvoDB& _evoDb) : evoDb(_evoDb) {}
+    explicit CDeterministicMNManager(CEvoDB& evoDb, CConnman& _connman) :
+        m_evoDb(evoDb), connman(_connman) {}
     ~CDeterministicMNManager() = default;
 
     bool ProcessBlock(const CBlock& block, const CBlockIndex* pindex, CValidationState& state,
@@ -556,9 +583,7 @@ public:
 
     bool IsDIP3Enforced(int nHeight = -1);
 
-    // TODO these can all be removed in a future version
-    void UpgradeDiff(CDBBatch& batch, const CBlockIndex* pindexNext, const CDeterministicMNList& curMNList, CDeterministicMNList& newMNList);
-    bool UpgradeDBIfNeeded();
+    bool MigrateDBIfNeeded();
 
     void DoMaintenance();
 

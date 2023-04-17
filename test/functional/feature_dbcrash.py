@@ -51,6 +51,7 @@ class ChainstateWriteCrashTest(BitcoinTestFramework):
         self.num_nodes = 4
         self.setup_clean_chain = False
         self.rpc_timeout = 480
+        self.supports_cli = False
 
         # Set -maxmempool=0 to turn off mempool memory sharing with dbcache
         # Set -rpcservertimeout=900 to reduce socket disconnects in this
@@ -74,6 +75,7 @@ class ChainstateWriteCrashTest(BitcoinTestFramework):
     def setup_network(self):
         self.add_nodes(self.num_nodes, extra_args=self.extra_args)
         self.start_nodes()
+        self.import_deterministic_coinbase_privkeys()
         # Leave them unconnected, we'll use submitblock directly in this test
 
     def restart_node(self, node_index, expected_tip):
@@ -230,6 +232,8 @@ class ChainstateWriteCrashTest(BitcoinTestFramework):
         # Syncing the blocks could cause nodes to crash, so the test begins here.
         self.sync_node3blocks(block_hashes_to_sync)
 
+        starting_tip_height = self.nodes[3].getblockcount()
+
         # Main test loop:
         # each time through the loop, generate a bunch of transactions,
         # and then either mine a single new block on the tip, or some-sized reorg.
@@ -240,14 +244,15 @@ class ChainstateWriteCrashTest(BitcoinTestFramework):
             # Pick a random block between current tip, and starting tip
             current_height = self.nodes[3].getblockcount()
             # TODO: re-enable this when ReplayBlocks is fixed to support evodb and additional indexes
-            # random_height = random.randint(starting_tip_height, current_height)
-            # self.log.debug("At height %d, considering height %d", current_height, random_height)
-            # if random_height > starting_tip_height:
-            #     # Randomly reorg from this point with some probability (1/4 for
-            #     # tip, 1/5 for tip-1, ...)
-            #     if random.random() < 1.0 / (current_height + 4 - random_height):
-            #         self.log.debug("Invalidating block at height %d", random_height)
-            #         self.nodes[3].invalidateblock(self.nodes[3].getblockhash(random_height))
+            skip_this_test_ReplayBlocks = True
+            random_height = random.randint(starting_tip_height, current_height)
+            self.log.debug("At height %d, considering height %d", current_height, random_height)
+            if not skip_this_test_ReplayBlocks and random_height > starting_tip_height:
+                # Randomly reorg from this point with some probability (1/4 for
+                # tip, 1/5 for tip-1, ...)
+                if random.random() < 1.0 / (current_height + 4 - random_height):
+                    self.log.debug("Invalidating block at height %d", random_height)
+                    self.nodes[3].invalidateblock(self.nodes[3].getblockhash(random_height))
 
             # Now generate new blocks until we pass the old tip height
             self.log.debug("Mining longer tip")

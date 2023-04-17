@@ -30,6 +30,8 @@ from test_framework.messages import (
     msg_isdlock,
     msg_islock,
     msg_tx,
+    MSG_TX,
+    MSG_TYPE_MASK,
     ser_string,
     uint256_from_str,
     uint256_to_string
@@ -81,18 +83,18 @@ class TestP2PConn(P2PInterface):
         inv = msg_inv([CInv(31 if deterministic else 30, hash)])
         self.send_message(inv)
 
-    def send_tx(self, tx, deterministic):
+    def send_tx(self, tx):
         hash = uint256_from_str(hash256(tx.serialize()))
         self.txes[hash] = tx
 
-        inv = msg_inv([CInv(31 if deterministic else 30, hash)])
+        inv = msg_inv([CInv(MSG_TX, hash)])
         self.send_message(inv)
 
     def on_getdata(self, message):
         for inv in message.inv:
-            if inv.hash in self.islocks:
+            if ((inv.type & MSG_TYPE_MASK) == 30 or (inv.type & MSG_TYPE_MASK) == 31) and inv.hash in self.islocks:
                 self.send_message(self.islocks[inv.hash])
-            if inv.hash in self.txes:
+            if (inv.type & MSG_TYPE_MASK) == MSG_TX and inv.hash in self.txes:
                 self.send_message(self.txes[inv.hash])
 
 
@@ -127,7 +129,7 @@ class DashZMQTest (DashTestFramework):
             self.zmq_context = zmq.Context()
             # Initialize the network
             self.activate_dip8()
-            self.nodes[0].spork("SPORK_17_QUORUM_DKG_ENABLED", 0)
+            self.nodes[0].sporkupdate("SPORK_17_QUORUM_DKG_ENABLED", 0)
             self.wait_for_sporks_same()
             # Create an LLMQ for testing
             self.quorum_type = 100  # llmq_test
@@ -144,8 +146,10 @@ class DashZMQTest (DashTestFramework):
             self.test_getzmqnotifications()
             self.test_instantsend_publishers(False)
             self.activate_dip0024()
-            self.wait_for_chainlocked_block_all_nodes(self.nodes[0].getbestblockhash())
             self.log.info("Activated DIP0024 at height:" + str(self.nodes[0].getblockcount()))
+            # Test for CL 8 blocks after dip24 activation because along with dip24, the BLS scheme is activted
+            self.generate_blocks(8)
+            self.wait_for_chainlocked_block_all_nodes(self.nodes[0].getbestblockhash())
             self.test_instantsend_publishers(False)
             # At this point, we need to move forward 3 cycles (3 x 24 blocks) so the first 3 quarters can be created (without DKG sessions)
             self.move_to_next_cycle()
@@ -160,6 +164,12 @@ class DashZMQTest (DashTestFramework):
             # Destroy the ZMQ context.
             self.log.debug("Destroying ZMQ context")
             self.zmq_context.destroy(linger=None)
+
+    def generate_blocks(self, num_blocks):
+        mninfos_online = self.mninfo.copy()
+        nodes = [self.nodes[0]] + [mn.node for mn in mninfos_online]
+        self.nodes[0].generate(num_blocks)
+        self.sync_blocks(nodes)
 
     def subscribe(self, publishers):
         import zmq
@@ -327,7 +337,7 @@ class DashZMQTest (DashTestFramework):
             # this is expected
             pass
         # Now send the tx itself
-        self.test_node.send_tx(FromHex(msg_tx(), rpc_raw_tx_3['hex']), deterministic)
+        self.test_node.send_tx(FromHex(msg_tx(), rpc_raw_tx_3['hex']))
         self.wait_for_instantlock(rpc_raw_tx_3['txid'], self.nodes[0])
         # Validate hashtxlock
         zmq_tx_lock_hash = self.subscribers[ZMQPublisher.hash_tx_lock].receive().read(32).hex()
