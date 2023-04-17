@@ -1020,7 +1020,7 @@ static void protx_update_registrar_help(const JSONRPCRequest& request, bool lega
     }.Check(request);
 }
 
-static UniValue protx_update_registrar_wrapper(const JSONRPCRequest& request, const bool specific_legacy_bls_scheme)
+static UniValue protx_update_registrar_wrapper(const JSONRPCRequest& F, const bool specific_legacy_bls_scheme)
 {
     protx_update_registrar_help(request, specific_legacy_bls_scheme);
 
@@ -1069,8 +1069,8 @@ static UniValue protx_update_registrar_wrapper(const JSONRPCRequest& request, co
 
     CKey keyOwner;
     if (!spk_man->GetKey(dmn->pdmnState->keyIDOwner, keyOwner)) {
-        if(request.params.size() == 7 && request.params[6].get_str() != "") {
-            keyOwner = DecodeSecret(request.params[6].get_str());
+        if(request.params.size() == 6 && request.params[5].get_str() != "") {
+            keyOwner = DecodeSecret(request.params[5].get_str());
             if (!keyOwner.IsValid())
                 throw std::runtime_error(strprintf("Invalid owner private key encoding"));
 
@@ -1079,7 +1079,7 @@ static UniValue protx_update_registrar_wrapper(const JSONRPCRequest& request, co
                 throw std::runtime_error(strprintf("The owner private key passed as an argument does not match the owner address associated with the ProRegTx transaction."));
         }
         else
-            throw std::runtime_error(strprintf("Private key for owner address %s not found in your wallet", EncodeDestination(dmn->pdmnState->keyIDOwner)));
+            throw std::runtime_error(strprintf("Private key for owner address %s not found in your wallet", EncodeDestination(PKHash(dmn->pdmnState->keyIDOwner))));
     }
 
     CMutableTransaction tx;
