@@ -117,6 +117,11 @@ static RPCArg GetRpcArg(const std::string& strParamName)
                 "The corresponding private key does not have to be known by your wallet.\n"
                 "The address must be unused and must differ from the collateralAddress."}
         },
+        {"ownerPrivateKey",
+                {"ownerPrivateKey", RPCArg::Type::STR, RPCArg::Optional::NO,
+                        "The owner private key, used to perform operations related to\n"
+                        " the \"protx update_registrar\" calls from a \"public RPC\" node on behalf of the end user."}
+        },
         {"payoutAddress_register",
             {"payoutAddress_register", RPCArg::Type::STR, RPCArg::Optional::NO,
                 "The dash address to use for masternode reward payments."}
@@ -1010,6 +1015,7 @@ static void protx_update_registrar_help(const JSONRPCRequest& request, bool lega
             GetRpcArg("votingAddress_update"),
             GetRpcArg("payoutAddress_update"),
             GetRpcArg("feeSourceAddress"),
+            GetRpcArg("ownerPrivateKey"),
         },
         RPCResult{
             RPCResult::Type::STR_HEX, "txid", "The transaction id"
@@ -1020,7 +1026,7 @@ static void protx_update_registrar_help(const JSONRPCRequest& request, bool lega
     }.Check(request);
 }
 
-static UniValue protx_update_registrar_wrapper(const JSONRPCRequest& F, const bool specific_legacy_bls_scheme)
+static UniValue protx_update_registrar_wrapper(const JSONRPCRequest& request, const bool specific_legacy_bls_scheme)
 {
     protx_update_registrar_help(request, specific_legacy_bls_scheme);
 
