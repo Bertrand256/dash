@@ -70,8 +70,12 @@ static RPCArg GetRpcArg(const std::string& strParamName)
         },
         {"ipAndPort",
             {"ipAndPort", RPCArg::Type::STR, RPCArg::Optional::NO,
-                "IP and port in the form \"IP:PORT\".\n"
-                "Must be unique on the network. Can be set to 0, which will require a ProUpServTx afterwards."}
+                "IP and port in the form \"IP:PORT\". Must be unique on the network.\n"
+                "Can be set to an empty string, which will require a ProUpServTx afterwards."}
+        },
+        {"ipAndPort_update",
+            {"ipAndPort", RPCArg::Type::STR, RPCArg::Optional::NO,
+                "IP and port in the form \"IP:PORT\". Must be unique on the network."}
         },
         {"operatorKey",
             {"operatorKey", RPCArg::Type::STR, RPCArg::Optional::NO,
@@ -85,31 +89,31 @@ static RPCArg GetRpcArg(const std::string& strParamName)
                 "If set to an empty string, the currently active payout address is reused."}
         },
         {"operatorPubKey_register",
-            {"operatorPubKey_register", RPCArg::Type::STR, RPCArg::Optional::NO,
+            {"operatorPubKey", RPCArg::Type::STR, RPCArg::Optional::NO,
                 "The operator BLS public key. The BLS private key does not have to be known.\n"
                 "It has to match the BLS private key which is later used when operating the masternode."}
         },
         {"operatorPubKey_register_legacy",
-                {"operatorPubKey_register", RPCArg::Type::STR, RPCArg::Optional::NO,
-                        "The operator BLS public key in legacy scheme. The BLS private key does not have to be known.\n"
-                        "It has to match the BLS private key which is later used when operating the masternode.\n"}
+            {"operatorPubKey", RPCArg::Type::STR, RPCArg::Optional::NO,
+                "The operator BLS public key in legacy scheme. The BLS private key does not have to be known.\n"
+                "It has to match the BLS private key which is later used when operating the masternode.\n"}
         },
         {"operatorPubKey_update",
-            {"operatorPubKey_update", RPCArg::Type::STR, RPCArg::Optional::NO,
+            {"operatorPubKey", RPCArg::Type::STR, RPCArg::Optional::NO,
                 "The operator BLS public key. The BLS private key does not have to be known.\n"
                 "It has to match the BLS private key which is later used when operating the masternode.\n"
                 "If set to an empty string, the currently active operator BLS public key is reused."}
         },
         {"operatorPubKey_update_legacy",
-                {"operatorPubKey_update", RPCArg::Type::STR, RPCArg::Optional::NO,
-                        "The operator BLS public key in legacy scheme. The BLS private key does not have to be known.\n"
-                        "It has to match the BLS private key which is later used when operating the masternode.\n"
-                        "If set to an empty string, the currently active operator BLS public key is reused."}
+            {"operatorPubKey", RPCArg::Type::STR, RPCArg::Optional::NO,
+                "The operator BLS public key in legacy scheme. The BLS private key does not have to be known.\n"
+                "It has to match the BLS private key which is later used when operating the masternode.\n"
+                "If set to an empty string, the currently active operator BLS public key is reused."}
         },
         {"operatorReward",
             {"operatorReward", RPCArg::Type::STR, RPCArg::Optional::NO,
-                "The fraction in %% to share with the operator. The value must be\n"
-                "between 0.00 and 100.00."}
+                "The fraction in %% to share with the operator.\n"
+                "The value must be between 0 and 10000."}
         },
         {"ownerAddress",
             {"ownerAddress", RPCArg::Type::STR, RPCArg::Optional::NO,
@@ -123,11 +127,11 @@ static RPCArg GetRpcArg(const std::string& strParamName)
                         " the \"protx update_registrar\" calls from a \"public RPC\" node on behalf of the end user."}
         },
         {"payoutAddress_register",
-            {"payoutAddress_register", RPCArg::Type::STR, RPCArg::Optional::NO,
+            {"payoutAddress", RPCArg::Type::STR, RPCArg::Optional::NO,
                 "The dash address to use for masternode reward payments."}
         },
         {"payoutAddress_update",
-            {"payoutAddress_update", RPCArg::Type::STR, RPCArg::Optional::NO,
+            {"payoutAddress", RPCArg::Type::STR, RPCArg::Optional::NO,
                 "The dash address to use for masternode reward payments.\n"
                 "If set to an empty string, the currently active payout address is reused."}
         },
@@ -144,13 +148,13 @@ static RPCArg GetRpcArg(const std::string& strParamName)
                 "If true, the resulting transaction is sent to the network."}
         },
         {"votingAddress_register",
-            {"votingAddress_register", RPCArg::Type::STR, RPCArg::Optional::NO,
+            {"votingAddress", RPCArg::Type::STR, RPCArg::Optional::NO,
                 "The voting key address. The private key does not have to be known by your wallet.\n"
                 "It has to match the private key which is later used when voting on proposals.\n"
                 "If set to an empty string, ownerAddress will be used."}
         },
         {"votingAddress_update",
-            {"votingAddress_update", RPCArg::Type::STR, RPCArg::Optional::NO,
+            {"votingAddress", RPCArg::Type::STR, RPCArg::Optional::NO,
                 "The voting key address. The private key does not have to be known by your wallet.\n"
                 "It has to match the private key which is later used when voting on proposals.\n"
                 "If set to an empty string, the currently active voting key address is reused."}
@@ -189,9 +193,7 @@ static CKeyID ParsePubKeyIDFromAddress(const std::string& strAddress, const std:
 static CBLSPublicKey ParseBLSPubKey(const std::string& hexKey, const std::string& paramName, bool specific_legacy_bls_scheme = false)
 {
     CBLSPublicKey pubKey;
-    bool is_bls_legacy_scheme = !llmq::utils::IsV19Active(::ChainActive().Tip());
-    bool use_bls_scheme = specific_legacy_bls_scheme || is_bls_legacy_scheme;
-    if (!pubKey.SetHexStr(hexKey, use_bls_scheme)) {
+    if (!pubKey.SetHexStr(hexKey, specific_legacy_bls_scheme)) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("%s must be a valid BLS public key, not %s", paramName, hexKey));
     }
     return pubKey;
@@ -511,7 +513,7 @@ static void protx_register_fund_hpmn_help(const JSONRPCRequest& request)
                       RPCResult::Type::STR_HEX, "hex", "The serialized signed ProTx in hex format"},
         },
         RPCExamples{
-            HelpExampleCli("protx", "register_fund_hpmn \"XrVhS9LogauRJGJu2sHuryjhpuex4RNPSb\" 1000 \"1.2.3.4:1234\" \"Xt9AMWaYSz7tR7Uo7gzXA3m4QmeWgrR3rr\" \"93746e8731c57f87f79b3620a7982924e2931717d49540a85864bd543de11c43fb868fd63e501a1db37e19ed59ae6db4\" \"Xt9AMWaYSz7tR7Uo7gzXA3m4QmeWgrR3rr\" 0 \"XrVhS9LogauRJGJu2sHuryjhpuex4RNPSb\" \"f2dbd9b0a1f541a7c44d34a58674d0262f5feca5\" 22821 22822")},
+            HelpExampleCli("protx", "register_fund_hpmn \"XrVhS9LogauRJGJu2sHuryjhpuex4RNPSb\" \"1.2.3.4:1234\" \"Xt9AMWaYSz7tR7Uo7gzXA3m4QmeWgrR3rr\" \"93746e8731c57f87f79b3620a7982924e2931717d49540a85864bd543de11c43fb868fd63e501a1db37e19ed59ae6db4\" \"Xt9AMWaYSz7tR7Uo7gzXA3m4QmeWgrR3rr\" 0 \"XrVhS9LogauRJGJu2sHuryjhpuex4RNPSb\" \"f2dbd9b0a1f541a7c44d34a58674d0262f5feca5\" 22821 22822")},
     }.Check(request);
 }
 
@@ -614,7 +616,7 @@ static UniValue protx_register_common_wrapper(const JSONRPCRequest& request,
     }
 
     bool isV19active = llmq::utils::IsV19Active(WITH_LOCK(cs_main, return ::ChainActive().Tip();));
-    if (mnType == MnType::HighPerformance && !isV19active) {
+    if (isHPMNrequested && !isV19active) {
         throw JSONRPCError(RPC_INVALID_REQUEST, "HPMN aren't allowed yet");
     }
 
@@ -624,12 +626,9 @@ static UniValue protx_register_common_wrapper(const JSONRPCRequest& request,
     tx.nVersion = 3;
     tx.nType = TRANSACTION_PROVIDER_REGISTER;
 
+    const bool use_legacy = isV19active ? specific_legacy_bls_scheme : true;
+
     CProRegTx ptx;
-    if (specific_legacy_bls_scheme && !isHPMNrequested) {
-        ptx.nVersion = CProRegTx::LEGACY_BLS_VERSION;
-    } else {
-        ptx.nVersion = CProRegTx::GetVersion(isV19active);
-    }
     ptx.nType = mnType;
 
     if (isFundRegister) {
@@ -666,7 +665,10 @@ static UniValue protx_register_common_wrapper(const JSONRPCRequest& request,
     }
 
     ptx.keyIDOwner = ParsePubKeyIDFromAddress(request.params[paramIdx + 1].get_str(), "owner address");
-    CBLSPublicKey pubKeyOperator = ParseBLSPubKey(request.params[paramIdx + 2].get_str(), "operator BLS address", specific_legacy_bls_scheme && !isHPMNrequested);
+    ptx.pubKeyOperator.Set(ParseBLSPubKey(request.params[paramIdx + 2].get_str(), "operator BLS address", use_legacy), use_legacy);
+    ptx.nVersion = use_legacy ? CProRegTx::LEGACY_BLS_VERSION : CProRegTx::BASIC_BLS_VERSION;
+    CHECK_NONFATAL(ptx.pubKeyOperator.IsLegacy() == (ptx.nVersion == CProRegTx::LEGACY_BLS_VERSION));
+
     CKeyID keyIDVoting = ptx.keyIDOwner;
 
     if (request.params[paramIdx + 3].get_str() != "") {
@@ -678,7 +680,7 @@ static UniValue protx_register_common_wrapper(const JSONRPCRequest& request,
         throw JSONRPCError(RPC_INVALID_PARAMETER, "operatorReward must be a number");
     }
     if (operatorReward < 0 || operatorReward > 10000) {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "operatorReward must be between 0.00 and 100.00");
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "operatorReward must be between 0 and 10000");
     }
     ptx.nOperatorReward = operatorReward;
 
@@ -708,7 +710,6 @@ static UniValue protx_register_common_wrapper(const JSONRPCRequest& request,
         paramIdx += 3;
     }
 
-    ptx.pubKeyOperator = pubKeyOperator;
     ptx.keyIDVoting = keyIDVoting;
     ptx.scriptPayout = GetScriptForDestination(payoutDest);
 
@@ -851,7 +852,7 @@ static void protx_update_service_help(const JSONRPCRequest& request)
         + HELP_REQUIRING_PASSPHRASE,
         {
             GetRpcArg("proTxHash"),
-            GetRpcArg("ipAndPort"),
+            GetRpcArg("ipAndPort_update"),
             GetRpcArg("operatorKey"),
             GetRpcArg("operatorPayoutAddress"),
             GetRpcArg("feeSourceAddress"),
@@ -875,7 +876,7 @@ static void protx_update_service_hpmn_help(const JSONRPCRequest& request)
             HELP_REQUIRING_PASSPHRASE,
         {
             GetRpcArg("proTxHash"),
-            GetRpcArg("ipAndPort"),
+            GetRpcArg("ipAndPort_update"),
             GetRpcArg("operatorKey"),
             GetRpcArg("platformNodeID"),
             GetRpcArg("platformP2PPort"),
@@ -910,7 +911,6 @@ static UniValue protx_update_service_common_wrapper(const JSONRPCRequest& reques
     }
 
     CProUpServTx ptx;
-    ptx.nVersion = CProUpServTx::GetVersion(llmq::utils::IsV19Active(::ChainActive().Tip()));
     ptx.nType = mnType;
     ptx.proTxHash = ParseHashV(request.params[0], "proTxHash");
 
@@ -949,6 +949,7 @@ static UniValue protx_update_service_common_wrapper(const JSONRPCRequest& reques
     if (dmn->nType != mnType) {
         throw std::runtime_error(strprintf("masternode with proTxHash %s is not a %s", ptx.proTxHash.ToString(), GetMnType(mnType).description));
     }
+    ptx.nVersion = dmn->pdmnState->nVersion;
 
     if (keyOperator.GetPublicKey() != dmn->pdmnState->pubKeyOperator.Get()) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("the operator key does not belong to the registered public key"));
@@ -1036,24 +1037,28 @@ static UniValue protx_update_registrar_wrapper(const JSONRPCRequest& request, co
     EnsureWalletIsUnlocked(wallet.get());
 
     CProUpRegTx ptx;
-    if (specific_legacy_bls_scheme) {
-        ptx.nVersion = CProUpRegTx::LEGACY_BLS_VERSION;
-    } else {
-        ptx.nVersion = CProUpRegTx::GetVersion(llmq::utils::IsV19Active(::ChainActive().Tip()));
-    }
     ptx.proTxHash = ParseHashV(request.params[0], "proTxHash");
 
     auto dmn = deterministicMNManager->GetListAtChainTip().GetMN(ptx.proTxHash);
     if (!dmn) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("masternode %s not found", ptx.proTxHash.ToString()));
     }
-    ptx.pubKeyOperator = dmn->pdmnState->pubKeyOperator.Get();
     ptx.keyIDVoting = dmn->pdmnState->keyIDVoting;
     ptx.scriptPayout = dmn->pdmnState->scriptPayout;
 
+    const bool use_legacy = llmq::utils::IsV19Active(::ChainActive().Tip()) ? specific_legacy_bls_scheme : true;
+
     if (request.params[1].get_str() != "") {
-        ptx.pubKeyOperator = ParseBLSPubKey(request.params[1].get_str(), "operator BLS address", specific_legacy_bls_scheme);
+        // new pubkey
+        ptx.pubKeyOperator.Set(ParseBLSPubKey(request.params[1].get_str(), "operator BLS address", use_legacy), use_legacy);
+    } else {
+        // same pubkey, reuse as is
+        ptx.pubKeyOperator = dmn->pdmnState->pubKeyOperator;
     }
+
+    ptx.nVersion = use_legacy ? CProUpRegTx::LEGACY_BLS_VERSION : CProUpRegTx::BASIC_BLS_VERSION;
+    CHECK_NONFATAL(ptx.pubKeyOperator.IsLegacy() == (ptx.nVersion == CProUpRegTx::LEGACY_BLS_VERSION));
+
     if (request.params[2].get_str() != "") {
         ptx.keyIDVoting = ParsePubKeyIDFromAddress(request.params[2].get_str(), "voting address");
     }
