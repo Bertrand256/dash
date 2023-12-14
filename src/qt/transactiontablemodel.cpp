@@ -4,6 +4,7 @@
 
 #include <qt/transactiontablemodel.h>
 
+#include <qt/clientmodel.h>
 #include <qt/guiutil.h>
 #include <qt/optionsmodel.h>
 #include <qt/transactiondesc.h>
@@ -22,6 +23,7 @@
 #include <QDebug>
 #include <QIcon>
 #include <QList>
+#include <QMessageBox>
 
 
 // Amount column is right-aligned it contains numbers
@@ -73,14 +75,18 @@ public:
     void refreshWallet(interfaces::Wallet& wallet)
     {
         qDebug() << "TransactionTablePriv::refreshWallet";
-        cachedWallet.clear();
-        {
+        parent->beginResetModel();
+        try {
+            cachedWallet.clear();
             for (const auto& wtx : wallet.getWalletTxs()) {
                 if (TransactionRecord::showTransaction()) {
                     cachedWallet.append(TransactionRecord::decomposeTransaction(wallet, wtx));
                 }
             }
+        } catch(const std::exception& e) {
+            QMessageBox::critical(nullptr, PACKAGE_NAME, QString("Failed to refresh wallet table: ") + QString::fromStdString(e.what()));
         }
+        parent->endResetModel();
     }
 
     /* Update our model of the wallet incrementally, to synchronize our model of the wallet
@@ -187,7 +193,7 @@ public:
         return cachedWallet.size();
     }
 
-    TransactionRecord *index(interfaces::Wallet& wallet, int numBlocks, int idx)
+    TransactionRecord* index(interfaces::Wallet& wallet, const uint256& cur_block_hash, const int idx)
     {
         if (idx >= 0 && idx < cachedWallet.size()) {
             TransactionRecord *rec = &cachedWallet[idx];
@@ -196,9 +202,10 @@ public:
             // try to update the status of this transaction from the wallet.
             // Otherwise, simply re-use the cached status.
             interfaces::WalletTxStatus wtx;
+            int numBlocks;
             int64_t block_time;
-            if (rec->statusUpdateNeeded(numBlocks, parent->getChainLockHeight()) && wallet.tryGetTxStatus(rec->hash, wtx, block_time)) {
-                rec->updateStatus(wtx, numBlocks,  parent->getChainLockHeight(), block_time);
+            if (!cur_block_hash.IsNull() && rec->statusUpdateNeeded(cur_block_hash, parent->getChainLockHeight()) && wallet.tryGetTxStatus(rec->hash, wtx, numBlocks, block_time)) {
+                rec->updateStatus(wtx, cur_block_hash, numBlocks, parent->getChainLockHeight(), block_time);
             }
             return rec;
         }
@@ -240,6 +247,11 @@ TransactionTableModel::~TransactionTableModel()
 {
     unsubscribeFromCoreSignals();
     delete priv;
+}
+
+void TransactionTableModel::refreshWallet()
+{
+    priv->refreshWallet(walletModel->wallet());
 }
 
 /** Updates the column title to "Amount (DisplayUnit)" and emits headerDataChanged() signal for table headers to react. */
@@ -725,10 +737,9 @@ QVariant TransactionTableModel::headerData(int section, Qt::Orientation orientat
 QModelIndex TransactionTableModel::index(int row, int column, const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
-    TransactionRecord *data = priv->index(walletModel->wallet(), walletModel->getNumBlocks(), row);
-    if(data)
-    {
-        return createIndex(row, column, priv->index(walletModel->wallet(), walletModel->getNumBlocks(), row));
+    TransactionRecord *data = priv->index(walletModel->wallet(), walletModel->getLastBlockProcessed(), row);
+    if (data) {
+        return createIndex(row, column, data);
     }
     return QModelIndex();
 }
@@ -802,18 +813,24 @@ static void ShowProgress(TransactionTableModel *ttm, const std::string &title, i
     if (nProgress == 100)
     {
         fQueueNotifications = false;
-        if (vQueueNotifications.size() > 10) { // prevent balloon spam, show maximum 10 balloons
-            bool invoked = QMetaObject::invokeMethod(ttm, "setProcessingQueuedTransactions", Qt::QueuedConnection, Q_ARG(bool, true));
-            assert(invoked);
-        }
-        for (unsigned int i = 0; i < vQueueNotifications.size(); ++i)
-        {
-            if (vQueueNotifications.size() - i <= 10) {
-                bool invoked = QMetaObject::invokeMethod(ttm, "setProcessingQueuedTransactions", Qt::QueuedConnection, Q_ARG(bool, false));
+        if (vQueueNotifications.size() < 10000) {
+            if (vQueueNotifications.size() > 10) { // prevent balloon spam, show maximum 10 balloons
+                bool invoked = QMetaObject::invokeMethod(ttm, "setProcessingQueuedTransactions", Qt::QueuedConnection, Q_ARG(bool, true));
                 assert(invoked);
             }
+            for (unsigned int i = 0; i < vQueueNotifications.size(); ++i)
+            {
+                if (vQueueNotifications.size() - i <= 10) {
+                    bool invoked = QMetaObject::invokeMethod(ttm, "setProcessingQueuedTransactions", Qt::QueuedConnection, Q_ARG(bool, false));
+                    assert(invoked);
+                }
 
-            vQueueNotifications[i].invoke(ttm);
+                vQueueNotifications[i].invoke(ttm);
+            }
+        } else {
+            // it's much faster to just refresh the whole thing instead
+            bool invoked = QMetaObject::invokeMethod(ttm, "refreshWallet", Qt::QueuedConnection);
+            assert(invoked);
         }
         std::vector<TransactionNotification >().swap(vQueueNotifications); // clear
     }

@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 The Bitcoin Core developers
+// Copyright (c) 2016-2020 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -23,9 +23,11 @@ static void WalletToolReleaseWallet(CWallet* wallet)
 
 static void WalletCreate(CWallet* wallet_instance)
 {
+    LOCK(wallet_instance->cs_wallet);
     wallet_instance->SetMinVersion(FEATURE_COMPRPUBKEY);
 
     // generate a new HD seed
+    wallet_instance->SetupLegacyScriptPubKeyMan();
     // NOTE: we do not yet create HD wallets by default
     // auto spk_man = wallet_instance->GetLegacyScriptPubKeyMan();
     // spk_man->GenerateNewHDChain("", "");
@@ -99,7 +101,7 @@ static void WalletShowInfo(CWallet* wallet_instance)
     tfm::format(std::cout, "HD (hd seed available): %s\n", wallet_instance->IsHDEnabled() ? "yes" : "no");
     tfm::format(std::cout, "Keypool Size: %u\n", wallet_instance->GetKeyPoolSize());
     tfm::format(std::cout, "Transactions: %zu\n", wallet_instance->mapWallet.size());
-    tfm::format(std::cout, "Address Book: %zu\n", wallet_instance->mapAddressBook.size());
+    tfm::format(std::cout, "Address Book: %zu\n", wallet_instance->m_address_book.size());
 }
 
 bool ExecuteWalletToolFunc(const std::string& command, const std::string& name)
@@ -112,7 +114,7 @@ bool ExecuteWalletToolFunc(const std::string& command, const std::string& name)
             WalletShowInfo(wallet_instance.get());
             wallet_instance->Close();
         }
-    } else if (command == "info" || command == "salvage") {
+    } else if (command == "info" || command == "salvage" || command == "wipetxes") {
         if (command == "info") {
             std::shared_ptr<CWallet> wallet_instance = MakeWallet(name, path, /* create= */ false);
             if (!wallet_instance) return false;
@@ -134,6 +136,32 @@ bool ExecuteWalletToolFunc(const std::string& command, const std::string& name)
             return ret;
 #else
             tfm::format(std::cerr, "Salvage command is not available as BDB support is not compiled");
+            return false;
+#endif
+        } else if (command == "wipetxes") {
+#ifdef USE_BDB
+            std::shared_ptr<CWallet> wallet_instance = MakeWallet(name, path, /* create= */ false);
+            if (wallet_instance == nullptr) return false;
+
+            std::vector<uint256> vHash;
+            std::vector<uint256> vHashOut;
+
+            LOCK(wallet_instance->cs_wallet);
+
+            for (auto& [txid, _] : wallet_instance->mapWallet) {
+                vHash.push_back(txid);
+            }
+
+            if (wallet_instance->ZapSelectTx(vHash, vHashOut) != DBErrors::LOAD_OK) {
+                tfm::format(std::cerr, "Could not properly delete transactions");
+                wallet_instance->Close();
+                return false;
+            }
+
+            wallet_instance->Close();
+            return vHashOut.size() == vHash.size();
+#else
+            tfm::format(std::cerr, "Wipetxes command is not available as BDB support is not compiled");
             return false;
 #endif
         }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018-2019 The Bitcoin Core developers
+# Copyright (c) 2018-2020 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test dash-wallet."""
@@ -69,7 +69,7 @@ class ToolWalletTest(BitcoinTestFramework):
         self.assert_raises_tool_error('Invalid command: help', 'help')
         self.assert_raises_tool_error('Error: two methods provided (info and create). Only one method should be provided.', 'info', 'create')
         self.assert_raises_tool_error('Error parsing command line arguments: Invalid parameter -foo', '-foo')
-        locked_dir = os.path.join(self.options.tmpdir, "node0", "regtest", "wallets")
+        locked_dir = os.path.join(self.options.tmpdir, "node0", self.chain, "wallets")
         error = "SQLiteDatabase: Unable to obtain an exclusive lock on the database, is it being used by another dashd?"
         if self.is_bdb_compiled():
             error = 'Error initializing wallet database environment "{}"!'.format(locked_dir)
@@ -78,7 +78,7 @@ class ToolWalletTest(BitcoinTestFramework):
             '-wallet=' + self.default_wallet_name,
             'info',
         )
-        path = os.path.join(self.options.tmpdir, "node0", "regtest", "wallets", "nonexistent.dat")
+        path = os.path.join(self.options.tmpdir, "node0", self.chain, "wallets", "nonexistent.dat")
         self.assert_raises_tool_error("Failed to load database path '{}'. Path does not exist.".format(path), '-wallet=nonexistent.dat', 'info')
 
     def test_tool_wallet_info(self):
@@ -228,6 +228,31 @@ class ToolWalletTest(BitcoinTestFramework):
 
         self.assert_tool_output('', '-wallet=salvage', 'salvage')
 
+    def test_wipe(self):
+        out = textwrap.dedent('''\
+            Wallet info
+            ===========
+            Encrypted: no
+            HD (hd seed available): yes
+            Keypool Size: 2
+            Transactions: 1
+            Address Book: 1
+        ''')
+        self.assert_tool_output(out, '-wallet=' + self.default_wallet_name, 'info')
+
+        self.assert_tool_output('', '-wallet=' + self.default_wallet_name, 'wipetxes')
+
+        out = textwrap.dedent('''\
+            Wallet info
+            ===========
+            Encrypted: no
+            HD (hd seed available): yes
+            Keypool Size: 2
+            Transactions: 0
+            Address Book: 1
+        ''')
+        self.assert_tool_output(out, '-wallet=' + self.default_wallet_name, 'info')
+
     def run_test(self):
         self.wallet_path = os.path.join(self.nodes[0].datadir, self.chain, 'wallets', self.default_wallet_name, self.wallet_data_filename)
         self.test_invalid_tool_commands_and_args()
@@ -238,6 +263,7 @@ class ToolWalletTest(BitcoinTestFramework):
         self.test_getwalletinfo_on_different_wallet()
         if self.is_bdb_compiled():
             self.test_salvage()
+            self.test_wipe()
 
 if __name__ == '__main__':
     ToolWalletTest().main()

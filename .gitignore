@@ -95,8 +95,6 @@ Makefile
 !depends/Makefile
 dash-qt
 Dash-Qt.app
-background.tiff*
-!/depends/Makefile
 
 # Qt Creator
 Makefile.am.user
@@ -112,6 +110,9 @@ qrc_*.cpp
 .DS_Store
 build
 *.dSYM
+
+# Previous releases
+releases
 
 #lcov
 *.gcno
@@ -157,12 +158,11 @@ cmake-build-debug
 
 osx_volname
 dist/
-*.background.tiff
 
 /guix-build-*
 
 # cppcheck cache-directory
-.cppcheck/*
+test/lint/.cppcheck/*
 
 # flake8 cache location
 .cache/*

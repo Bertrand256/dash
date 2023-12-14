@@ -2,7 +2,7 @@
 #
 # linearize-data.py: Construct a linear, no-fork version of the chain.
 #
-# Copyright (c) 2013-2014 The Bitcoin Core developers
+# Copyright (c) 2013-2020 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #
@@ -48,17 +48,7 @@ def wordreverse(in_buf):
     return b''.join(out_words)
 
 def calc_hdr_hash(blk_hdr):
-    #hash1 = hashlib.sha256()
-    #hash1.update(blk_hdr)
-    #hash1_o = hash1.digest()
-
-    #hash2 = hashlib.sha256()
-    #hash2.update(hash1_o)
-    #hash2_o = hash2.digest()
-
-    #return hash2_o
-        pow_hash = dash_hash.getPoWHash(blk_hdr)
-        return pow_hash
+    return dash_hash.getPoWHash(blk_hdr)
 
 def calc_hash_str(blk_hdr):
     hash = calc_hdr_hash(blk_hdr)
