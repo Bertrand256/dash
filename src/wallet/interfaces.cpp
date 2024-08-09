@@ -7,6 +7,7 @@
 #include <amount.h>
 #include <coinjoin/client.h>
 #include <interfaces/chain.h>
+#include <interfaces/coinjoin.h>
 #include <interfaces/handler.h>
 #include <policy/fees.h>
 #include <primitives/transaction.h>
@@ -14,10 +15,10 @@
 #include <script/standard.h>
 #include <support/allocators/secure.h>
 #include <sync.h>
-#include <ui_interface.h>
 #include <uint256.h>
 #include <util/check.h>
 #include <util/system.h>
+#include <util/ui_change_type.h>
 #include <validation.h>
 #include <wallet/context.h>
 #include <wallet/fees.h>
@@ -50,6 +51,7 @@ namespace {
 //! Construct wallet tx struct.
 WalletTx MakeWalletTx(CWallet& wallet, const CWalletTx& wtx)
 {
+    LOCK(wallet.cs_wallet);
     WalletTx result;
     bool fInputDenomFound{false}, fOutputDenomFound{false};
     result.tx = wtx.tx;
@@ -69,7 +71,7 @@ WalletTx MakeWalletTx(CWallet& wallet, const CWalletTx& wtx)
         result.txout_address_is_mine.emplace_back(ExtractDestination(txout.scriptPubKey, result.txout_address.back()) ?
                                                       wallet.IsMine(result.txout_address.back()) :
                                                       ISMINE_NO);
-        if (!fOutputDenomFound && result.txout_address_is_mine.back() && CCoinJoin::IsDenominatedAmount(txout.nValue)) {
+        if (!fOutputDenomFound && result.txout_address_is_mine.back() && CoinJoin::IsDenominatedAmount(txout.nValue)) {
             fOutputDenomFound = true;
         }
     }
@@ -120,57 +122,10 @@ WalletTxOut MakeWalletTxOut(const CWallet& wallet,
     return result;
 }
 
-namespace CoinJoin = interfaces::CoinJoin;
-class CoinJoinImpl : public CoinJoin::Client
-{
-    CCoinJoinClientManager& m_manager;
-
-public:
-    CoinJoinImpl(const CJClientManager& clientman, const std::shared_ptr<CWallet>& wallet)
-        : m_manager(*Assert(clientman.Get(*wallet))) {}
-
-    void resetCachedBlocks() override
-    {
-        m_manager.nCachedNumBlocks = std::numeric_limits<int>::max();
-    }
-    void resetPool() override
-    {
-        m_manager.ResetPool();
-    }
-    void disableAutobackups() override
-    {
-        m_manager.fCreateAutoBackups = false;
-    }
-    int getCachedBlocks() override
-    {
-        return m_manager.nCachedNumBlocks;
-    }
-    std::string getSessionDenoms() override
-    {
-        return m_manager.GetSessionDenoms();
-    }
-    void setCachedBlocks(int nCachedBlocks) override
-    {
-       m_manager.nCachedNumBlocks = nCachedBlocks;
-    }
-    bool isMixing() override
-    {
-        return m_manager.IsMixing();
-    }
-    bool startMixing() override
-    {
-        return m_manager.StartMixing();
-    }
-    void stopMixing() override
-    {
-        m_manager.StopMixing();
-    }
-};
-
 class WalletImpl : public Wallet
 {
 public:
-    explicit WalletImpl(const std::shared_ptr<CWallet>& wallet, const CJClientManager& clientman) : m_wallet(wallet), m_coinjoin(clientman, wallet) {}
+    explicit WalletImpl(const std::shared_ptr<CWallet>& wallet) : m_wallet(wallet) {}
 
     void markDirty() override
     {
@@ -199,10 +154,7 @@ public:
     std::string getWalletName() override { return m_wallet->GetName(); }
     bool getNewDestination(const std::string label, CTxDestination& dest) override
     {
-        auto spk_man = m_wallet->GetLegacyScriptPubKeyMan();
-        if (!spk_man) {
-            return false;
-        }
+        LOCK(m_wallet->cs_wallet);
         std::string error;
         return m_wallet->GetNewDestination(label, dest, error);
     }
@@ -218,8 +170,16 @@ public:
     {
         return m_wallet->SignMessage(message, pkhash, str_sig);
     }
-    bool isSpendable(const CScript& script) override { return m_wallet->IsMine(script) & ISMINE_SPENDABLE; }
-    bool isSpendable(const CTxDestination& dest) override { return m_wallet->IsMine(dest) & ISMINE_SPENDABLE; }
+    bool isSpendable(const CScript& script) override
+    {
+        LOCK(m_wallet->cs_wallet);
+        return m_wallet->IsMine(script) & ISMINE_SPENDABLE;
+    }
+    bool isSpendable(const CTxDestination& dest) override
+    {
+        LOCK(m_wallet->cs_wallet);
+        return m_wallet->IsMine(dest) & ISMINE_SPENDABLE;
+    }
     bool haveWatchOnly() override
     {
         auto spk_man = m_wallet->GetLegacyScriptPubKeyMan();
@@ -267,22 +227,14 @@ public:
         }
         return result;
     }
-    bool addDestData(const CTxDestination& dest, const std::string& key, const std::string& value) override
-    {
+    std::vector<std::string> getAddressReceiveRequests() override {
+        LOCK(m_wallet->cs_wallet);
+        return m_wallet->GetAddressReceiveRequests();
+    }
+    bool setAddressReceiveRequest(const CTxDestination& dest, const std::string& id, const std::string& value) override {
         LOCK(m_wallet->cs_wallet);
         WalletBatch batch{m_wallet->GetDatabase()};
-        return m_wallet->AddDestData(batch, dest, key, value);
-    }
-    bool eraseDestData(const CTxDestination& dest, const std::string& key) override
-    {
-        LOCK(m_wallet->cs_wallet);
-        WalletBatch batch{m_wallet->GetDatabase()};
-        return m_wallet->EraseDestData(batch, dest, key);
-    }
-    std::vector<std::string> getDestValues(const std::string& prefix) override
-    {
-        LOCK(m_wallet->cs_wallet);
-        return m_wallet->GetDestValues(prefix);
+        return m_wallet->SetAddressReceiveRequest(batch, dest, id, value);
     }
     void lockCoin(const COutPoint& output) override
     {
@@ -319,8 +271,9 @@ public:
         LOCK(m_wallet->cs_wallet);
         ReserveDestination m_dest(m_wallet.get());
         CTransactionRef tx;
+        FeeCalculation fee_calc_out;
         if (!m_wallet->CreateTransaction(recipients, tx, fee, change_pos,
-                fail_reason, coin_control, sign)) {
+                fail_reason, coin_control, fee_calc_out, sign)) {
             return {};
         }
         return tx;
@@ -415,10 +368,11 @@ public:
     TransactionError fillPSBT(int sighash_type,
         bool sign,
         bool bip32derivs,
+        size_t* n_signed,
         PartiallySignedTransaction& psbtx,
         bool& complete) override
     {
-        return m_wallet->FillPSBT(psbtx, complete, sighash_type, sign, bip32derivs);
+        return m_wallet->FillPSBT(psbtx, complete, sighash_type, sign, bip32derivs, n_signed);
     }
     WalletBalances getBalances() override
     {
@@ -550,12 +504,12 @@ public:
     bool hdEnabled() override { return m_wallet->IsHDEnabled(); }
     bool canGetAddresses() override { return m_wallet->CanGetAddresses(); }
     bool privateKeysDisabled() override { return m_wallet->IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS); }
-    CoinJoin::Client& coinJoin() override { return m_coinjoin; }
     CAmount getDefaultMaxTxFee() override { return m_wallet->m_default_max_tx_fee; }
     void remove() override
     {
         RemoveWallet(m_wallet, false /* load_on_start */);
     }
+    bool isLegacy() override { return m_wallet->IsLegacy(); }
     std::unique_ptr<Handler> handleUnload(UnloadFn fn) override
     {
         return MakeHandler(m_wallet->NotifyUnload.connect(fn));
@@ -571,13 +525,13 @@ public:
     std::unique_ptr<Handler> handleAddressBookChanged(AddressBookChangedFn fn) override
     {
         return MakeHandler(m_wallet->NotifyAddressBookChanged.connect(
-            [fn](CWallet*, const CTxDestination& address, const std::string& label, bool is_mine,
-                const std::string& purpose, ChangeType status) { fn(address, label, is_mine, purpose, status); }));
+            [fn](const CTxDestination& address, const std::string& label, bool is_mine,
+                 const std::string& purpose, ChangeType status) { fn(address, label, is_mine, purpose, status); }));
     }
     std::unique_ptr<Handler> handleTransactionChanged(TransactionChangedFn fn) override
     {
         return MakeHandler(m_wallet->NotifyTransactionChanged.connect(
-            [fn](CWallet*, const uint256& txid, ChangeType status) { fn(txid, status); }));
+            [fn](const uint256& txid, ChangeType status) { fn(txid, status); }));
     }
     std::unique_ptr<Handler> handleInstantLockReceived(InstantLockReceivedFn fn) override
     {
@@ -600,13 +554,14 @@ public:
     CWallet* wallet() override { return m_wallet.get(); }
 
     std::shared_ptr<CWallet> m_wallet;
-    CoinJoinImpl m_coinjoin;
+    std::unique_ptr<interfaces::CoinJoin::Client> m_coinjoin_client;
 };
 
 class WalletLoaderImpl : public WalletLoader
 {
 public:
-    WalletLoaderImpl(Chain& chain, ArgsManager& args)
+    WalletLoaderImpl(Chain& chain, const std::unique_ptr<interfaces::CoinJoin::Loader>& coinjoin_loader, ArgsManager& args) :
+        m_context(coinjoin_loader)
     {
         m_context.chain = &chain;
         m_context.args = &args;
@@ -617,21 +572,21 @@ public:
     void registerRpcs() override
     {
         for (const CRPCCommand& command : GetWalletRPCCommands()) {
-            m_rpc_commands.emplace_back(command.category, command.name, [this, &command](const JSONRPCRequest& request, UniValue& result, bool last_handler) {
+            m_rpc_commands.emplace_back(command.category, command.name, command.subname, [this, &command](const JSONRPCRequest& request, UniValue& result, bool last_handler) {
                 return command.actor({request, m_context}, result, last_handler);
             }, command.argNames, command.unique_id);
             m_rpc_handlers.emplace_back(m_context.chain->handleRpc(m_rpc_commands.back()));
         }
     }
     bool verify() override { return VerifyWallets(*m_context.chain); }
-    bool load() override { return LoadWallets(*m_context.chain); }
+    bool load() override { assert(m_context.m_coinjoin_loader); return LoadWallets(*m_context.chain, *m_context.m_coinjoin_loader); }
     void start(CScheduler& scheduler) override { return StartWallets(scheduler, *Assert(m_context.args)); }
     void flush() override { return FlushWallets(); }
     void stop() override { return StopWallets(); }
     void setMockTime(int64_t time) override { return SetMockTime(time); }
 
     //! WalletLoader methods
-    std::unique_ptr<Wallet> createWallet(const CJClientManager& client_man, const std::string& name, const SecureString& passphrase, uint64_t wallet_creation_flags, bilingual_str& error, std::vector<bilingual_str>& warnings) override
+    std::unique_ptr<Wallet> createWallet(const std::string& name, const SecureString& passphrase, uint64_t wallet_creation_flags, bilingual_str& error, std::vector<bilingual_str>& warnings) override
     {
         std::shared_ptr<CWallet> wallet;
         DatabaseOptions options;
@@ -639,14 +594,16 @@ public:
         options.require_create = true;
         options.create_flags = wallet_creation_flags;
         options.create_passphrase = passphrase;
-        return MakeWallet(CreateWallet(*m_context.chain, name, true /* load_on_start */, options, status, error, warnings), client_man);
+        assert(m_context.m_coinjoin_loader);
+        return MakeWallet(CreateWallet(*m_context.chain, *m_context.m_coinjoin_loader, name, true /* load_on_start */, options, status, error, warnings));
     }
-    std::unique_ptr<Wallet> loadWallet(const CJClientManager& client_man, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings) override
+    std::unique_ptr<Wallet> loadWallet(const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings) override
     {
         DatabaseOptions options;
         DatabaseStatus status;
         options.require_existing = true;
-        return MakeWallet(LoadWallet(*m_context.chain, name, true /* load_on_start */, options, status, error, warnings), client_man);
+        assert(m_context.m_coinjoin_loader);
+        return MakeWallet(LoadWallet(*m_context.chain, *m_context.m_coinjoin_loader, name, true /* load_on_start */, options, status, error, warnings));
     }
     std::string getWalletDir() override
     {
@@ -664,7 +621,7 @@ public:
     {
         std::vector<std::unique_ptr<Wallet>> wallets;
         for (const auto& wallet : GetWallets()) {
-            wallets.emplace_back(MakeWallet(wallet, *::coinJoinClientManagers));
+            wallets.emplace_back(MakeWallet(wallet));
         }
         return wallets;
     }
@@ -682,8 +639,8 @@ public:
 } // namespace wallet
 
 namespace interfaces {
-std::unique_ptr<Wallet> MakeWallet(const std::shared_ptr<CWallet>& wallet, const CJClientManager& clientman) { return wallet ? std::make_unique<wallet::WalletImpl>(wallet, clientman) : nullptr; }
-std::unique_ptr<WalletLoader> MakeWalletLoader(Chain& chain, ArgsManager& args) {
-    return std::make_unique<wallet::WalletLoaderImpl>(chain, args);
+std::unique_ptr<Wallet> MakeWallet(const std::shared_ptr<CWallet>& wallet) { return wallet ? std::make_unique<wallet::WalletImpl>(wallet) : nullptr; }
+std::unique_ptr<WalletLoader> MakeWalletLoader(Chain& chain, const std::unique_ptr<interfaces::CoinJoin::Loader>& coinjoin_loader, ArgsManager& args) {
+    return std::make_unique<wallet::WalletLoaderImpl>(chain, coinjoin_loader, args);
 }
 } // namespace interfaces

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2019 The Bitcoin Core developers
+# Copyright (c) 2019-2020 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test RPC misc output."""
@@ -11,7 +11,6 @@ from test_framework.util import (
     assert_equal,
     assert_greater_than,
     assert_greater_than_or_equal,
-    wait_until
 )
 
 from test_framework.authproxy import JSONRPCException
@@ -28,8 +27,8 @@ class RpcMiscTest(BitcoinTestFramework):
         self.log.info("test CHECK_NONFATAL")
         assert_raises_rpc_error(
             -1,
-            "Internal bug detected: 'request.params.size() != 100'",
-            lambda: node.echo(*[0] * 100),
+            'Internal bug detected: \'request.params[9].get_str() != "trigger_internal_bug"\'',
+            lambda: node.echo(arg9='trigger_internal_bug'),
         )
 
         self.log.info("test getmemoryinfo")
@@ -55,12 +54,26 @@ class RpcMiscTest(BitcoinTestFramework):
 
         assert_raises_rpc_error(-8, "unknown mode foobar", node.getmemoryinfo, mode="foobar")
 
-        self.log.info("test logging")
+        self.log.info("test logging rpc and help")
+
+        # Test logging RPC returns the expected number of logging categories.
+        assert_equal(len(node.logging()), 37)
+
+        # Test toggling a logging category on/off/on with the logging RPC.
         assert_equal(node.logging()['qt'], True)
         node.logging(exclude=['qt'])
         assert_equal(node.logging()['qt'], False)
         node.logging(include=['qt'])
         assert_equal(node.logging()['qt'], True)
+
+        # Test logging RPC returns the logging categories in alphabetical order.
+        sorted_logging_categories = sorted(node.logging())
+        assert_equal(list(node.logging()), sorted_logging_categories)
+
+        # Test logging help returns the logging categories string in alphabetical order.
+        categories = ', '.join(sorted_logging_categories)
+        logging_help = self.nodes[0].help('logging')
+        assert f"valid logging categories are: {categories}" in logging_help
 
         self.log.info("test getindexinfo")
         self.restart_node(0, ["-txindex=0"])
@@ -69,7 +82,7 @@ class RpcMiscTest(BitcoinTestFramework):
 
         # Restart the node with indices and wait for them to sync
         self.restart_node(0, ["-txindex", "-blockfilterindex", "-coinstatsindex"])
-        wait_until(lambda: all(i["synced"] for i in node.getindexinfo().values()))
+        self.wait_until(lambda: all(i["synced"] for i in node.getindexinfo().values()))
 
         # Returns a list of all running indices by default
         values = {"synced": True, "best_block_height": 200}

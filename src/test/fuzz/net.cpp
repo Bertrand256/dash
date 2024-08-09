@@ -14,6 +14,7 @@
 #include <test/fuzz/util.h>
 #include <test/util/net.h>
 #include <test/util/setup_common.h>
+#include <util/asmap.h>
 
 #include <cstdint>
 #include <optional>
@@ -31,30 +32,18 @@ FUZZ_TARGET_INIT(net, initialize_net)
 
     CNode node{ConsumeNode(fuzzed_data_provider)};
     SetMockTime(ConsumeTime(fuzzed_data_provider));
+    node.SetCommonVersion(fuzzed_data_provider.ConsumeIntegral<int>());
     while (fuzzed_data_provider.ConsumeBool()) {
         CallOneOf(
             fuzzed_data_provider,
             [&] {
-                CAddrMan addrman;
+                AddrMan addrman(/* asmap */ std::vector<bool>(), /* deterministic */ false, /* consistency_check_ratio */ 0);
                 CConnman connman{fuzzed_data_provider.ConsumeIntegral<uint64_t>(), fuzzed_data_provider.ConsumeIntegral<uint64_t>(), addrman};
                 node.CloseSocketDisconnect(&connman);
             },
             [&] {
-                node.MaybeSetAddrName(fuzzed_data_provider.ConsumeRandomLengthString(32));
-            },
-            [&] {
-                node.SetSendVersion(fuzzed_data_provider.ConsumeIntegral<int>());
-            },
-            [&] {
-                const std::vector<bool> asmap = ConsumeRandomLengthBitVector(fuzzed_data_provider);
-                if (!SanityCheckASMap(asmap)) {
-                    return;
-                }
                 CNodeStats stats;
-                node.copyStats(stats, asmap);
-            },
-            [&] {
-                node.SetRecvVersion(fuzzed_data_provider.ConsumeIntegral<int>());
+                node.CopyStats(stats);
             },
             [&] {
                 const CNode* add_ref_node = node.AddRef();
@@ -64,41 +53,6 @@ FUZZ_TARGET_INIT(net, initialize_net)
                 if (node.GetRefCount() > 0) {
                     node.Release();
                 }
-            },
-            [&] {
-                if (node.m_addr_known == nullptr) {
-                    return;
-                }
-                const std::optional<CAddress> addr_opt = ConsumeDeserializable<CAddress>(fuzzed_data_provider);
-                if (!addr_opt) {
-                    return;
-                }
-                node.AddAddressKnown(*addr_opt);
-            },
-            [&] {
-                if (node.m_addr_known == nullptr) {
-                    return;
-                }
-                const std::optional<CAddress> addr_opt = ConsumeDeserializable<CAddress>(fuzzed_data_provider);
-                if (!addr_opt) {
-                    return;
-                }
-                FastRandomContext fast_random_context{ConsumeUInt256(fuzzed_data_provider)};
-                node.PushAddress(*addr_opt, fast_random_context);
-            },
-            [&] {
-                const std::optional<CInv> inv_opt = ConsumeDeserializable<CInv>(fuzzed_data_provider);
-                if (!inv_opt) {
-                    return;
-                }
-                // node.AddKnownTx(inv_opt->hash);
-            },
-            [&] {
-                const std::optional<CInv> inv_opt = ConsumeDeserializable<CInv>(fuzzed_data_provider);
-                if (!inv_opt) {
-                    return;
-                }
-                node.PushInventory(*inv_opt);
             },
             [&] {
                 const std::optional<CService> service_opt = ConsumeDeserializable<CService>(fuzzed_data_provider);
@@ -115,15 +69,12 @@ FUZZ_TARGET_INIT(net, initialize_net)
     }
 
     (void)node.GetAddrLocal();
-    (void)node.GetAddrName();
     (void)node.GetId();
     (void)node.GetLocalNonce();
     (void)node.GetLocalServices();
-    (void)node.GetRecvVersion();
     const int ref_count = node.GetRefCount();
     assert(ref_count >= 0);
-    (void)node.GetSendVersion();
-    (void)node.IsAddrRelayPeer();
+    (void)node.GetCommonVersion();
 
     const NetPermissionFlags net_permission_flags = ConsumeWeakEnum(fuzzed_data_provider, ALL_NET_PERMISSION_FLAGS);
     (void)node.HasPermission(net_permission_flags);

@@ -110,6 +110,10 @@ if BUILD_BITCOIND
   bin_PROGRAMS += dashd
 endif
 
+if BUILD_BITCOIN_NODE
+  bin_PROGRAMS += dash-node
+endif
+
 if BUILD_BITCOIN_CLI
   bin_PROGRAMS += dash-cli
 endif
@@ -129,18 +133,19 @@ BITCOIN_CORE_H = \
   addressindex.h \
   spentindex.h \
   addrman.h \
+  addrman_impl.h \
   attributes.h \
   banman.h \
   base58.h \
   batchedlogger.h \
   bech32.h \
-  bip39.h \
-  bip39_english.h \
+  bip324.h \
   blockencodings.h \
   bloom.h \
   cachemap.h \
   cachemultimap.h \
   blockfilter.h \
+  bloom.h \
   chain.h \
   chainparams.h \
   chainparamsbase.h \
@@ -149,6 +154,7 @@ BITCOIN_CORE_H = \
   clientversion.h \
   coinjoin/coinjoin.h \
   coinjoin/client.h \
+  coinjoin/common.h \
   coinjoin/context.h \
   coinjoin/options.h \
   coinjoin/server.h \
@@ -169,11 +175,13 @@ BITCOIN_CORE_H = \
   cuckoocache.h \
   ctpl_stl.h \
   cxxtimer.hpp \
+  dbwrapper.h \
   deploymentinfo.h \
   deploymentstatus.h \
   evo/assetlocktx.h \
   evo/dmn_types.h \
   evo/cbtx.h \
+  evo/chainhelper.h \
   evo/creditpool.h \
   evo/deterministicmns.h \
   evo/dmnstate.h \
@@ -187,6 +195,7 @@ BITCOIN_CORE_H = \
   dsnotificationinterface.h \
   governance/governance.h \
   governance/classes.h \
+  governance/common.h \
   governance/exceptions.h \
   governance/object.h \
   governance/validators.h \
@@ -195,7 +204,6 @@ BITCOIN_CORE_H = \
   gsl/assert.h \
   gsl/pointers.h \
   flat-database.h \
-  hdchain.h \
   flatfile.h \
   fs.h \
   httprpc.h \
@@ -209,12 +217,12 @@ BITCOIN_CORE_H = \
   indirectmap.h \
   init.h \
   interfaces/chain.h \
+  interfaces/coinjoin.h \
   interfaces/handler.h \
   interfaces/node.h \
   interfaces/wallet.h \
   key.h \
   key_io.h \
-  dbwrapper.h \
   limitedmap.h \
   llmq/blockprocessor.h \
   llmq/chainlocks.h \
@@ -228,6 +236,7 @@ BITCOIN_CORE_H = \
   llmq/ehf_signals.cpp \
   llmq/ehf_signals.h \
   llmq/instantsend.h \
+  llmq/options.h \
   llmq/params.h \
   llmq/quorums.h \
   llmq/signing.h \
@@ -258,12 +267,15 @@ BITCOIN_CORE_H = \
   node/coin.h \
   node/coinstats.h \
   node/context.h \
+  node/psbt.h \
   node/transaction.h \
+  node/ui_interface.h \
   node/utxo_snapshot.h \
   noui.h \
   outputtype.h \
   policy/feerate.h \
   policy/fees.h \
+  policy/packages.h \
   policy/policy.h \
   policy/settings.h \
   pow.h \
@@ -274,12 +286,14 @@ BITCOIN_CORE_H = \
   reverse_iterator.h \
   rpc/blockchain.h \
   rpc/client.h \
+  rpc/index_util.h \
   rpc/mining.h \
   rpc/protocol.h \
   rpc/rawtransaction_util.h \
   rpc/register.h \
   rpc/request.h \
   rpc/server.h \
+  rpc/server_util.h \
   rpc/util.h \
   saltedhasher.h \
   scheduler.h \
@@ -304,28 +318,28 @@ BITCOIN_CORE_H = \
   support/lockedpool.h \
   sync.h \
   timestampindex.h \
-  threadsafety.h \
   threadinterrupt.h \
+  threadsafety.h \
   timedata.h \
   torcontrol.h \
   txdb.h \
   txmempool.h \
-  ui_interface.h \
   undo.h \
   unordered_lru_cache.h \
   util/bip32.h \
   util/bytevectorhash.h \
   util/check.h \
+  util/edge.h \
   util/enumerate.h \
+  util/epochguard.h \
   util/error.h \
+  util/expected.h \
   util/fastrange.h \
   util/fees.h \
   util/golombrice.h \
   util/hasher.h \
   util/hash_type.h \
   util/irange.h \
-  util/spanparsing.h \
-  util/system.h \
   util/asmap.h \
   util/getuniquepath.h \
   util/macros.h \
@@ -340,24 +354,33 @@ BITCOIN_CORE_H = \
   util/ranges_set.h \
   util/sock.h \
   util/string.h \
+  util/spanparsing.h \
+  util/system.h \
   util/time.h \
   util/thread.h \
   util/threadnames.h \
+  util/tokenpipe.h \
   util/trace.h \
   util/translation.h \
-  util/vector.h \
+  util/types.h \
+  util/ui_change_type.h \
   util/url.h \
   util/vector.h \
+  util/wpipe.h \
   validation.h \
   validationinterface.h \
   versionbits.h \
-  walletinitinterface.h \
   wallet/bdb.h \
+  wallet/bip39.h \
+  wallet/bip39_english.h \
   wallet/coincontrol.h \
+  wallet/coinselection.h \
   wallet/context.h \
   wallet/crypter.h \
   wallet/db.h \
+  wallet/dump.h \
   wallet/fees.h \
+  wallet/hdchain.h \
   wallet/ismine.h \
   wallet/load.h \
   wallet/rpcwallet.h \
@@ -368,7 +391,7 @@ BITCOIN_CORE_H = \
   wallet/walletdb.h \
   wallet/wallettool.h \
   wallet/walletutil.h \
-  wallet/coinselection.h \
+  walletinitinterface.h \
   warnings.h \
   zmq/zmqabstractnotifier.h \
   zmq/zmqnotificationinterface.h \
@@ -395,12 +418,12 @@ libbitcoin_server_a_SOURCES = \
   addrman.cpp \
   banman.cpp \
   batchedlogger.cpp \
+  bip324.cpp \
   blockencodings.cpp \
   blockfilter.cpp \
   chain.cpp \
   coinjoin/coinjoin.cpp \
   coinjoin/context.cpp \
-  coinjoin/options.cpp \
   coinjoin/server.cpp \
   consensus/tx_verify.cpp \
   dbwrapper.cpp \
@@ -409,6 +432,7 @@ libbitcoin_server_a_SOURCES = \
   evo/assetlocktx.cpp \
   evo/cbtx.cpp \
   evo/creditpool.cpp \
+  evo/chainhelper.cpp \
   evo/deterministicmns.cpp \
   evo/dmnstate.cpp \
   evo/evodb.cpp \
@@ -419,6 +443,14 @@ libbitcoin_server_a_SOURCES = \
   evo/specialtx.cpp \
   evo/specialtxman.cpp \
   flatfile.cpp \
+  governance/classes.cpp \
+  governance/exceptions.cpp \
+  governance/governance.cpp \
+  governance/object.cpp \
+  governance/validators.cpp \
+  governance/vote.cpp \
+  governance/votedb.cpp \
+  gsl/assert.cpp \
   httprpc.cpp \
   httpserver.cpp \
   i2p.cpp \
@@ -427,12 +459,6 @@ libbitcoin_server_a_SOURCES = \
   index/coinstatsindex.cpp \
   index/txindex.cpp \
   init.cpp \
-  governance/governance.cpp \
-  governance/classes.cpp \
-  governance/object.cpp \
-  governance/validators.cpp \
-  governance/vote.cpp \
-  governance/votedb.cpp \
   llmq/quorums.cpp \
   llmq/blockprocessor.cpp \
   llmq/commitment.cpp \
@@ -444,6 +470,7 @@ libbitcoin_server_a_SOURCES = \
   llmq/dkgsession.cpp \
   llmq/context.cpp \
   llmq/instantsend.cpp \
+  llmq/options.cpp \
   llmq/snapshot.cpp \
   llmq/signing.cpp \
   llmq/signing_shares.cpp \
@@ -454,7 +481,6 @@ libbitcoin_server_a_SOURCES = \
   masternode/payments.cpp \
   masternode/sync.cpp \
   masternode/utils.cpp \
-  messagesigner.cpp \
   miner.cpp \
   net.cpp \
   netfulfilledman.cpp \
@@ -464,9 +490,12 @@ libbitcoin_server_a_SOURCES = \
   node/coinstats.cpp \
   node/context.cpp \
   node/interfaces.cpp \
+  node/psbt.cpp \
   node/transaction.cpp \
+  node/ui_interface.cpp \
   noui.cpp \
   policy/fees.cpp \
+  policy/packages.cpp \
   policy/policy.cpp \
   policy/settings.cpp \
   pow.cpp \
@@ -474,6 +503,7 @@ libbitcoin_server_a_SOURCES = \
   rpc/blockchain.cpp \
   rpc/coinjoin.cpp \
   rpc/evo.cpp \
+  rpc/index_util.cpp \
   rpc/masternode.cpp \
   rpc/governance.cpp \
   rpc/mining.cpp \
@@ -482,6 +512,7 @@ libbitcoin_server_a_SOURCES = \
   rpc/quorums.cpp \
   rpc/rawtransaction.cpp \
   rpc/server.cpp \
+  rpc/server_util.cpp \
   script/sigcache.cpp \
   shutdown.cpp \
   spork.cpp \
@@ -490,7 +521,6 @@ libbitcoin_server_a_SOURCES = \
   torcontrol.cpp \
   txdb.cpp \
   txmempool.cpp \
-  ui_interface.cpp \
   validation.cpp \
   validationinterface.cpp \
   versionbits.cpp \
@@ -521,14 +551,16 @@ libbitcoin_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(SQLITE_CFLAG
 libbitcoin_wallet_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_wallet_a_SOURCES = \
   coinjoin/client.cpp \
-  coinjoin/options.cpp \
+  coinjoin/interfaces.cpp \
   coinjoin/util.cpp \
-  hdchain.cpp \
+  wallet/bip39.cpp \
   wallet/coincontrol.cpp \
   wallet/context.cpp \
   wallet/crypter.cpp \
   wallet/db.cpp \
+  wallet/dump.cpp \
   wallet/fees.cpp \
+  wallet/hdchain.cpp \
   wallet/interfaces.cpp \
   wallet/load.cpp \
   wallet/rpcdump.cpp \
@@ -559,10 +591,10 @@ crypto_libbitcoin_crypto_base_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS) $(PIC_FLA
 crypto_libbitcoin_crypto_base_a_SOURCES = \
   crypto/aes.cpp \
   crypto/aes.h \
-  crypto/chacha_poly_aead.h \
-  crypto/chacha_poly_aead.cpp \
   crypto/chacha20.h \
   crypto/chacha20.cpp \
+  crypto/chacha20poly1305.h \
+  crypto/chacha20poly1305.cpp \
   crypto/common.h \
   crypto/hkdf_sha256_32.cpp \
   crypto/hkdf_sha256_32.h \
@@ -691,7 +723,6 @@ libbitcoin_common_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_common_a_SOURCES = \
   base58.cpp \
   bech32.cpp \
-  bip39.cpp \
   bloom.cpp \
   chainparams.cpp \
   coins.cpp \
@@ -699,9 +730,11 @@ libbitcoin_common_a_SOURCES = \
   core_read.cpp \
   core_write.cpp \
   deploymentinfo.cpp \
+  governance/common.cpp \
   key.cpp \
   key_io.cpp \
   merkleblock.cpp \
+  net_types.cpp \
   netaddress.cpp \
   netbase.cpp \
   net_permissions.cpp \
@@ -730,6 +763,8 @@ libbitcoin_util_a_SOURCES = \
   bls/bls_ies.h \
   bls/bls_worker.cpp \
   bls/bls_worker.h \
+  coinjoin/common.cpp \
+  coinjoin/options.cpp \
   support/lockedpool.cpp \
   chainparamsbase.cpp \
   clientversion.cpp \
@@ -737,6 +772,7 @@ libbitcoin_util_a_SOURCES = \
   fs.cpp \
   interfaces/handler.cpp \
   logging.cpp \
+  messagesigner.cpp \
   random.cpp \
   randomenv.cpp \
   rpc/request.cpp \
@@ -748,6 +784,7 @@ libbitcoin_util_a_SOURCES = \
   util/bip32.cpp \
   util/bytevectorhash.cpp \
   util/check.cpp \
+  util/edge.cpp \
   util/error.cpp \
   util/fees.cpp \
   util/hasher.cpp \
@@ -766,6 +803,8 @@ libbitcoin_util_a_SOURCES = \
   util/string.cpp \
   util/thread.cpp \
   util/threadnames.cpp \
+  util/tokenpipe.cpp \
+  util/wpipe.cpp \
   $(BITCOIN_CORE_H)
 
 if USE_LIBEVENT
@@ -784,22 +823,21 @@ libbitcoin_cli_a_SOURCES = \
 nodist_libbitcoin_util_a_SOURCES = $(srcdir)/obj/build.h
 #
 
-# dashd binary #
-dashd_SOURCES = bitcoind.cpp
-dashd_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-dashd_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-dashd_LDFLAGS = $(LDFLAGS_WRAP_EXCEPTIONS) $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(PTHREAD_FLAGS)
+# dashd & dash-node binaries #
+bitcoin_daemon_sources = bitcoind.cpp
+bitcoin_bin_cppflags = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+bitcoin_bin_cxxflags = $(AM_CXXFLAGS) $(PIE_FLAGS)
+bitcoin_bin_ldflags = $(LDFLAGS_WRAP_EXCEPTIONS) $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(PTHREAD_FLAGS)
 
 if TARGET_WINDOWS
-dashd_SOURCES += dashd-res.rc
+bitcoin_daemon_sources += dashd-res.rc
 endif
 
-dashd_LDADD = \
-  $(LIBBITCOIN_SERVER) \
+bitcoin_bin_ldadd = \
   $(LIBBITCOIN_WALLET) \
   $(LIBBITCOIN_COMMON) \
-  $(LIBUNIVALUE) \
   $(LIBBITCOIN_UTIL) \
+  $(LIBUNIVALUE) \
   $(LIBBITCOIN_ZMQ) \
   $(LIBBITCOIN_CONSENSUS) \
   $(LIBBITCOIN_CRYPTO) \
@@ -809,7 +847,19 @@ dashd_LDADD = \
   $(LIBMEMENV) \
   $(LIBSECP256K1)
 
-dashd_LDADD += $(BACKTRACE_LIB) $(BOOST_LIBS) $(BDB_LIBS) $(MINIUPNPC_LIBS) $(NATPMP_LIBS) $(SQLITE_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS) $(GMP_LIBS)
+bitcoin_bin_ldadd += $(BACKTRACE_LIB) $(BOOST_LIBS) $(BDB_LIBS) $(MINIUPNPC_LIBS) $(NATPMP_LIBS) $(SQLITE_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS) $(GMP_LIBS)
+
+dashd_SOURCES = $(bitcoin_daemon_sources)
+dashd_CPPFLAGS = $(bitcoin_bin_cppflags)
+dashd_CXXFLAGS = $(bitcoin_bin_cxxflags)
+dashd_LDFLAGS = $(bitcoin_bin_ldflags)
+dashd_LDADD = $(LIBBITCOIN_SERVER) $(bitcoin_bin_ldadd)
+
+dash_node_SOURCES = $(bitcoin_daemon_sources)
+dash_node_CPPFLAGS = $(bitcoin_bin_cppflags)
+dash_node_CXXFLAGS = $(bitcoin_bin_cxxflags)
+dash_node_LDFLAGS = $(bitcoin_bin_ldflags)
+dash_node_LDADD = $(LIBBITCOIN_SERVER) $(bitcoin_bin_ldadd)
 
 # dash-cli binary #
 dash_cli_SOURCES = bitcoin-cli.cpp
@@ -853,34 +903,14 @@ dash_tx_LDADD += $(BACKTRACE_LIB) $(BOOST_LIBS) $(GMP_LIBS)
 
 # dash-wallet binary #
 dash_wallet_SOURCES = bitcoin-wallet.cpp
-dash_wallet_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-dash_wallet_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-dash_wallet_LDFLAGS = $(LDFLAGS_WRAP_EXCEPTIONS) $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(PTHREAD_FLAGS)
+dash_wallet_CPPFLAGS = $(bitcoin_bin_cppflags)
+dash_wallet_CXXFLAGS = $(bitcoin_bin_cxxflags)
+dash_wallet_LDFLAGS = $(bitcoin_bin_ldflags)
+dash_wallet_LDADD = $(LIBBITCOIN_WALLET_TOOL) $(bitcoin_bin_ldadd)
 
 if TARGET_WINDOWS
 dash_wallet_SOURCES += dash-wallet-res.rc
 endif
-
-# Libraries below may be listed more than once to resolve circular dependencies (see
-# https://eli.thegreenplace.net/2013/07/09/library-order-in-static-linking#circular-dependency)
-dash_wallet_LDADD = \
-  $(LIBBITCOIN_WALLET_TOOL) \
-  $(LIBBITCOIN_SERVER) \
-  $(LIBBITCOIN_WALLET) \
-  $(LIBBITCOIN_SERVER) \
-  $(LIBBITCOIN_COMMON) \
-  $(LIBBITCOIN_CONSENSUS) \
-  $(LIBBITCOIN_UTIL) \
-  $(LIBBITCOIN_CRYPTO) \
-  $(LIBBITCOIN_ZMQ) \
-  $(LIBDASHBLS) \
-  $(LIBLEVELDB) \
-  $(LIBLEVELDB_SSE42) \
-  $(LIBMEMENV) \
-  $(LIBSECP256K1) \
-  $(LIBUNIVALUE)
-
-dash_wallet_LDADD += $(BACKTRACE_LIB) $(BOOST_LIBS) $(BDB_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(MINIUPNPC_LIBS) $(NATPMP_LIBS) $(SQLITE_LIBS) $(ZMQ_LIBS) $(GMP_LIBS)
 #
 
 # dashconsensus library #

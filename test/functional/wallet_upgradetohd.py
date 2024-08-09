@@ -21,12 +21,13 @@ from test_framework.util import (
 class WalletUpgradeToHDTest(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 1
+        self.extra_args = [['-usehd=0']]
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()
 
     def setup_network(self):
-        self.add_nodes(self.num_nodes)
+        self.add_nodes(self.num_nodes, self.extra_args)
         self.start_nodes()
         self.import_deterministic_coinbase_privkeys()
 
@@ -57,10 +58,10 @@ class WalletUpgradeToHDTest(BitcoinTestFramework):
             outs = node.decoderawtransaction(node.gettransaction(txid)['hex'])['vout']
             for out in outs:
                 if out['value'] == 1:
-                    keypath = node.getaddressinfo(out['scriptPubKey']['addresses'][0])['hdkeypath']
+                    keypath = node.getaddressinfo(out['scriptPubKey']['address'])['hdkeypath']
                     assert_equal(keypath, "m/44'/1'/0'/0/%d" % i)
                 else:
-                    keypath = node.getaddressinfo(out['scriptPubKey']['addresses'][0])['hdkeypath']
+                    keypath = node.getaddressinfo(out['scriptPubKey']['address'])['hdkeypath']
                     assert_equal(keypath, "m/44'/1'/0'/1/%d" % i)
 
         self.bump_mocktime(1)
@@ -69,7 +70,8 @@ class WalletUpgradeToHDTest(BitcoinTestFramework):
         self.log.info("Should no longer be able to start it with HD disabled")
         self.stop_node(0)
         node.assert_start_raises_init_error(['-usehd=0'], "Error: Error loading %s: You can't disable HD on an already existing HD wallet" % self.default_wallet_name)
-        self.start_node(0)
+        self.extra_args = []
+        self.start_node(0, [])
         balance_after = node.getbalance()
 
         self.recover_non_hd()
@@ -188,8 +190,8 @@ class WalletUpgradeToHDTest(BitcoinTestFramework):
         node.stop()
         node.wait_until_stopped()
         self.start_node(0, extra_args=['-rescan'])
-        assert_raises_rpc_error(-14, "Cannot upgrade encrypted wallet to HD without the wallet passphrase", node.upgradetohd, mnemonic)
-        assert_raises_rpc_error(-14, "The wallet passphrase entered was incorrect", node.upgradetohd, mnemonic, "", "wrongpass")
+        assert_raises_rpc_error(-13, "Error: Wallet encrypted but passphrase not supplied to RPC.", node.upgradetohd, mnemonic)
+        assert_raises_rpc_error(-1,  "Error: The wallet passphrase entered was incorrect", node.upgradetohd, mnemonic, "", "wrongpass")
         assert node.upgradetohd(mnemonic, "", walletpass)
         assert_raises_rpc_error(-13, "Error: Please enter the wallet passphrase with walletpassphrase first.", node.dumphdinfo)
         node.walletpassphrase(walletpass, 100)

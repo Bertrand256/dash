@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2018 The Bitcoin Core developers
+// Copyright (c) 2015-2020 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -55,10 +55,8 @@ CZMQNotificationInterface* CZMQNotificationInterface::Create()
     for (const auto& entry : factories)
     {
         std::string arg("-zmq" + entry.first);
-        if (gArgs.IsArgSet(arg))
-        {
-            const auto& factory = entry.second;
-            const std::string address = gArgs.GetArg(arg, "");
+        const auto& factory = entry.second;
+        for (const std::string& address : gArgs.GetArgs(arg)) {
             std::unique_ptr<CZMQAbstractNotifier> notifier = factory();
             notifier->SetType(entry.first);
             notifier->SetAddress(address);
@@ -193,14 +191,14 @@ void CZMQNotificationInterface::NotifyTransactionLock(const CTransactionRef& tx,
     });
 }
 
-void CZMQNotificationInterface::NotifyGovernanceVote(const std::shared_ptr<const CGovernanceVote> &vote)
+void CZMQNotificationInterface::NotifyGovernanceVote(const CDeterministicMNList& tip_mn_list, const std::shared_ptr<const CGovernanceVote> &vote)
 {
-    TryForEachAndRemoveFailed(notifiers, [&vote](CZMQAbstractNotifier* notifier) {
-        return notifier->NotifyGovernanceVote(vote);
+    TryForEachAndRemoveFailed(notifiers, [&tip_mn_list, &vote](CZMQAbstractNotifier* notifier) {
+        return notifier->NotifyGovernanceVote(tip_mn_list, vote);
     });
 }
 
-void CZMQNotificationInterface::NotifyGovernanceObject(const std::shared_ptr<const CGovernanceObject> &object)
+void CZMQNotificationInterface::NotifyGovernanceObject(const std::shared_ptr<const Governance::Object> &object)
 {
     TryForEachAndRemoveFailed(notifiers, [&object](CZMQAbstractNotifier* notifier) {
         return notifier->NotifyGovernanceObject(object);

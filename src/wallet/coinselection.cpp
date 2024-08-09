@@ -1,14 +1,14 @@
-// Copyright (c) 2017 The Bitcoin Core developers
+// Copyright (c) 2017-2020 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <wallet/coinselection.h>
 
+#include <policy/feerate.h>
 #include <util/system.h>
 #include <util/moneystr.h>
 
-#include <llmq/instantsend.h>
-#include <coinjoin/coinjoin.h>
+#include <coinjoin/common.h>
 
 #include <optional>
 
@@ -229,7 +229,7 @@ struct CompareByPriority
     bool operator()(const OutputGroup& group1,
                     const OutputGroup& group2) const
     {
-        return CCoinJoin::CalculateAmountPriority(group1.m_value) > CCoinJoin::CalculateAmountPriority(group2.m_value);
+        return CoinJoin::CalculateAmountPriority(group1.m_value) > CoinJoin::CalculateAmountPriority(group2.m_value);
     }
 };
 
@@ -238,7 +238,7 @@ bool less_then_denom (const OutputGroup& group1, const OutputGroup& group2)
 {
     bool found1 = false;
     bool found2 = false;
-    for (const auto& d : CCoinJoin::GetStandardDenominations()) // loop through predefined denoms
+    for (const auto& d : CoinJoin::GetStandardDenominations()) // loop through predefined denoms
     {
         if(group1.m_value == d) found1 = true;
         if(group2.m_value == d) found2 = true;
@@ -280,7 +280,7 @@ bool KnapsackSolver(const CAmount& nTargetValue, std::vector<OutputGroup>& group
         applicable_groups.clear();
         nTotalLower = 0;
         for (const OutputGroup& group : groups) {
-            if (tryDenom == 0 && CCoinJoin::IsDenominatedAmount(group.m_value)) {
+            if (tryDenom == 0 && CoinJoin::IsDenominatedAmount(group.m_value)) {
                 continue; // we don't want denom values on first run
             }
             if (group.m_value == nTargetValue) {
@@ -362,10 +362,28 @@ bool KnapsackSolver(const CAmount& nTargetValue, std::vector<OutputGroup>& group
 
  ******************************************************************************/
 
-void OutputGroup::Insert(const CInputCoin& output, int depth, bool from_me, size_t ancestors, size_t descendants) {
+void OutputGroup::Insert(const CInputCoin& output, int depth, bool from_me, size_t ancestors, size_t descendants, bool positive_only) {
+    // Compute the effective value first
+    const CAmount coin_fee = output.m_input_bytes < 0 ? 0 : m_effective_feerate.GetFee(output.m_input_bytes);
+    const CAmount ev = output.txout.nValue - coin_fee;
+
+    // Filter for positive only here before adding the coin
+    if (positive_only && ev <= 0) return;
+
     m_outputs.push_back(output);
+    CInputCoin& coin = m_outputs.back();
+
+    coin.m_fee = coin_fee;
+    fee += coin.m_fee;
+
+    coin.m_long_term_fee = coin.m_input_bytes < 0 ? 0 : m_long_term_feerate.GetFee(coin.m_input_bytes);
+    long_term_fee += coin.m_long_term_fee;
+
+    coin.effective_value = ev;
+    effective_value += coin.effective_value;
+
     m_from_me &= from_me;
-    m_value += output.effective_value;
+    m_value += output.txout.nValue;
     m_depth = std::min(m_depth, depth);
     // ancestors here express the number of ancestors the new coin will end up having, which is
     // the sum, rather than the max; this will overestimate in the cases where multiple inputs
@@ -374,30 +392,11 @@ void OutputGroup::Insert(const CInputCoin& output, int depth, bool from_me, size
     // descendants is the count as seen from the top ancestor, not the descendants as seen from the
     // coin itself; thus, this value is counted as the max, not the sum
     m_descendants = std::max(m_descendants, descendants);
-    effective_value = m_value;
 }
 
-std::vector<CInputCoin>::iterator OutputGroup::Discard(const CInputCoin& output) {
-    auto it = m_outputs.begin();
-    while (it != m_outputs.end() && it->outpoint != output.outpoint) ++it;
-    if (it == m_outputs.end()) return it;
-    m_value -= output.effective_value;
-    effective_value -= output.effective_value;
-    return m_outputs.erase(it);
-}
-
-bool OutputGroup::IsLockedByInstantSend() const
+bool OutputGroup::EligibleForSpending(const CoinEligibilityFilter& eligibility_filter, bool isISLocked) const
 {
-    for (const auto& output : m_outputs) {
-        if (!llmq::quorumInstantSendManager->IsLocked(output.outpoint.hash))
-            return false;
-    }
-    return true;
-}
-
-bool OutputGroup::EligibleForSpending(const CoinEligibilityFilter& eligibility_filter) const
-{
-    return (m_depth >= (m_from_me ? eligibility_filter.conf_mine : eligibility_filter.conf_theirs) || IsLockedByInstantSend())
+    return (m_depth >= (m_from_me ? eligibility_filter.conf_mine : eligibility_filter.conf_theirs) || isISLocked)
         && m_ancestors <= eligibility_filter.max_ancestors
         && m_descendants <= eligibility_filter.max_descendants;
 }

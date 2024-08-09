@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2022 The Dash Core developers
+// Copyright (c) 2014-2023 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -6,16 +6,19 @@
 #define BITCOIN_GOVERNANCE_VOTE_H
 
 #include <primitives/transaction.h>
+#include <uint256.h>
 
-class CGovernanceVote;
+class CActiveMasternodeManager;
 class CBLSPublicKey;
-class CBLSSecretKey;
-class CConnman;
+class CDeterministicMNList;
+class CGovernanceVote;
+class CMasternodeSync;
 class CKey;
 class CKeyID;
+class PeerManager;
 
 // INTENTION OF MASTERNODES REGARDING ITEM
-enum vote_outcome_enum_t {
+enum vote_outcome_enum_t : uint8_t {
     VOTE_OUTCOME_NONE      = 0,
     VOTE_OUTCOME_YES       = 1,
     VOTE_OUTCOME_NO        = 2,
@@ -24,7 +27,7 @@ enum vote_outcome_enum_t {
 
 
 // SIGNAL VARIOUS THINGS TO HAPPEN:
-enum vote_signal_enum_t {
+enum vote_signal_enum_t : uint8_t {
     VOTE_SIGNAL_NONE       = 0,
     VOTE_SIGNAL_FUNDING    = 1, //   -- fund this object for it's stated amount
     VOTE_SIGNAL_VALID      = 2, //   -- this object checks out in sentinel engine
@@ -99,10 +102,10 @@ public:
 
     bool Sign(const CKey& key, const CKeyID& keyID);
     bool CheckSignature(const CKeyID& keyID) const;
-    bool Sign(const CBLSSecretKey& key);
+    bool Sign(const CActiveMasternodeManager& mn_activeman);
     bool CheckSignature(const CBLSPublicKey& pubKey) const;
-    bool IsValid(bool useVotingKey) const;
-    void Relay(CConnman& connman) const;
+    bool IsValid(const CDeterministicMNList& tip_mn_list, bool useVotingKey) const;
+    void Relay(PeerManager& peerman, const CMasternodeSync& mn_sync, const CDeterministicMNList& tip_mn_list) const;
 
     const COutPoint& GetMasternodeOutpoint() const { return masternodeOutpoint; }
 
@@ -115,7 +118,7 @@ public:
     uint256 GetHash() const;
     uint256 GetSignatureHash() const;
 
-    std::string ToString() const;
+    std::string ToString(const CDeterministicMNList& tip_mn_list) const;
 
     SERIALIZE_METHODS(CGovernanceVote, obj)
     {

@@ -1,4 +1,4 @@
-// Copyright (c) 2015 The Bitcoin Core developers
+// Copyright (c) 2015-2020 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -8,8 +8,14 @@
 #include <zmq/zmqabstractnotifier.h>
 
 class CBlockIndex;
+class CDeterministicMNList;
 class CGovernanceVote;
-class CGovernanceObject;
+
+namespace Governance
+{
+    class Object;
+} //namespace Governance
+
 
 class CZMQAbstractPublishNotifier : public CZMQAbstractNotifier
 {
@@ -57,13 +63,13 @@ public:
 class CZMQPublishHashGovernanceVoteNotifier : public CZMQAbstractPublishNotifier
 {
 public:
-    bool NotifyGovernanceVote(const std::shared_ptr<const CGovernanceVote>& vote) override;
+    bool NotifyGovernanceVote(const CDeterministicMNList& tip_mn_list, const std::shared_ptr<const CGovernanceVote>& vote) override;
 };
 
 class CZMQPublishHashGovernanceObjectNotifier : public CZMQAbstractPublishNotifier
 {
 public:
-    bool NotifyGovernanceObject(const std::shared_ptr<const CGovernanceObject>& object) override;
+    bool NotifyGovernanceObject(const std::shared_ptr<const Governance::Object>& object) override;
 };
 
 class CZMQPublishHashInstantSendDoubleSpendNotifier : public CZMQAbstractPublishNotifier
@@ -117,13 +123,13 @@ public:
 class CZMQPublishRawGovernanceVoteNotifier : public CZMQAbstractPublishNotifier
 {
 public:
-    bool NotifyGovernanceVote(const std::shared_ptr<const CGovernanceVote>& vote) override;
+    bool NotifyGovernanceVote(const CDeterministicMNList& tip_mn_list, const std::shared_ptr<const CGovernanceVote>& vote) override;
 };
 
 class CZMQPublishRawGovernanceObjectNotifier : public CZMQAbstractPublishNotifier
 {
 public:
-    bool NotifyGovernanceObject(const std::shared_ptr<const CGovernanceObject>& object) override;
+    bool NotifyGovernanceObject(const std::shared_ptr<const Governance::Object>& object) override;
 };
 
 class CZMQPublishRawInstantSendDoubleSpendNotifier : public CZMQAbstractPublishNotifier

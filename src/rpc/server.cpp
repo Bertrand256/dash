@@ -1,12 +1,15 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2020 The Bitcoin Core developers
-// Copyright (c) 2014-2022 The Dash Core developers
+// Copyright (c) 2014-2023 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <rpc/server.h>
 
 #include <chainparams.h>
+#include <node/context.h>
+#include <rpc/blockchain.h>
+#include <rpc/server_util.h>
 #include <rpc/util.h>
 #include <shutdown.h>
 #include <sync.h>
@@ -18,7 +21,9 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cassert>
 #include <memory> // for unique_ptr
+#include <mutex>
 #include <unordered_map>
 
 static Mutex g_rpc_warmup_mutex;
@@ -28,8 +33,9 @@ static std::string rpcWarmupStatus GUARDED_BY(g_rpc_warmup_mutex) = "RPC server 
 /* Timer-creating functions */
 static RPCTimerInterface* timerInterface = nullptr;
 /* Map of name to timer. */
-static std::map<std::string, std::unique_ptr<RPCTimerBase> > deadlineTimers;
-static bool ExecuteCommand(const CRPCCommand& command, const JSONRPCRequest& request, UniValue& result, bool last_handler, std::multimap<std::string, std::vector<UniValue>> mapPlatformRestrictions);
+static Mutex g_deadline_timers_mutex;
+static std::map<std::string, std::unique_ptr<RPCTimerBase> > deadlineTimers GUARDED_BY(g_deadline_timers_mutex);
+static bool ExecuteCommand(const CRPCCommand& command, const JSONRPCRequest& request, UniValue& result, bool last_handler, const std::multimap<std::string, std::vector<UniValue>>& mapPlatformRestrictions);
 
 // Any commands submitted by this user will have their commands filtered based on the mapPlatformRestrictions
 static const std::string defaultPlatformUser = "platform-user";
@@ -87,7 +93,7 @@ std::string CRPCTable::help(const std::string& strCommand, const std::string& st
     std::vector<std::pair<std::string, const CRPCCommand*> > vCommands;
 
     for (const auto& entry : mapCommands)
-        vCommands.push_back(make_pair(entry.second.front()->category + entry.first, entry.second.front()));
+        vCommands.push_back(make_pair(entry.second.front()->category + entry.first.first + entry.first.second, entry.second.front()));
     sort(vCommands.begin(), vCommands.end());
 
     JSONRPCRequest jreq = helpreq;
@@ -100,6 +106,9 @@ std::string CRPCTable::help(const std::string& strCommand, const std::string& st
         std::string strMethod = pcmd->name;
         if ((strCommand != "" || pcmd->category == "hidden") && strMethod != strCommand)
             continue;
+
+        if (strSubCommand != pcmd->subname) continue;
+
         jreq.strMethod = strMethod;
         try
         {
@@ -140,12 +149,14 @@ std::string CRPCTable::help(const std::string& strCommand, const std::string& st
 void CRPCTable::InitPlatformRestrictions()
 {
     mapPlatformRestrictions = {
+        {"getassetunlockstatuses", {}},
         {"getbestblockhash", {}},
         {"getblockhash", {}},
         {"getblockcount", {}},
         {"getbestchainlock", {}},
-        {"quorum", {"sign", static_cast<uint8_t>(Params().GetConsensus().llmqTypePlatform)}},
-        {"quorum", {"verify"}},
+        {"quorum sign", {static_cast<uint8_t>(Params().GetConsensus().llmqTypePlatform)}},
+        {"quorum verify", {}},
+        {"submitchainlock", {}},
         {"verifyislock", {}},
     };
 }
@@ -281,28 +292,26 @@ static const CRPCCommand vRPCCommands[] =
 
 CRPCTable::CRPCTable()
 {
-    unsigned int vcidx;
-    for (vcidx = 0; vcidx < (sizeof(vRPCCommands) / sizeof(vRPCCommands[0])); vcidx++)
-    {
-        const CRPCCommand *pcmd;
-
-        pcmd = &vRPCCommands[vcidx];
-        mapCommands[pcmd->name].push_back(pcmd);
+    for (const auto& c : vRPCCommands) {
+        appendCommand(c.name, &c);
     }
 }
 
-bool CRPCTable::appendCommand(const std::string& name, const CRPCCommand* pcmd)
+void CRPCTable::appendCommand(const std::string& name, const CRPCCommand* pcmd)
 {
-    if (IsRPCRunning())
-        return false;
-
-    mapCommands[name].push_back(pcmd);
-    return true;
+    appendCommand(name, "", pcmd);
 }
 
-bool CRPCTable::removeCommand(const std::string& name, const CRPCCommand* pcmd)
+void CRPCTable::appendCommand(const std::string& name, const std::string& subname, const CRPCCommand* pcmd)
 {
-    auto it = mapCommands.find(name);
+    CHECK_NONFATAL(!IsRPCRunning()); // Only add commands before rpc is running
+
+    mapCommands[std::make_pair(name, subname)].push_back(pcmd);
+}
+
+bool CRPCTable::removeCommand(const std::string& name, const std::string& subname, const CRPCCommand* pcmd)
+{
+    auto it = mapCommands.find(std::make_pair(name, subname));
     if (it != mapCommands.end()) {
         auto new_end = std::remove(it->second.begin(), it->second.end(), pcmd);
         if (it->second.end() != new_end) {
@@ -322,17 +331,26 @@ void StartRPC()
 
 void InterruptRPC()
 {
-    LogPrint(BCLog::RPC, "Interrupting RPC\n");
-    // Interrupt e.g. running longpolls
-    g_rpc_running = false;
+    static std::once_flag g_rpc_interrupt_flag;
+    // This function could be called twice if the GUI has been started with -server=1.
+    std::call_once(g_rpc_interrupt_flag, []() {
+        LogPrint(BCLog::RPC, "Interrupting RPC\n");
+        // Interrupt e.g. running longpolls
+        g_rpc_running = false;
+    });
 }
 
 void StopRPC()
 {
-    LogPrint(BCLog::RPC, "Stopping RPC\n");
-    deadlineTimers.clear();
-    DeleteAuthCookie();
-    g_rpcSignals.Stopped();
+    static std::once_flag g_rpc_stop_flag;
+    // This function could be called twice if the GUI has been started with -server=1.
+    assert(!g_rpc_running);
+    std::call_once(g_rpc_stop_flag, []() {
+        LogPrint(BCLog::RPC, "Stopping RPC\n");
+        WITH_LOCK(g_deadline_timers_mutex, deadlineTimers.clear());
+        DeleteAuthCookie();
+        g_rpcSignals.Stopped();
+    });
 }
 
 bool IsRPCRunning()
@@ -419,7 +437,10 @@ static inline JSONRPCRequest transformNamedArguments(const JSONRPCRequest& in, c
     const std::vector<UniValue>& values = in.params.getValues();
     std::unordered_map<std::string, const UniValue*> argsIn;
     for (size_t i=0; i<keys.size(); ++i) {
-        argsIn[keys[i]] = &values[i];
+        auto [_, inserted] = argsIn.emplace(keys[i], &values[i]);
+        if (!inserted) {
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Parameter " + keys[i] + " specified multiple times");
+        }
     }
     // Process expected parameters. If any parameters were left unspecified in
     // the request before a parameter that was specified, null values need to be
@@ -489,12 +510,22 @@ UniValue CRPCTable::execute(const JSONRPCRequest &request) const
             throw JSONRPCError(RPC_IN_WARMUP, rpcWarmupStatus);
     }
 
+    std::string subcommand;
+    if (request.params.size() > 0 && request.params[0].isStr()) {
+        subcommand = request.params[0].get_str();
+    }
+
     // Find method
-    auto it = mapCommands.find(request.strMethod);
+    auto it = mapCommands.find(std::make_pair(request.strMethod, subcommand));
+    if (it == mapCommands.end() && !subcommand.empty()) {
+        subcommand = "";
+        it = mapCommands.find(std::make_pair(request.strMethod, subcommand));
+    }
     if (it != mapCommands.end()) {
         UniValue result;
         for (const auto& command : it->second) {
-            if (ExecuteCommand(*command, request, result, &command == &it->second.back(), mapPlatformRestrictions)) {
+            const JSONRPCRequest new_request{subcommand.empty() ? request : request.squashed() };
+            if (ExecuteCommand(*command, new_request, result, &command == &it->second.back(), mapPlatformRestrictions)) {
                 return result;
             }
         }
@@ -502,12 +533,15 @@ UniValue CRPCTable::execute(const JSONRPCRequest &request) const
     throw JSONRPCError(RPC_METHOD_NOT_FOUND, "Method not found");
 }
 
-static bool ExecuteCommand(const CRPCCommand& command, const JSONRPCRequest& request, UniValue& result, bool last_handler, std::multimap<std::string, std::vector<UniValue>> mapPlatformRestrictions)
+static bool ExecuteCommand(const CRPCCommand& command, const JSONRPCRequest& request, UniValue& result, bool last_handler, const std::multimap<std::string, std::vector<UniValue>>& mapPlatformRestrictions)
 {
+    const NodeContext& node = EnsureAnyNodeContext(request.context);
     // Before executing the RPC Command, filter commands from platform rpc user
-    if (fMasternodeMode && request.authUser == gArgs.GetArg("-platform-user", defaultPlatformUser)) {
+    if (node.mn_activeman && request.authUser == gArgs.GetArg("-platform-user", defaultPlatformUser)) {
         // replace this with structured binding in c++20
-        const auto& it = mapPlatformRestrictions.equal_range(request.strMethod);
+        std::string command_name = command.name;
+        if (!command.subname.empty()) command_name += " " + command.subname;
+        const auto& it = mapPlatformRestrictions.equal_range(command_name);
         const auto& allowed_begin = it.first;
         const auto& allowed_end = it.second;
         /**
@@ -517,8 +551,8 @@ static bool ExecuteCommand(const CRPCCommand& command, const JSONRPCRequest& req
          *
          * if request.strMethod == "quorum":
          * [
-         *      "quorum", ["sign", platformLlmqType],
-         *      "quorum", ["verify"]
+         *      "quorum sign", [platformLlmqType],
+         *      "quorum verify", []
          * ]
          * if request.strMethod == "verifyislock"
          * [
@@ -581,9 +615,9 @@ static bool ExecuteCommand(const CRPCCommand& command, const JSONRPCRequest& req
     }
 }
 
-std::vector<std::string> CRPCTable::listCommands() const
+std::vector<std::pair<std::string, std::string>> CRPCTable::listCommands() const
 {
-    std::vector<std::string> commandList;
+    std::vector<std::pair<std::string, std::string>> commandList;
     for (const auto& i : mapCommands) commandList.emplace_back(i.first);
     return commandList;
 }
@@ -609,6 +643,7 @@ void RPCRunLater(const std::string& name, std::function<void()> func, int64_t nS
 {
     if (!timerInterface)
         throw JSONRPCError(RPC_INTERNAL_ERROR, "No timer handler registered for RPC");
+    LOCK(g_deadline_timers_mutex);
     deadlineTimers.erase(name);
     LogPrint(BCLog::RPC, "queue run of timer %s in %i seconds (using %s)\n", name, nSeconds, timerInterface->Name());
     deadlineTimers.emplace(name, std::unique_ptr<RPCTimerBase>(timerInterface->NewTimer(func, nSeconds*1000)));

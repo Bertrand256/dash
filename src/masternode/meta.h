@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2022 The Dash Core developers
+// Copyright (c) 2014-2023 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -150,13 +150,15 @@ private:
 
 private:
     const std::unique_ptr<db_type> m_db;
-    const bool is_valid{false};
+    bool is_valid{false};
 
     std::vector<uint256> vecDirtyGovernanceObjectHashes GUARDED_BY(cs);
 
 public:
-    explicit CMasternodeMetaMan(bool load_cache);
+    explicit CMasternodeMetaMan();
     ~CMasternodeMetaMan();
+
+    bool LoadCache(bool load_cache);
 
     bool IsValid() const { return is_valid; }
 
@@ -173,7 +175,5 @@ public:
 
     std::vector<uint256> GetAndClearDirtyGovernanceObjectHashes();
 };
-
-extern std::unique_ptr<CMasternodeMetaMan> mmetaman;
 
 #endif // BITCOIN_MASTERNODE_META_H

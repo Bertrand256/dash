@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2022 The Dash Core developers
+// Copyright (c) 2017-2024 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -6,11 +6,11 @@
 
 #include <evo/cbtx.h>
 #include <core_io.h>
+#include <deploymentstatus.h>
 #include <evo/deterministicmns.h>
 #include <llmq/blockprocessor.h>
 #include <llmq/commitment.h>
 #include <llmq/quorums.h>
-#include <llmq/utils.h>
 #include <node/blockstorage.h>
 #include <evo/specialtx.h>
 
@@ -63,7 +63,7 @@ std::string CSimplifiedMNListEntry::ToString() const
     }
 
     return strprintf("CSimplifiedMNListEntry(nVersion=%d, nType=%d, proRegTxHash=%s, confirmedHash=%s, service=%s, pubKeyOperator=%s, votingAddress=%s, isValid=%d, payoutAddress=%s, operatorPayoutAddress=%s, platformHTTPPort=%d, platformNodeID=%s)",
-                     nVersion, ToUnderlying(nType), proRegTxHash.ToString(), confirmedHash.ToString(), service.ToString(false), pubKeyOperator.ToString(), EncodeDestination(PKHash(keyIDVoting)), isValid, payoutAddress, operatorPayoutAddress, platformHTTPPort, platformNodeID.ToString());
+                     nVersion, ToUnderlying(nType), proRegTxHash.ToString(), confirmedHash.ToString(), service.ToString(), pubKeyOperator.ToString(), EncodeDestination(PKHash(keyIDVoting)), isValid, payoutAddress, operatorPayoutAddress, platformHTTPPort, platformNodeID.ToString());
 }
 
 UniValue CSimplifiedMNListEntry::ToJson(bool extended) const
@@ -74,7 +74,7 @@ UniValue CSimplifiedMNListEntry::ToJson(bool extended) const
     obj.pushKV("nType", ToUnderlying(nType));
     obj.pushKV("proRegTxHash", proRegTxHash.ToString());
     obj.pushKV("confirmedHash", confirmedHash.ToString());
-    obj.pushKV("service", service.ToString(false));
+    obj.pushKV("service", service.ToString());
     obj.pushKV("pubKeyOperator", pubKeyOperator.ToString());
     obj.pushKV("votingAddress", EncodeDestination(PKHash(keyIDVoting)));
     obj.pushKV("isValid", isValid);
@@ -95,12 +95,11 @@ UniValue CSimplifiedMNListEntry::ToJson(bool extended) const
     return obj;
 }
 
-// TODO: Invistigate if we can delete this constructor
 CSimplifiedMNList::CSimplifiedMNList(const std::vector<CSimplifiedMNListEntry>& smlEntries)
 {
-    mnList.resize(smlEntries.size());
-    for (size_t i = 0; i < smlEntries.size(); i++) {
-        mnList[i] = std::make_unique<CSimplifiedMNListEntry>(smlEntries[i]);
+    mnList.reserve(smlEntries.size());
+    for (const auto& entry : smlEntries) {
+        mnList.emplace_back(std::make_unique<CSimplifiedMNListEntry>(entry));
     }
 
     std::sort(mnList.begin(), mnList.end(), [&](const std::unique_ptr<CSimplifiedMNListEntry>& a, const std::unique_ptr<CSimplifiedMNListEntry>& b) {
@@ -110,11 +109,9 @@ CSimplifiedMNList::CSimplifiedMNList(const std::vector<CSimplifiedMNListEntry>& 
 
 CSimplifiedMNList::CSimplifiedMNList(const CDeterministicMNList& dmnList)
 {
-    mnList.resize(dmnList.GetAllMNsCount());
-
-    size_t i = 0;
-    dmnList.ForEachMN(false, [this, &i](auto& dmn) {
-        mnList[i++] = std::make_unique<CSimplifiedMNListEntry>(dmn);
+    mnList.reserve(dmnList.GetAllMNsCount());
+    dmnList.ForEachMN(false, [this](auto& dmn) {
+        mnList.emplace_back(std::make_unique<CSimplifiedMNListEntry>(dmn));
     });
 
     std::sort(mnList.begin(), mnList.end(), [&](const std::unique_ptr<CSimplifiedMNListEntry>& a, const std::unique_ptr<CSimplifiedMNListEntry>& b) {
@@ -186,14 +183,14 @@ bool CSimplifiedMNListDiff::BuildQuorumsDiff(const CBlockIndex* baseBlockIndex, 
     return true;
 }
 
-bool CSimplifiedMNListDiff::BuildQuorumChainlockInfo(const CBlockIndex* blockIndex)
+void CSimplifiedMNListDiff::BuildQuorumChainlockInfo(const llmq::CQuorumManager& qman, const CBlockIndex* blockIndex)
 {
     // Group quorums (indexes corresponding to entries of newQuorums) per CBlockIndex containing the expected CL signature in CbTx.
     // We want to avoid to load CbTx now, as more than one quorum will target the same block: hence we want to load CbTxs once per block (heavy operation).
     std::multimap<const CBlockIndex*, uint16_t>  workBaseBlockIndexMap;
 
     for (const auto [idx, e] : enumerate(newQuorums)) {
-        auto quorum = llmq::quorumManager->GetQuorum(e.llmqType, e.quorumHash);
+        auto quorum = qman.GetQuorum(e.llmqType, e.quorumHash);
         // In case of rotation, all rotated quorums rely on the CL sig expected in the cycleBlock (the block of the first DKG) - 8
         // In case of non-rotation, quorums rely on the CL sig expected in the block of the DKG - 8
         const CBlockIndex* pWorkBaseBlockIndex =
@@ -223,8 +220,6 @@ bool CSimplifiedMNListDiff::BuildQuorumChainlockInfo(const CBlockIndex* blockInd
             it_sig->second.insert(idx_set.begin(), idx_set.end());
         }
     }
-
-    return true;
 }
 
 UniValue CSimplifiedMNListDiff::ToJson(bool extended) const
@@ -269,11 +264,10 @@ UniValue CSimplifiedMNListDiff::ToJson(bool extended) const
     }
     obj.pushKV("newQuorums", newQuorumsArr);
 
-    CCbTx cbTxPayload;
-    if (GetTxPayload(*cbTx, cbTxPayload)) {
-        obj.pushKV("merkleRootMNList", cbTxPayload.merkleRootMNList.ToString());
-        if (cbTxPayload.nVersion >= 2) {
-            obj.pushKV("merkleRootQuorums", cbTxPayload.merkleRootQuorums.ToString());
+    if (const auto opt_cbTxPayload = GetTxPayload<CCbTx>(*cbTx)) {
+        obj.pushKV("merkleRootMNList", opt_cbTxPayload->merkleRootMNList.ToString());
+        if (opt_cbTxPayload->nVersion >= CCbTx::Version::MERKLE_ROOT_QUORUMS) {
+            obj.pushKV("merkleRootQuorums", opt_cbTxPayload->merkleRootQuorums.ToString());
         }
     }
 
@@ -322,28 +316,29 @@ CSimplifiedMNListDiff BuildSimplifiedDiff(const CDeterministicMNList& from, cons
     return diffRet;
 }
 
-bool BuildSimplifiedMNListDiff(const uint256& baseBlockHash, const uint256& blockHash, CSimplifiedMNListDiff& mnListDiffRet,
-                               const llmq::CQuorumBlockProcessor& quorum_block_processor, std::string& errorRet, bool extended)
+bool BuildSimplifiedMNListDiff(CDeterministicMNManager& dmnman, const ChainstateManager& chainman, const llmq::CQuorumBlockProcessor& qblockman,
+                               const llmq::CQuorumManager& qman, const uint256& baseBlockHash, const uint256& blockHash,
+                               CSimplifiedMNListDiff& mnListDiffRet, std::string& errorRet, bool extended)
 {
     AssertLockHeld(cs_main);
     mnListDiffRet = CSimplifiedMNListDiff();
 
-    const CBlockIndex* baseBlockIndex = ::ChainActive().Genesis();
+    const CBlockIndex* baseBlockIndex = chainman.ActiveChain().Genesis();
     if (!baseBlockHash.IsNull()) {
-        baseBlockIndex = g_chainman.m_blockman.LookupBlockIndex(baseBlockHash);
+        baseBlockIndex = chainman.m_blockman.LookupBlockIndex(baseBlockHash);
         if (!baseBlockIndex) {
             errorRet = strprintf("block %s not found", baseBlockHash.ToString());
             return false;
         }
     }
 
-    const CBlockIndex* blockIndex = g_chainman.m_blockman.LookupBlockIndex(blockHash);
+    const CBlockIndex* blockIndex = chainman.m_blockman.LookupBlockIndex(blockHash);
     if (!blockIndex) {
         errorRet = strprintf("block %s not found", blockHash.ToString());
         return false;
     }
 
-    if (!::ChainActive().Contains(baseBlockIndex) || !::ChainActive().Contains(blockIndex)) {
+    if (!chainman.ActiveChain().Contains(baseBlockIndex) || !chainman.ActiveChain().Contains(blockIndex)) {
         errorRet = strprintf("block %s and %s are not in the same chain", baseBlockHash.ToString(), blockHash.ToString());
         return false;
     }
@@ -352,8 +347,8 @@ bool BuildSimplifiedMNListDiff(const uint256& baseBlockHash, const uint256& bloc
         return false;
     }
 
-    auto baseDmnList = deterministicMNManager->GetListForBlock(baseBlockIndex);
-    auto dmnList = deterministicMNManager->GetListForBlock(blockIndex);
+    auto baseDmnList = dmnman.GetListForBlock(baseBlockIndex);
+    auto dmnList = dmnman.GetListForBlock(blockIndex);
     mnListDiffRet = BuildSimplifiedDiff(baseDmnList, dmnList, extended);
 
     // We need to return the value that was provided by the other peer as it otherwise won't be able to recognize the
@@ -361,16 +356,13 @@ bool BuildSimplifiedMNListDiff(const uint256& baseBlockHash, const uint256& bloc
     // null block hash was provided to get the diff from the genesis block.
     mnListDiffRet.baseBlockHash = baseBlockHash;
 
-    if (!mnListDiffRet.BuildQuorumsDiff(baseBlockIndex, blockIndex, quorum_block_processor)) {
+    if (!mnListDiffRet.BuildQuorumsDiff(baseBlockIndex, blockIndex, qblockman)) {
         errorRet = strprintf("failed to build quorums diff");
         return false;
     }
 
-    if (llmq::utils::IsV20Active(blockIndex)) {
-        if (!mnListDiffRet.BuildQuorumChainlockInfo(blockIndex)) {
-            errorRet = strprintf("failed to build quorums chainlocks info");
-            return false;
-        }
+    if (DeploymentActiveAfter(blockIndex, Params().GetConsensus(), Consensus::DEPLOYMENT_V20)) {
+        mnListDiffRet.BuildQuorumChainlockInfo(qman, blockIndex);
     }
 
     // TODO store coinbase TX in CBlockIndex

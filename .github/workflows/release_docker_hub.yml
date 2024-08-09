@@ -65,9 +65,13 @@ jobs:
         context: ./contrib/containers/deploy
         file: ./contrib/containers/deploy/Dockerfile.GitHubActions.Release
         push: true
+        provenance: mode=max
+        sbom: true
         tags: ${{ steps.docker_meta.outputs.tags }}
         labels: ${{ steps.docker_meta.outputs.labels }}
-        build-args: TAG=${{ steps.get_tag.outputs.build_tag }}
+        build-args: |
+          TAG=${{ steps.get_tag.outputs.build_tag }}
+          GITHUB_REPOSITORY=${{ github.repository }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
         platforms: linux/amd64,linux/arm64

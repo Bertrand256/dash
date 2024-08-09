@@ -8,6 +8,7 @@
 
 #include <crypto/chacha20.h>
 #include <crypto/common.h>
+#include <span.h>
 #include <uint256.h>
 
 #include <cassert>
@@ -68,10 +69,22 @@
  *
  * Thread-safe.
  */
-void GetRandBytes(unsigned char* buf, int num) noexcept;
+void GetRandBytes(Span<unsigned char> bytes) noexcept;
+/** Generate a uniform random integer in the range [0..range). Precondition: range > 0 */
 uint64_t GetRand(uint64_t nMax) noexcept;
-std::chrono::microseconds GetRandMicros(std::chrono::microseconds duration_max) noexcept;
-std::chrono::milliseconds GetRandMillis(std::chrono::milliseconds duration_max) noexcept;
+/** Generate a uniform random duration in the range [0..max). Precondition: max.count() > 0 */
+template <typename D>
+D GetRandomDuration(typename std::common_type<D>::type max) noexcept
+// Having the compiler infer the template argument from the function argument
+// is dangerous, because the desired return value generally has a different
+// type than the function argument. So std::common_type is used to force the
+// call site to specify the type of the return value.
+{
+    assert(max.count() > 0);
+    return D{GetRand(max.count())};
+};
+constexpr auto GetRandMicros = GetRandomDuration<std::chrono::microseconds>;
+constexpr auto GetRandMillis = GetRandomDuration<std::chrono::milliseconds>;
 int GetRandInt(int nMax) noexcept;
 uint256 GetRandHash() noexcept;
 
@@ -85,7 +98,7 @@ bool GetRandBool(double rate);
  *
  * Thread-safe.
  */
-void GetStrongRandBytes(unsigned char* buf, int num) noexcept;
+void GetStrongRandBytes(Span<unsigned char> bytes) noexcept;
 
 /**
  * Gather entropy from various expensive sources, and feed them to the PRNG state.
@@ -114,22 +127,10 @@ private:
     bool requires_seed;
     ChaCha20 rng;
 
-    unsigned char bytebuf[64];
-    int bytebuf_size;
-
     uint64_t bitbuf;
     int bitbuf_size;
 
     void RandomSeed();
-
-    void FillByteBuffer()
-    {
-        if (requires_seed) {
-            RandomSeed();
-        }
-        rng.Keystream(bytebuf, sizeof(bytebuf));
-        bytebuf_size = sizeof(bytebuf);
-    }
 
     void FillBitBuffer()
     {
@@ -154,10 +155,10 @@ public:
     /** Generate a random 64-bit integer. */
     uint64_t rand64() noexcept
     {
-        if (bytebuf_size < 8) FillByteBuffer();
-        uint64_t ret = ReadLE64(bytebuf + 64 - bytebuf_size);
-        bytebuf_size -= 8;
-        return ret;
+        if (requires_seed) RandomSeed();
+        std::array<std::byte, 8> buf;
+        rng.Keystream(buf);
+        return ReadLE64(UCharCast(buf.data()));
     }
 
     /** Generate a random (bits)-bit integer. */
@@ -199,7 +200,11 @@ public:
     }
 
     /** Generate random bytes. */
-    std::vector<unsigned char> randbytes(size_t len);
+    template <typename B = unsigned char>
+    std::vector<B> randbytes(size_t len);
+
+    /** Fill a byte Span with random bytes. */
+    void fillrand(Span<std::byte> output);
 
     /** Generate a random 32-bit integer. */
     uint32_t rand32() noexcept { return randbits(32); }

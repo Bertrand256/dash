@@ -8,50 +8,64 @@ may not. In particular, the Tor Browser Bundle defaults to listening on port 915
 See [Tor Project FAQ:TBBSocksPort](https://www.torproject.org/docs/faq.html.en#TBBSocksPort)
 for how to properly configure Tor.
 
+## How to see information about your Tor configuration via Dash Core
+
+There are several ways to see your local onion address in Dash Core:
+- in the "Local addresses" output of CLI `-netinfo`
+- in the "localaddresses" output of RPC `getnetworkinfo`
+- in the debug log (grep for "AddLocal"; the Tor address ends in `.onion`)
+
+You may set the `-debug=tor` config logging option to have additional
+information in the debug log about your Tor configuration.
+
+CLI `-addrinfo` returns the number of addresses known to your node per
+network. This can be useful to see how many onion peers your node knows,
+e.g. for `-onlynet=onion`.
+
+To fetch a number of onion addresses that your node knows, for example seven
+addresses, use the `getnodeaddresses 7 onion` RPC.
 
 ## 1. Run Dash Core behind a Tor proxy
 
 The first step is running Dash Core behind a Tor proxy. This will already anonymize all
 outgoing connections, but more is possible.
 
-	-proxy=ip:port  Set the proxy server. If SOCKS5 is selected (default), this proxy
-	                server will be used to try to reach .onion addresses as well.
-	                You need to use -noonion or -onion=0 to explicitly disable
-	                outbound access to onion services.
+    -proxy=ip:port  Set the proxy server. If SOCKS5 is selected (default), this proxy
+                    server will be used to try to reach .onion addresses as well.
+                    You need to use -noonion or -onion=0 to explicitly disable
+                    outbound access to onion services.
 
-	-onion=ip:port  Set the proxy server to use for Tor onion services. You do not
-	                need to set this if it's the same as -proxy. You can use -onion=0
-	                to explicitly disable access to onion services.
-	                Note: Only the -proxy option sets the proxy for DNS requests;
-	                with -onion they will not route over Tor, so use -proxy if you
-	                have privacy concerns.
+    -onion=ip:port  Set the proxy server to use for Tor onion services. You do not
+                    need to set this if it's the same as -proxy. You can use -onion=0
+                    to explicitly disable access to onion services.
+                    ------------------------------------------------------------------
+                    Note: Only the -proxy option sets the proxy for DNS requests;
+                    with -onion they will not route over Tor, so use -proxy if you
+                    have privacy concerns.
+                    ------------------------------------------------------------------
 
-	-listen         When using -proxy, listening is disabled by default. If you want
-	                to manually configure an onion service (see section 3), you'll
-	                need to enable it explicitly.
+    -listen         When using -proxy, listening is disabled by default. If you want
+                    to manually configure an onion service (see section 3), you'll
+                    need to enable it explicitly.
 
-	-connect=X      When behind a Tor proxy, you can specify .onion addresses instead
-	-addnode=X      of IP addresses or hostnames in these parameters. It requires
-	-seednode=X     SOCKS5. In Tor mode, such addresses can also be exchanged with
-	                other P2P nodes.
+    -connect=X      When behind a Tor proxy, you can specify .onion addresses instead
+    -addnode=X      of IP addresses or hostnames in these parameters. It requires
+    -seednode=X     SOCKS5. In Tor mode, such addresses can also be exchanged with
+                    other P2P nodes.
 
-	-onlynet=onion  Make outgoing connections only to .onion addresses. Incoming
-	                connections are not affected by this option. This option can be
-	                specified multiple times to allow multiple network types, e.g.
-	                ipv4, ipv6 or onion. If you use this option with values other
-	                than onion you *cannot* disable onion connections; outgoing onion
-	                connections will be enabled when you use -proxy or -onion. Use
-	                -noonion or -onion=0 if you want to be sure there are no outbound
-	                onion connections over the default proxy or your defined -proxy.
+    -onlynet=onion  Make automatic outbound connections only to .onion addresses.
+                    Inbound and manual connections are not affected by this option.
+                    It can be specified multiple times to allow multiple networks,
+                    e.g. onlynet=onion, onlynet=i2p, onlynet=cjdns.
 
 An example how to start the client if the Tor proxy is running on local host on
 port 9050 and only allows .onion nodes to connect:
 
-	./dashd -onion=127.0.0.1:9050 -onlynet=onion -listen=0 -addnode=ssapp53tmftyjmjb.onion
+    ./dashd -onion=127.0.0.1:9050 -onlynet=onion -listen=0 -addnode=ssapp53tmftyjmjb.onion
 
 In a typical situation, this suffices to run behind a Tor proxy:
 
-	./dashd -proxy=127.0.0.1:9050
+    ./dashd -proxy=127.0.0.1:9050
 
 ## 2. Automatically create a Dash Core onion service
 
@@ -152,65 +166,72 @@ reachable from the Tor network. Add these lines to your /etc/tor/torrc (or equiv
 config file): *Needed for Tor version 0.2.7.0 and older versions of Tor only. For newer
 versions of Tor see [Section 4](#4-automatically-listen-on-tor).*
 
-	HiddenServiceDir /var/lib/tor/dashcore-service/
-	HiddenServicePort 9999 127.0.0.1:9996
-	HiddenServicePort 19999 127.0.0.1:19996
+    HiddenServiceDir /var/lib/tor/dashcore-service/
+    HiddenServicePort 9999 127.0.0.1:9996
 
 The directory can be different of course, but virtual port numbers should be equal to
 your dashd's P2P listen port (9999 by default), and target addresses and ports
 should be equal to binding address and port for inbound Tor connections (127.0.0.1:9996 by default).
 
-	-externalip=X   You can tell Dash Core about its publicly reachable address using
-	                this option, and this can be a .onion address. Given the above
-	                configuration, you can find your .onion address in
-	                /var/lib/tor/dashcore-service/hostname. For connections
-	                coming from unroutable addresses (such as 127.0.0.1, where the
-	                Tor proxy typically runs), .onion addresses are given
-	                preference for your node to advertise itself with.
+    -externalip=X   You can tell Dash Core about its publicly reachable addresses using
+                    this option, and this can be an onion address. Given the above
+                    configuration, you can find your onion address in
+                    /var/lib/tor/dashcore-service/hostname. For connections
+                    coming from unroutable addresses (such as 127.0.0.1, where the
+                    Tor proxy typically runs), onion addresses are given
+                    preference for your node to advertise itself with.
 
-	-listen         You'll need to enable listening for incoming connections, as this
-	                is off by default behind a proxy.
+                    You can set multiple local addresses with -externalip. The
+                    one that will be rumoured to a particular peer is the most
+                    compatible one and also using heuristics, e.g. the address
+                    with the most incoming connections, etc.
 
-	-discover       When -externalip is specified, no attempt is made to discover local
-	                IPv4 or IPv6 addresses. If you want to run a dual stack, reachable
-	                from both Tor and IPv4 (or IPv6), you'll need to either pass your
-	                other addresses using -externalip, or explicitly enable -discover.
-	                Note that both addresses of a dual-stack system may be easily
-	                linkable using traffic analysis.
+    -listen         You'll need to enable listening for incoming connections, as this
+                    is off by default behind a proxy.
+
+    -discover       When -externalip is specified, no attempt is made to discover local
+                    IPv4 or IPv6 addresses. If you want to run a dual stack, reachable
+                    from both Tor and IPv4 (or IPv6), you'll need to either pass your
+                    other addresses using -externalip, or explicitly enable -discover.
+                    Note that both addresses of a dual-stack system may be easily
+                    linkable using traffic analysis.
 
 In a typical situation, where you're only reachable via Tor, this should suffice:
 
-	./dashd -proxy=127.0.0.1:9050 -externalip=ssapp53tmftyjmjb.onion -listen
+    ./dashd -proxy=127.0.0.1:9050 -externalip=7zvj7a2imdgkdbg4f2dryd5rgtrn7upivr5eeij4cicjh65pooxeshid.onion -listen
 
 (obviously, replace the .onion address with your own). It should be noted that you still
 listen on all devices and another node could establish a clearnet connection, when knowing
 your address. To mitigate this, additionally bind the address of your Tor proxy:
 
-	./dashd ... -bind=127.0.0.1
+    ./dashd ... -bind=127.0.0.1
 
 If you don't care too much about hiding your node, and want to be reachable on IPv4
 as well, use `discover` instead:
 
-	./dashd ... -discover
+    ./dashd ... -discover
 
 and open port 9999 on your firewall (or use port mapping, i.e., `-upnp` or `-natpmp`).
 
 If you only want to use Tor to reach .onion addresses, but not use it as a proxy
 for normal IPv4/IPv6 communication, use:
 
-	./dashd -onion=127.0.0.1:9050 -externalip=ssapp53tmftyjmjb.onion -discover
+    ./dashd -onion=127.0.0.1:9050 -externalip=7zvj7a2imdgkdbg4f2dryd5rgtrn7upivr5eeij4cicjh65pooxeshid.onion -discover
 
 
 ## 3.1. List of known Dash Core Tor relays
 
-- 3dnj6le7i2dgzqtj7tth5zoiscmoddovzswdl5pjy5pnyllevxhb3uyd.onion
-- cmhr5r3lqhy7ic2ebeil66ftcz5u62zq5qhbfdz53l6sqxljh7zxntyd.onion
-- k532fqvgzqotj6epfw3rfc377elrj3td47ztad2tkn6vwnw6nhxacrqd.onion
-- nqvpq3urtggxybor6wlf5odzanfqcitg5m7xjo2w25bj7tl2g54te6yd.onion
-- oabd4mxviavh2xhlv4xidbqswsrqvmcnkpfwfwhjgy4w2dmlaoulxwad.onion
-- qpcfsys2rqguha4vahdq6lbx7flc2fivrdicwxqtvh5okujrh6ami3ad.onion
-- v7ttoiov7rc5aut64nfomyfwxt424ihufwvr5ilf7moeg3fwibjpjcqd.onion
-- yjos5hcumgpgggm37xjmgjfzzhbjo6a7phyavutfzkh6qrlnozvajuad.onion
+cmhr5r3lqhy7ic2ebeil66ftcz5u62zq5qhbfdz53l6sqxljh7zxntyd.onion
+k532fqvgzqotj6epfw3rfc377elrj3td47ztad2tkn6vwnw6nhxacrqd.onion
+v7ttoiov7rc5aut64nfomyfwxt424ihufwvr5ilf7moeg3fwibjpjcqd.onion
+snu2xaql3crh2b4t6g2wxemgrpzmaxfxla4tua63bnp2phhxwr6hzzid.onion
+fq63mjtyamklhxtskvvdf7tcdckwvtoo7kb5eazi34tsxuvexveyroad.onion
+5v5lgddolcidtt2qmhmvyka2ewht4mkmmj73tfwuimlckgmqb5lthtid.onion
+
+You can easily validate which of these are still online via nc such as
+```
+nc -v -x 127.0.0.1:9050 -z *.onion 9999
+```
 
 ## 4. Privacy recommendations
 

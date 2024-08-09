@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2022 The Dash Core developers
+// Copyright (c) 2018-2023 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -97,7 +97,7 @@ void CBLSIESMultiRecipientBlobs::InitEncrypt(size_t count)
 {
     ephemeralSecretKey.MakeNewKey();
     ephemeralPubKey = ephemeralSecretKey.GetPublicKey();
-    GetStrongRandBytes(ivSeed.begin(), ivSeed.size());
+    GetStrongRandBytes({ivSeed.begin(), ivSeed.size()});
 
     uint256 iv = ivSeed;
     ivVector.resize(count);

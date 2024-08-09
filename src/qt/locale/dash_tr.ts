@@ -106,16 +106,8 @@
         <translation>Adres Listesini Dışarı Aktar</translation>
     </message>
     <message>
-        <source>Comma separated file (*.csv)</source>
-        <translation>Virgülle ayrılmış değerler dosyası (*.csv)</translation>
-    </message>
-    <message>
         <source>Exporting Failed</source>
         <translation>Dışarı aktarmada hata</translation>
-    </message>
-    <message>
-        <source>There was an error trying to save the address list to %1. Please try again.</source>
-        <translation>Adres listesinin %1 konumuna kaydedilmesi sırasında bir hata meydana geldi. Lütfen tekrar deneyin.</translation>
     </message>
 </context>
 <context>
@@ -211,14 +203,6 @@
         <translation>Cüzdan kilidini kaldır</translation>
     </message>
     <message>
-        <source>This operation needs your wallet passphrase to decrypt the wallet.</source>
-        <translation>Bu eylem, cüzdan şifresini çözmek için cüzdan parolanıza ihtiyaç duyuyor.</translation>
-    </message>
-    <message>
-        <source>Decrypt wallet</source>
-        <translation>Cüzdanın şifrelemesini aç</translation>
-    </message>
-    <message>
         <source>Change passphrase</source>
         <translation>Parola değiştir</translation>
     </message>
@@ -291,10 +275,6 @@
         <translation>Cüzdan şifresinin açılması için girilen parola yanlıştı.</translation>
     </message>
     <message>
-        <source>Wallet decryption failed</source>
-        <translation>Cüzdan şifresinin açılması başarısız oldu</translation>
-    </message>
-    <message>
         <source>Wallet passphrase was successfully changed.</source>
         <translation>Cüzdan parolası başarılı bir şekilde değiştirildi.</translation>
     </message>
@@ -322,11 +302,10 @@
     </message>
 </context>
 <context>
+    <name>BitcoinApplication</name>
+    </context>
+<context>
     <name>BitcoinGUI</name>
-    <message>
-        <source>A fatal error occurred. Dash Core can no longer continue safely and will quit.</source>
-        <translation>Kritik bir hata oluştu. Dash Core artık güvenli şekilde devam edemez ve kapanacak.</translation>
-    </message>
     <message>
         <source>&amp;Overview</source>
         <translation>&amp;Genel bakış</translation>
@@ -352,6 +331,34 @@
         <translation>Ödeme talep et (QR kodu ve Dash URI'si oluşturur)</translation>
     </message>
     <message>
+        <source>&amp;Options…</source>
+        <translation>&amp;Seçenekler…</translation>
+    </message>
+    <message>
+        <source>&amp;Encrypt Wallet…</source>
+        <translation>&amp;Cüzdanı Şifrele…</translation>
+    </message>
+    <message>
+        <source>&amp;Backup Wallet…</source>
+        <translation>&amp;Cüzdanı Yedekle…</translation>
+    </message>
+    <message>
+        <source>&amp;Change Passphrase…</source>
+        <translation>&amp;Parolayı Değiştir…</translation>
+    </message>
+    <message>
+        <source>&amp;Unlock Wallet…</source>
+        <translation>Cüzdanı &amp;Kilitle…</translation>
+    </message>
+    <message>
+        <source>Sign &amp;message…</source>
+        <translation>&amp;İleti imzala…</translation>
+    </message>
+    <message>
+        <source>&amp;Verify message…</source>
+        <translation>İletiyi &amp;kontrol et…</translation>
+    </message>
+    <message>
         <source>&amp;Sending addresses</source>
         <translation>&amp;Gönderilen adresler</translation>
     </message>
@@ -360,16 +367,16 @@
         <translation>&amp;Alıcı adresler</translation>
     </message>
     <message>
+        <source>Open &amp;URI…</source>
+        <translation>&amp;URI Aç…</translation>
+    </message>
+    <message>
         <source>Open Wallet</source>
         <translation>Açık Cüzdan</translation>
     </message>
     <message>
         <source>Open a wallet</source>
         <translation>Cüzdanı Aç</translation>
-    </message>
-    <message>
-        <source>Close Wallet...</source>
-        <translation>Kapalı Cüzdan...</translation>
     </message>
     <message>
         <source>Close wallet</source>
@@ -428,10 +435,6 @@
         <translation>Qt hakkında bilgi göster</translation>
     </message>
     <message>
-        <source>&amp;Options...</source>
-        <translation>&amp;Seçenekler...</translation>
-    </message>
-    <message>
         <source>&amp;About %1</source>
         <translation>%1 &amp;Hakkında</translation>
     </message>
@@ -452,32 +455,16 @@
         <translation>Ana pencereyi göster ya da gizle</translation>
     </message>
     <message>
-        <source>&amp;Encrypt Wallet...</source>
-        <translation>&amp;Cüzdanı Şifrele...</translation>
-    </message>
-    <message>
         <source>Encrypt the private keys that belong to your wallet</source>
         <translation>Cüzdanınıza ait özel anahtarları şifreleyin</translation>
-    </message>
-    <message>
-        <source>&amp;Backup Wallet...</source>
-        <translation>&amp;Cüzdanı Yedekle...</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
         <translation>Cüzdanı diğer bir konumda yedekle</translation>
     </message>
     <message>
-        <source>&amp;Change Passphrase...</source>
-        <translation>&amp;Parolayı Değiştir...</translation>
-    </message>
-    <message>
         <source>Change the passphrase used for wallet encryption</source>
         <translation>Cüzdan şifrelemesi için kullanılan parolayı değiştir</translation>
-    </message>
-    <message>
-        <source>&amp;Unlock Wallet...</source>
-        <translation>Cüzdanı &amp;Kilitle...</translation>
     </message>
     <message>
         <source>Unlock wallet</source>
@@ -488,16 +475,8 @@
         <translation>Cüzdanı &amp;Kilitle</translation>
     </message>
     <message>
-        <source>Sign &amp;message...</source>
-        <translation>&amp;İleti imzala...</translation>
-    </message>
-    <message>
         <source>Sign messages with your Dash addresses to prove you own them</source>
         <translation>İletileri adreslerin size ait olduğunu ispatlamak için Dash adresleri ile imzala</translation>
-    </message>
-    <message>
-        <source>&amp;Verify message...</source>
-        <translation>İletiyi &amp;kontrol et...</translation>
     </message>
     <message>
         <source>Verify messages to ensure they were signed with specified Dash addresses</source>
@@ -514,10 +493,6 @@
     <message>
         <source>&amp;Debug console</source>
         <translation>&amp;Debug konsolu</translation>
-    </message>
-    <message>
-        <source>Open debugging console</source>
-        <translation>Debug konsolunu aç</translation>
     </message>
     <message>
         <source>&amp;Network Monitor</source>
@@ -568,14 +543,6 @@
         <translation>Kullanılmış alım adresleri ve etiketlerin listesini göster</translation>
     </message>
     <message>
-        <source>Open &amp;URI...</source>
-        <translation>&amp;URI Aç...</translation>
-    </message>
-    <message>
-        <source>Open a dash: URI or payment request</source>
-        <translation>Bir Dash: bağlantısı ya da ödeme talebi aç</translation>
-    </message>
-    <message>
         <source>&amp;Command-line options</source>
         <translation>&amp;Komut satırı seçenekleri</translation>
     </message>
@@ -608,10 +575,6 @@
     <message>
         <source>Show information about %1</source>
         <translation>%1 ile ilgili bilgileri göster</translation>
-    </message>
-    <message>
-        <source>Create Wallet...</source>
-        <translation>Cüzdan Oluştur...</translation>
     </message>
     <message>
         <source>Create a new wallet</source>
@@ -653,30 +616,6 @@
         <source>Network activity disabled</source>
         <translation>Ağ etkinliği devre dışı bırakıldı</translation>
     </message>
-    <message>
-        <source>Syncing Headers (%1%)...</source>
-        <translation>Üstbilgiler Senkronize Ediliyor (%1%)...</translation>
-    </message>
-    <message>
-        <source>Synchronizing with network...</source>
-        <translation>Ağ ile senkronize ediliyor...</translation>
-    </message>
-    <message>
-        <source>Indexing blocks on disk...</source>
-        <translation>Bloklar diske indeksleniyor...</translation>
-    </message>
-    <message>
-        <source>Processing blocks on disk...</source>
-        <translation>Bloklar diske işleniyor...</translation>
-    </message>
-    <message>
-        <source>Reindexing blocks on disk...</source>
-        <translation>Diskteki bloklar yeniden indeksleniyor...</translation>
-    </message>
-    <message>
-        <source>Connecting to peers...</source>
-        <translation>Eşlere bağlanılıyor...</translation>
-    </message>
     <message numerus="yes">
         <source>Processed %n block(s) of transaction history.</source>
         <translation><numerusform>İşlem geçmişindeki %n blok işlendi.</numerusform><numerusform>İşlem geçmişindeki %n blok işlendi.</numerusform></translation>
@@ -686,8 +625,40 @@
         <translation>%1 geride</translation>
     </message>
     <message>
-        <source>Catching up...</source>
-        <translation>Aralık kapatılıyor...</translation>
+        <source>Close Wallet…</source>
+        <translation>Kapalı Cüzdan…</translation>
+    </message>
+    <message>
+        <source>Create Wallet…</source>
+        <translation>Cüzdan Oluştur…</translation>
+    </message>
+    <message>
+        <source>Syncing Headers (%1%)…</source>
+        <translation>Üstbilgiler Senkronize Ediliyor (%1%)…</translation>
+    </message>
+    <message>
+        <source>Synchronizing with network…</source>
+        <translation>Ağ ile senkronize ediliyor…</translation>
+    </message>
+    <message>
+        <source>Indexing blocks on disk…</source>
+        <translation>Bloklar diske indeksleniyor…</translation>
+    </message>
+    <message>
+        <source>Processing blocks on disk…</source>
+        <translation>Bloklar diske işleniyor…</translation>
+    </message>
+    <message>
+        <source>Reindexing blocks on disk…</source>
+        <translation>Diskteki bloklar yeniden indeksleniyor…</translation>
+    </message>
+    <message>
+        <source>Connecting to peers…</source>
+        <translation>Eşlere bağlanılıyor…</translation>
+    </message>
+    <message>
+        <source>Catching up…</source>
+        <translation>Aralık kapatılıyor…</translation>
     </message>
     <message>
         <source>Last received block was generated %1 ago.</source>
@@ -971,10 +942,6 @@
         <translation>Bazı koinler harcandığı için seçilmedi.</translation>
     </message>
     <message>
-        <source>Some coins were unselected because they do not have enough mixing rounds.</source>
-        <translation>Yeterli karıştırma turları olmadığından bazı koinler seçilmedi.</translation>
-    </message>
-    <message>
         <source>Show all coins</source>
         <translation>Tüm koinleri göster</translation>
     </message>
@@ -1010,8 +977,8 @@
 <context>
     <name>CreateWalletActivity</name>
     <message>
-        <source>Creating Wallet &lt;b&gt;%1&lt;/b&gt;...</source>
-        <translation>&lt;b&gt;%1&lt;/b&gt; Cüzdan Oluşturuluyor...</translation>
+        <source>Creating Wallet &lt;b&gt;%1&lt;/b&gt;…</source>
+        <translation>&lt;b&gt;%1&lt;/b&gt; Cüzdan Oluşturuluyor…</translation>
     </message>
     <message>
         <source>Create wallet failed</source>
@@ -1060,7 +1027,7 @@
         <source>Create</source>
         <translation>Oluştur</translation>
     </message>
-</context>
+    </context>
 <context>
     <name>EditAddressDialog</name>
     <message>
@@ -1150,10 +1117,6 @@
         <translation>Filtre Listesi:</translation>
     </message>
     <message>
-        <source>Filter propsal list</source>
-        <translation>Teklif listesini filtrele</translation>
-    </message>
-    <message>
         <source>Proposal Count:</source>
         <translation>Teklif Sayısı:</translation>
     </message>
@@ -1204,10 +1167,6 @@
         <translation>Bu programın ilk kez başlatılmasından dolayı %1 yazılımının verilerini nerede saklayacağını seçebilirsiniz.</translation>
     </message>
     <message>
-        <source>When you click OK, %1 will begin to download and process the full %4 block chain (%2GB) starting with the earliest transactions in %3 when %4 initially launched.</source>
-        <translation>Tamam'a tıkladığınızda, %1, bütün %4 blok zincirini (%2GB) %4 ilk olarak yayınlandığında %3'deki en erken işlemlerden  indirmeye ve işlemeye başlayacaktır.</translation>
-    </message>
-    <message>
         <source>This initial synchronisation is very demanding, and may expose hardware problems with your computer that had previously gone unnoticed. Each time you run %1, it will continue downloading where it left off.</source>
         <translation>Bu başlangıç senkronizasyonu çok zorlayıcıdır ve bilgisayarınızdaki daha önce fark edilmemiş olan donanım sorunlarını ortaya çıkarabilir. %1'i her çalıştırdığınızda, kaldığı yerden devam edecektir.</translation>
     </message>
@@ -1246,14 +1205,6 @@
     <message>
         <source>Error</source>
         <translation>Hata</translation>
-    </message>
-    <message>
-        <source>%1 GB of free space available</source>
-        <translation>%1 GB boş alan mevcut</translation>
-    </message>
-    <message>
-        <source>(of %1 GB needed)</source>
-        <translation>(%1 GB gerekli)</translation>
     </message>
 </context>
 <context>
@@ -1335,8 +1286,12 @@
         <translation>Teminat Çıkış Noktasını Kopyala</translation>
     </message>
     <message>
-        <source>Updating...</source>
-        <translation>Güncelleştiriyor...</translation>
+        <source>Please wait…</source>
+        <translation>Lütfen bekleyin…</translation>
+    </message>
+    <message>
+        <source>Updating…</source>
+        <translation>Güncelleştiriyor…</translation>
     </message>
     <message>
         <source>ENABLED</source>
@@ -1371,10 +1326,6 @@
         <translation>Herhangi bir özelliğe göre filtreleyin (ör. adres veya protx hash'ı)</translation>
     </message>
     <message>
-        <source>Please wait...</source>
-        <translation>Lütfen bekleyin...</translation>
-    </message>
-    <message>
         <source>Additional information for DIP3 Masternode %1</source>
         <translation>DIP3 Ana Düğümü %1 için ek bilgi</translation>
     </message>
@@ -1398,8 +1349,12 @@
         <translation>Kalan blok sayısı</translation>
     </message>
     <message>
-        <source>Unknown...</source>
-        <translation>Bilinmiyor...</translation>
+        <source>Unknown…</source>
+        <translation>Bilinmiyor…</translation>
+    </message>
+    <message>
+        <source>calculating…</source>
+        <translation>hesaplanıyor…</translation>
     </message>
     <message>
         <source>Last block time</source>
@@ -1414,10 +1369,6 @@
         <translation>Saat başı ilerleme artışı</translation>
     </message>
     <message>
-        <source>calculating...</source>
-        <translation>hesaplanıyor...</translation>
-    </message>
-    <message>
         <source>Estimated time left until synced</source>
         <translation>Senkronize edilene kadar kalan tahmini süre</translation>
     </message>
@@ -1426,8 +1377,8 @@
         <translation>Gizle</translation>
     </message>
     <message>
-        <source>Unknown. Syncing Headers (%1, %2%)...</source>
-        <translation>Bilinmeyen. Başlıklar Senkronize Ediliyor (%1, %2%)...</translation>
+        <source>Unknown. Syncing Headers (%1, %2%)…</source>
+        <translation>Bilinmeyen. Başlıklar Senkronize Ediliyor (%1, %2%)…</translation>
     </message>
 </context>
 <context>
@@ -1437,20 +1388,8 @@
         <translation>URI aç</translation>
     </message>
     <message>
-        <source>Open payment request from URI or file</source>
-        <translation>Dosyadan veya URI'den ödeme talebi aç</translation>
-    </message>
-    <message>
         <source>URI:</source>
         <translation>URI:</translation>
-    </message>
-    <message>
-        <source>Select payment request file</source>
-        <translation>Ödeme talebi dosyasını seç</translation>
-    </message>
-    <message>
-        <source>Select payment request file to open</source>
-        <translation>Açılacak ödeme talebi dosyasını seç</translation>
     </message>
 </context>
 <context>
@@ -1468,8 +1407,8 @@
         <translation>varsayılan cüzdan</translation>
     </message>
     <message>
-        <source>Opening Wallet &lt;b&gt;%1&lt;/b&gt;...</source>
-        <translation>&lt;b&gt;%1&lt;/b&gt; Cüzdan Açılıyor...</translation>
+        <source>Opening Wallet &lt;b&gt;%1&lt;/b&gt;…</source>
+        <translation>&lt;b&gt;%1&lt;/b&gt; Cüzdan Açılıyor…</translation>
     </message>
 </context>
 <context>
@@ -1591,10 +1530,6 @@
         <translation>Router'da otomatik olarak Dash Core istemcisi portu aç. Bu sadece router'ınız UPnP destekliyorsa ve etkinse çalışır.</translation>
     </message>
     <message>
-        <source>Automatically open the Bitcoin client port on the router. This only works when your router supports NAT-PMP and it is enabled. The external port could be random.</source>
-        <translation>Yönlendiricideki Bitcoin istemci bağlantı noktasını otomatik olarak açın. Bu, yalnızca yönlendiriciniz NAT-PMP'yi desteklediğinde ve etkinleştirildiğinde çalışır. Harici bağlantı noktası rastgele olabilir.</translation>
-    </message>
-    <message>
         <source>Map port using NA&amp;T-PMP</source>
         <translation>NA&amp;T-PMP kullanarak bağlantı noktasını eşleyin</translation>
     </message>
@@ -1619,20 +1554,8 @@
         <translation>Bu ağ türünde eşlere ulaşmak için varsayılan SOCKS5 proxy'nin kullanılıp kullanılmadığını gösterir.</translation>
     </message>
     <message>
-        <source>Use separate SOCKS&amp;5 proxy to reach peers via Tor hidden services:</source>
-        <translation>Eşlere gizli Tor servisleri kullanarak ulaşmak için ayrı SOCKS&amp;5 vekil sunucusu kullan:</translation>
-    </message>
-    <message>
         <source>Options set in this dialog are overridden by the command line or in the configuration file:</source>
         <translation>Bu iletişim kutusunda ayarlanan seçenekler, komut satırı veya yapılandırma dosyası tarafından geçersiz kılınır:</translation>
-    </message>
-    <message>
-        <source>Hide the icon from the system tray.</source>
-        <translation>Simgeyi sistem çubuğunda gizle.</translation>
-    </message>
-    <message>
-        <source>&amp;Hide tray icon</source>
-        <translation>&amp;Sistem çubuğu simgesini gizle</translation>
     </message>
     <message>
         <source>Minimize instead of exit the application when the window is closed. When this option is enabled, the application will be closed only after selecting Exit in the menu.</source>
@@ -1715,10 +1638,6 @@
         <translation>Tor</translation>
     </message>
     <message>
-        <source>Connect to the Dash network through a separate SOCKS5 proxy for Tor hidden services.</source>
-        <translation>Dash ağına gizli Tor servisleri için ayrı bir SOCKS5 vekil sunucusu aracılığıyla bağlan.</translation>
-    </message>
-    <message>
         <source>Show only a tray icon after minimizing the window.</source>
         <translation>Küçültüldükten sonra sadece çekmece ikonu göster.</translation>
     </message>
@@ -1741,12 +1660,6 @@
     <message>
         <source>The user interface language can be set here. This setting will take effect after restarting %1.</source>
         <translation>Kullanıcı arayüzünün dili burada belirtilebilir. Bu ayar %1 tekrar başlatıldığında etkinleşecektir.</translation>
-    </message>
-    <message>
-        <source>Language missing or translation incomplete? Help contributing translations here:
-https://www.transifex.com/projects/p/dash/</source>
-        <translation>Diliniz mevcut değil veya çeviri eksik mi? Buradan çevirilere katkıda bulunun:
-https://www.transifex.com/projects/p/dash/</translation>
     </message>
     <message>
         <source>&amp;Unit to show amounts in:</source>
@@ -2029,6 +1942,9 @@ https://www.transifex.com/projects/p/dash/</translation>
     </message>
 </context>
 <context>
+    <name>PSBTOperationsDialog</name>
+    </context>
+<context>
     <name>PaymentServer</name>
     <message>
         <source>Payment request error</source>
@@ -2047,18 +1963,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>'dash://' geçerli bir URI değil. Bunun yerine 'dash:' kullanın.</translation>
     </message>
     <message>
-        <source>Payment request fetch URL is invalid: %1</source>
-        <translation>Ödeme talebini alma URL'i geçersiz: %1</translation>
-    </message>
-    <message>
-        <source>Cannot process payment request because BIP70 support was not compiled in.</source>
-        <translation>BIP70 desteği derlenmediği için ödeme isteği işlenmiyor.</translation>
-    </message>
-    <message>
-        <source>Invalid payment address %1</source>
-        <translation>%1 ödeme adresi geçersizdir</translation>
-    </message>
-    <message>
         <source>URI cannot be parsed! This can be caused by an invalid Dash address or malformed URI parameters.</source>
         <translation>URI ayrıştırılamıyor! Bunun nedeni geçersiz bir Dash adresi veya hatalı biçimlendirilmiş URI değişkenleri olabilir.</translation>
     </message>
@@ -2066,94 +1970,30 @@ https://www.transifex.com/projects/p/dash/</translation>
         <source>Payment request file handling</source>
         <translation>Ödeme talebi dosyası yönetimi</translation>
     </message>
-    <message>
-        <source>Payment request file cannot be read! This can be caused by an invalid payment request file.</source>
-        <translation>Ödeme talebi dosyası okunamıyor! Bunun nedeni geçersiz bir ödeme talebi dosyası olabilir.</translation>
-    </message>
-    <message>
-        <source>Payment request rejected</source>
-        <translation>Ödeme talebi reddedildi</translation>
-    </message>
-    <message>
-        <source>Payment request network doesn't match client network.</source>
-        <translation>Ödeme talebi ağı, istemci ağıyla eşleşmiyor.</translation>
-    </message>
-    <message>
-        <source>Payment request expired.</source>
-        <translation>Ödeme talebinin geçerlilik süresi bitti.</translation>
-    </message>
-    <message>
-        <source>Payment request is not initialized.</source>
-        <translation>Ödeme talebi başlatılmadı.</translation>
-    </message>
-    <message>
-        <source>Unverified payment requests to custom payment scripts are unsupported.</source>
-        <translation>Özel ödeme betiklerine, doğrulanmamış ödeme talepleri desteklenmez.</translation>
-    </message>
-    <message>
-        <source>Invalid payment request.</source>
-        <translation>Geçersiz ödeme talebi.</translation>
-    </message>
-    <message>
-        <source>Requested payment amount of %1 is too small (considered dust).</source>
-        <translation>Talep edilen %1 ödeme tutarı çok küçüktür (toz olarak kabul edilir).</translation>
-    </message>
-    <message>
-        <source>Refund from %1</source>
-        <translation>%1 adresinden geri ödeme</translation>
-    </message>
-    <message>
-        <source>Payment request %1 is too large (%2 bytes, allowed %3 bytes).</source>
-        <translation>%1 ödeme talebi çok büyük (%2 bayt, üst sınır %3 bayt).</translation>
-    </message>
-    <message>
-        <source>Error communicating with %1: %2</source>
-        <translation>%1 ile iletişimde hata: %2</translation>
-    </message>
-    <message>
-        <source>Payment request cannot be parsed!</source>
-        <translation>Ödeme talebi ayrıştırılamaz!</translation>
-    </message>
-    <message>
-        <source>Bad response from server %1</source>
-        <translation>%1 sunucusundan hatalı yanıt</translation>
-    </message>
-    <message>
-        <source>Network request error</source>
-        <translation>Ağ talebi hatası</translation>
-    </message>
-    <message>
-        <source>Payment acknowledged</source>
-        <translation>Ödeme kabul edildi</translation>
-    </message>
 </context>
 <context>
     <name>PeerTableModel</name>
     <message>
-        <source>NodeId</source>
-        <translation>Düğüm ID'si</translation>
-    </message>
-    <message>
-        <source>Node/Service</source>
-        <translation>Düğüm/Servis</translation>
-    </message>
-    <message>
         <source>User Agent</source>
+        <extracomment>Title of Peers Table column which contains the peer's User Agent string.</extracomment>
         <translation>Kullanıcı Yazılımı</translation>
     </message>
     <message>
         <source>Ping</source>
+        <extracomment>Title of Peers Table column which indicates the current latency of the connection with the peer.</extracomment>
         <translation>Ping</translation>
     </message>
     <message>
         <source>Sent</source>
+        <extracomment>Title of Peers Table column which indicates the total amount of network information we have sent to the peer.</extracomment>
         <translation>Gönderildi</translation>
     </message>
     <message>
         <source>Received</source>
+        <extracomment>Title of Peers Table column which indicates the total amount of network information we have received from the peer.</extracomment>
         <translation>Alındı</translation>
     </message>
-</context>
+    </context>
 <context>
     <name>Proposal</name>
     <message>
@@ -2239,10 +2079,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Grafik arayüzde yapılan tüm seçenek değişikliklerini sıfırla</translation>
     </message>
     <message>
-        <source>Set SSL root certificates for payment request (default: -system-)</source>
-        <translation>Ödeme talebi için SSL kök sertifikalarını belirle (varsayılan: -system-)</translation>
-    </message>
-    <message>
         <source>Show splash screen on startup (default: %u)</source>
         <translation>Başlatıldığında başlangıç ekranını göster (varsayılan: %u)</translation>
     </message>
@@ -2287,8 +2123,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Hata: -custom-css-dir yolunda %1 CSS dosyas(lar)ı eksik.</translation>
     </message>
     <message>
-        <source>%1 didn't yet exit safely...</source>
-        <translation>%1  henüz güvenli bir şekilde çıkış yapmamıştır...</translation>
+        <source>%1 didn't yet exit safely…</source>
+        <translation>%1  henüz güvenli bir şekilde çıkış yapmamıştır…</translation>
     </message>
     <message>
         <source>Amount</source>
@@ -2398,38 +2234,15 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>QR Kodu</translation>
     </message>
     <message>
-        <source>&amp;Save Image...</source>
-        <translation>Resmi ka&amp;ydet...</translation>
-    </message>
-    <message>
-        <source>Error creating QR Code.</source>
-        <translation>QR Kod oluşturma hatası.</translation>
-    </message>
-</context>
-<context>
-    <name>QRGeneralImageWidget</name>
-    <message>
-        <source>&amp;Save Image...</source>
-        <translation>Resmi ka&amp;ydet...</translation>
-    </message>
-    <message>
-        <source>&amp;Copy Image</source>
-        <translation>Resmi &amp;Kopyala</translation>
-    </message>
-    <message>
-        <source>Save QR Code</source>
-        <translation>QR Kodu Kaydet</translation>
-    </message>
-    <message>
-        <source>PNG Image (*.png)</source>
-        <translation>PNG Resim (*.png)</translation>
+        <source>&amp;Save Image…</source>
+        <translation>Resmi ka&amp;ydet…</translation>
     </message>
 </context>
 <context>
     <name>QRImageWidget</name>
     <message>
-        <source>&amp;Save Image...</source>
-        <translation>Resmi ka&amp;ydet...</translation>
+        <source>&amp;Save Image…</source>
+        <translation>Resmi ka&amp;ydet…</translation>
     </message>
     <message>
         <source>&amp;Copy Image</source>
@@ -2451,11 +2264,7 @@ https://www.transifex.com/projects/p/dash/</translation>
         <source>Save QR Code</source>
         <translation>QR Kodu Kaydet</translation>
     </message>
-    <message>
-        <source>PNG Image (*.png)</source>
-        <translation>PNG Resim (*.png)</translation>
-    </message>
-</context>
+    </context>
 <context>
     <name>RPCConsole</name>
     <message>
@@ -2511,10 +2320,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Blok zinciri</translation>
     </message>
     <message>
-        <source>Number of Masternodes</source>
-        <translation>Ana düğüm sayısı</translation>
-    </message>
-    <message>
         <source>Memory Pool</source>
         <translation>Bellek Alanı</translation>
     </message>
@@ -2563,14 +2368,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Ayrıntılı bilgi görmek için bir eş seçin.</translation>
     </message>
     <message>
-        <source>Whitelisted</source>
-        <translation>Beyaz listedekiler</translation>
-    </message>
-    <message>
-        <source>Direction</source>
-        <translation>Yön</translation>
-    </message>
-    <message>
         <source>Version</source>
         <translation>Sürüm</translation>
     </message>
@@ -2605,10 +2402,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>-rescan=2: Rescan the block chain for missing wallet transactions starting from genesis block.</source>
         <translation>-rescan=2: Cüzdana ait görünmeyen işlemleri bulmak için blok zincirini genesis blokundan itibaren tarama.</translation>
-    </message>
-    <message>
-        <source>Wallet Path</source>
-        <translation>Cüzdan Yolu</translation>
     </message>
     <message>
         <source>User Agent</source>
@@ -2683,10 +2476,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Servisler</translation>
     </message>
     <message>
-        <source>Ban Score</source>
-        <translation>Yasaklama Skoru</translation>
-    </message>
-    <message>
         <source>Connection Time</source>
         <translation>Bağlantı Süresi</translation>
     </message>
@@ -2721,30 +2510,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>&amp;Wallet Repair</source>
         <translation>&amp;Cüzdan Tamiri</translation>
-    </message>
-    <message>
-        <source>Recover transactions 1</source>
-        <translation>İşlemleri geri al 1</translation>
-    </message>
-    <message>
-        <source>Recover transactions 2</source>
-        <translation>İşlemleri geri al 2</translation>
-    </message>
-    <message>
-        <source>Upgrade wallet format</source>
-        <translation>Cüzdan biçimini yükselt</translation>
-    </message>
-    <message>
-        <source>-zapwallettxes=1: Recover transactions from blockchain (keep meta-data, e.g. account owner).</source>
-        <translation>-zapwallettxes=1: Blok zincirinden işlemleri kurtarma (meta-veri tutulur, ör. hesap sahibi).</translation>
-    </message>
-    <message>
-        <source>-zapwallettxes=2: Recover transactions from blockchain (drop meta-data).</source>
-        <translation>-zapwallettxes=2: Blok zincirinden işlemleri kurtarma (meta-veri atılır).</translation>
-    </message>
-    <message>
-        <source>-upgradewallet: Upgrade wallet to latest format on startup. (Note: this is NOT an update of the wallet itself!)</source>
-        <translation>-upgradewallet: Açılışta cüzdanı en son biçime yükselt. (Not: Bu cüzdanın kendisinin güncellenmesi DEĞİLDİR!)</translation>
     </message>
     <message>
         <source>Wallet repair options.</source>
@@ -2831,32 +2596,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>"%1" cüzdanı kullanılarak komut yürütülüyor</translation>
     </message>
     <message>
-        <source>(node id: %1)</source>
-        <translation>(düğüm kimliği: %1)</translation>
-    </message>
-    <message>
         <source>via %1</source>
         <translation>%1 vasıtasıyla</translation>
-    </message>
-    <message>
-        <source>never</source>
-        <translation>asla</translation>
-    </message>
-    <message>
-        <source>Inbound</source>
-        <translation>Gelen</translation>
-    </message>
-    <message>
-        <source>Outbound</source>
-        <translation>Giden</translation>
-    </message>
-    <message>
-        <source>Yes</source>
-        <translation>Evet</translation>
-    </message>
-    <message>
-        <source>No</source>
-        <translation>Hayır</translation>
     </message>
     <message>
         <source>Regular</source>
@@ -2874,7 +2615,7 @@ https://www.transifex.com/projects/p/dash/</translation>
         <source>Unknown</source>
         <translation>bilinmiyor</translation>
     </message>
-</context>
+    </context>
 <context>
     <name>ReceiveCoinsDialog</name>
     <message>
@@ -2969,13 +2710,9 @@ https://www.transifex.com/projects/p/dash/</translation>
         <source>Copy amount</source>
         <translation>Tutarı kopyala</translation>
     </message>
-</context>
+    </context>
 <context>
     <name>ReceiveRequestDialog</name>
-    <message>
-        <source>QR Code</source>
-        <translation>QR Kodu</translation>
-    </message>
     <message>
         <source>Copy &amp;URI</source>
         <translation>&amp;URI'yi kopyala</translation>
@@ -2985,8 +2722,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>&amp;Adresi kopyala</translation>
     </message>
     <message>
-        <source>&amp;Save Image...</source>
-        <translation>Resmi ka&amp;ydet...</translation>
+        <source>&amp;Save Image…</source>
+        <translation>Resmi ka&amp;ydet…</translation>
     </message>
     <message>
         <source>Request payment to %1</source>
@@ -2995,30 +2732,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Payment information</source>
         <translation>Ödeme bilgisi</translation>
-    </message>
-    <message>
-        <source>URI</source>
-        <translation>URI</translation>
-    </message>
-    <message>
-        <source>Address</source>
-        <translation>Adres</translation>
-    </message>
-    <message>
-        <source>Amount</source>
-        <translation>Tutar</translation>
-    </message>
-    <message>
-        <source>Label</source>
-        <translation>Etiket</translation>
-    </message>
-    <message>
-        <source>Message</source>
-        <translation>İleti</translation>
-    </message>
-    <message>
-        <source>Wallet</source>
-        <translation>Cüzdan</translation>
     </message>
 </context>
 <context>
@@ -3063,10 +2776,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Para kontrolü özellikleri</translation>
     </message>
     <message>
-        <source>Inputs...</source>
-        <translation>Girdiler...</translation>
-    </message>
-    <message>
         <source>automatically selected</source>
         <translation>otomatik seçilmiş</translation>
     </message>
@@ -3095,6 +2804,10 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Toz:</translation>
     </message>
     <message>
+        <source>Inputs…</source>
+        <translation>Girdiler…</translation>
+    </message>
+    <message>
         <source>After Fee:</source>
         <translation>Ücretten sonra:</translation>
     </message>
@@ -3115,8 +2828,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>İşlem ücreti:</translation>
     </message>
     <message>
-        <source>Choose...</source>
-        <translation>Seç...</translation>
+        <source>(Smart fee not initialized yet. This usually takes a few blocks…)</source>
+        <translation>(Zeki ücret henüz başlatılmadı. Bu genelde birkaç blok alır…)</translation>
     </message>
     <message>
         <source>Confirmation time target:</source>
@@ -3127,16 +2840,16 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Eğer özel ücret 1000 duff olarak belirlendiyse ve işlem sadece 250 bayt ise "kilobayt başına" ücret olarak sadece 250 duff ödersiniz,&lt;br /&gt;bu da "en az" 1000 duff öder. Bir kilobayttan büyük işlemler için ikisi de kilobayt başına ödeme yapar.</translation>
     </message>
     <message>
-        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks.&lt;br /&gt;But be aware that this can end up in a never confirming transaction once there is more demand for dash transactions than the network can process.</source>
-        <translation>Bloklardaki alandan daha düşük işlem hacmi var olduğu sürece sadece minimum ücreti ödemek yeterli olur.&lt;br /&gt;Ama ağın işleyebileceğinden daha fazla dash işlemi talebi olursa, bunun işlemlerin asla teyit edilememesi gibi bir sonucu olabileceğini unutmayın.</translation>
-    </message>
-    <message>
         <source>per kilobyte</source>
         <translation>kilobayt başı</translation>
     </message>
     <message>
         <source>Using the fallbackfee can result in sending a transaction that will take several hours or days (or never) to confirm. Consider choosing your fee manually or wait until you have validated the complete chain.</source>
         <translation>Fallbackfee kullanmak, bir işlemin teyit edilmesinin satler veya günler almasına (ve hiçbir zaman teyit edilememesine) neden olabilir. Ücreti elle seçmeyi veya tüm zincirin onaylanmasını beklemeyi göz önünde bulundurun.</translation>
+    </message>
+    <message>
+        <source>Choose…</source>
+        <translation>Seç…</translation>
     </message>
     <message>
         <source>Note: Not enough data for fee estimation, using the fallback fee instead.</source>
@@ -3151,20 +2864,12 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Gizle</translation>
     </message>
     <message>
-        <source>(read the tooltip)</source>
-        <translation>(bilgi balonunu oku)</translation>
-    </message>
-    <message>
         <source>Recommended:</source>
         <translation>Tavsiye edilen:</translation>
     </message>
     <message>
         <source>Custom:</source>
         <translation>Özel:</translation>
-    </message>
-    <message>
-        <source>(Smart fee not initialized yet. This usually takes a few blocks...)</source>
-        <translation>(Zeki ücret henüz başlatılmadı. Bu genelde birkaç blok alır...)</translation>
     </message>
     <message>
         <source>Confirm the send action</source>
@@ -3225,10 +2930,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>%1 (%2 blocks)</source>
         <translation>%1 (%2 blocks)</translation>
-    </message>
-    <message>
-        <source>from wallet %1</source>
-        <translation>%1 cüzdanından</translation>
     </message>
     <message>
         <source>using</source>
@@ -3329,14 +3030,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>A fee higher than %1 is considered an absurdly high fee.</source>
         <translation>%1 tutarından yüksek bir ücret saçma derecede yüksek bir ücret olarak kabul edilir.</translation>
-    </message>
-    <message>
-        <source>Payment request expired.</source>
-        <translation>Ödeme talebinin geçerlilik süresi bitti.</translation>
-    </message>
-    <message>
-        <source>Pay only the required fee of %1</source>
-        <translation>Sadece asgari ücret olan %1 tutarını öde</translation>
     </message>
     <message numerus="yes">
         <source>Estimated to begin confirmation within %n block(s).</source>
@@ -3445,23 +3138,12 @@ https://www.transifex.com/projects/p/dash/</translation>
         <source>Memo:</source>
         <translation>Not:</translation>
     </message>
-    <message>
-        <source>Enter a label for this address to add it to your address book</source>
-        <translation>Adres defterinize eklemek için bu adrese bir etiket giriniz</translation>
-    </message>
-</context>
-<context>
-    <name>SendConfirmationDialog</name>
-    <message>
-        <source>Send</source>
-        <translation>Gönder</translation>
-    </message>
 </context>
 <context>
     <name>ShutdownWindow</name>
     <message>
-        <source>%1 is shutting down...</source>
-        <translation>%1 kapanıyor...</translation>
+        <source>%1 is shutting down…</source>
+        <translation>%1 kapanıyor…</translation>
     </message>
     <message>
         <source>Do not shut down the computer until this window disappears.</source>
@@ -3628,13 +3310,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     </message>
 </context>
 <context>
-    <name>SplashScreen</name>
-    <message>
-        <source>[testnet]</source>
-        <translation>[testnet]</translation>
-    </message>
-</context>
-<context>
     <name>TrafficGraphWidget</name>
     <message>
         <source>KB/s</source>
@@ -3790,14 +3465,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Transaction total size</source>
         <translation>İşlemin toplam boyutu</translation>
-    </message>
-    <message>
-        <source> (Certificate was not verified)</source>
-        <translation>(Sertifika doğrulanmadı)</translation>
-    </message>
-    <message>
-        <source>Merchant</source>
-        <translation>Tüccar</translation>
     </message>
     <message>
         <source>Generated coins must mature %1 blocks before they can be spent. When you generated this block, it was broadcast to the network to be added to the block chain. If it fails to get into the chain, its state will change to "not accepted" and it won't be spendable. This may occasionally happen if another node generates a block within a few seconds of yours.</source>
@@ -4005,7 +3672,7 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Bu yıl</translation>
     </message>
     <message>
-        <source>Range...</source>
+        <source>Range…</source>
         <translation>Tarih Aralığı</translation>
     </message>
     <message>
@@ -4105,10 +3772,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>İşlem Tarihçesini Dışarı Aktar</translation>
     </message>
     <message>
-        <source>Comma separated file (*.csv)</source>
-        <translation>Virgülle ayrılmış değerler dosyası (*.csv)</translation>
-    </message>
-    <message>
         <source>Confirmed</source>
         <translation>Doğrulandı</translation>
     </message>
@@ -4186,14 +3849,10 @@ https://www.transifex.com/projects/p/dash/</translation>
         <source>Closing the wallet for too long can result in having to resync the entire chain if pruning is enabled.</source>
         <translation>Budama etkinse cüzdanı çok uzun süre kapatmak tüm zinciri yeniden senkronize etmek zorunda kalmanıza neden olabilir.</translation>
     </message>
-</context>
+    </context>
 <context>
     <name>WalletFrame</name>
-    <message>
-        <source>No wallet has been loaded.</source>
-        <translation>Hiçbir cüzdan yüklenmedi.</translation>
-    </message>
-</context>
+    </context>
 <context>
     <name>WalletModel</name>
     <message>
@@ -4222,10 +3881,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Backup Wallet</source>
         <translation>Cüzdanı Yedekle</translation>
-    </message>
-    <message>
-        <source>Wallet Data (*.dat)</source>
-        <translation>Cüzdan Verileri (*.dat)</translation>
     </message>
     <message>
         <source>Backup Failed</source>
@@ -4267,20 +3922,12 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Bu yayın öncesi bir deneme sürümüdür - tüm riski siz üstlenmiş olursunuz - bitcoin oluşturmak ya da ticari uygulamalar için kullanmayınız</translation>
     </message>
     <message>
-        <source>Warning: The network does not appear to fully agree! Some miners appear to be experiencing issues.</source>
-        <translation>Uyarı: şebeke tamamen mutabık değil gibi görünüyor! Bazı madenciler sorun yaşıyor gibi görünüyor.</translation>
-    </message>
-    <message>
         <source>Warning: We do not appear to fully agree with our peers! You may need to upgrade, or other nodes may need to upgrade.</source>
         <translation>Uyarı: eşlerimizle tamamen mutabık değiliz gibi görünüyor! Güncelleme yapmanız gerekebilir ya da diğer düğümlerin güncelleme yapmaları gerekebilir.</translation>
     </message>
     <message>
         <source>Already have that input.</source>
         <translation>Bu girdi zaten var.</translation>
-    </message>
-    <message>
-        <source>Cannot downgrade wallet</source>
-        <translation>Cüzdan eski biçime geri alınamaz</translation>
     </message>
     <message>
         <source>Collateral not valid.</source>
@@ -4363,14 +4010,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Yeterli kullanıcı bulundu, imzalanıyor ( %s bekleniyor )</translation>
     </message>
     <message>
-        <source>Found enough users, signing ...</source>
-        <translation>Yeterli kullanıcı bulundu, imzalanıyor ...</translation>
-    </message>
-    <message>
-        <source>Importing...</source>
-        <translation>İçe aktarılıyor...</translation>
-    </message>
-    <message>
         <source>Incompatible mode.</source>
         <translation>Uyumsuz mod.</translation>
     </message>
@@ -4403,28 +4042,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>-minsporkkeys ile belirtilmiş geçersiz minimum spork imzacısı sayısı</translation>
     </message>
     <message>
-        <source>Keypool ran out, please call keypoolrefill first</source>
-        <translation>Keypool tükendi, lütfen önce keypoolrefill'i çağırın</translation>
-    </message>
-    <message>
-        <source>Loading banlist...</source>
-        <translation>Yasaklama listesi yükleniyor...</translation>
-    </message>
-    <message>
-        <source>Loading fulfilled requests cache...</source>
-        <translation>Tamamlanan talepler önbelleği yükleniyor...</translation>
-    </message>
-    <message>
-        <source>Loading masternode cache...</source>
-        <translation>Ana düğüm önbelleği yükleniyor...</translation>
-    </message>
-    <message>
         <source>Lock is already in place.</source>
         <translation>Kilit zaten yerinde.</translation>
-    </message>
-    <message>
-        <source>Mixing in progress...</source>
-        <translation>Karışım devam ediyor...</translation>
     </message>
     <message>
         <source>Need to specify a port with -whitebind: '%s'</source>
@@ -4447,12 +4066,36 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Ana düğüm listesinde yok.</translation>
     </message>
     <message>
+        <source>Pruning blockstore…</source>
+        <translation>Blockstore budanıyor…</translation>
+    </message>
+    <message>
+        <source>Replaying blocks…</source>
+        <translation>Tekrarlanan bloklar…</translation>
+    </message>
+    <message>
+        <source>Rescanning…</source>
+        <translation>Yeniden tarama…</translation>
+    </message>
+    <message>
+        <source>Starting network threads…</source>
+        <translation>Ağ iş parçacıkları başlatılıyor…</translation>
+    </message>
+    <message>
         <source>Submitted to masternode, waiting in queue %s</source>
         <translation>Ana düğüme gönderildi, kuyrukta bekleniyor %s</translation>
     </message>
     <message>
         <source>Synchronization finished</source>
         <translation>Eşleme bitti</translation>
+    </message>
+    <message>
+        <source>Synchronizing blockchain…</source>
+        <translation>Blok zinciri eşleniyor…</translation>
+    </message>
+    <message>
+        <source>Synchronizing governance objects…</source>
+        <translation>Yönetim nesneleri eşleniyor…</translation>
     </message>
     <message>
         <source>Unable to start HTTP server. See debug log for details.</source>
@@ -4465,14 +4108,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>User Agent comment (%s) contains unsafe characters.</source>
         <translation>Kullanıcı Aracı açıklaması (%s) güvensiz karakterler içermektedir.</translation>
-    </message>
-    <message>
-        <source>Verifying wallet(s)...</source>
-        <translation>Cüzdan(lar) doğrulanıyor...</translation>
-    </message>
-    <message>
-        <source>Will retry...</source>
-        <translation>Tekrar denenecek...</translation>
     </message>
     <message>
         <source>Can't find random Masternode.</source>
@@ -4517,10 +4152,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Prune: last wallet synchronisation goes beyond pruned data. You need to -reindex (download the whole blockchain again in case of pruned node)</source>
         <translation>Budama: son cüzdan eşleşmesi budanmış verilerin ötesine gitmektedir. -reindex kullanmanız gerekmektedir (Budanmış düğüm ise tüm blok zincirini tekrar indirmeniz gerekir.)</translation>
-    </message>
-    <message>
-        <source>Rescans are not possible in pruned mode. You will need to use -reindex which will download the whole blockchain again.</source>
-        <translation>Tekrar taramalar budanmış kipte mümkün değildir. Tüm blok zincirini tekrar indirecek olan -reindex seçeneğini kullanmanız gerekecektir.</translation>
     </message>
     <message>
         <source>The block database contains a block which appears to be from the future. This may be due to your computer's date and time being set incorrectly. Only rebuild the block database if you are sure that your computer's date and time are correct</source>
@@ -4591,16 +4222,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Evo veritabanını yükseltirken hata oluştu</translation>
     </message>
     <message>
-        <source>Error: A fatal internal error occurred, see debug.log for details</source>
-        <translation>Hata: Ölümcül dahili bir hata meydana geldi, ayrıntılar için debug.log dosyasına bakınız</translation>
-    </message>
-    <message>
         <source>Error: Disk space is low for %s</source>
         <translation>Hata: %s için disk alanı yetersiz</translation>
-    </message>
-    <message>
-        <source>Error: failed to add socket to epollfd (epoll_ctl returned error %s)</source>
-        <translation>Hata: epollfd'ye soket eklenemedi (epoll_ctl %s hatası verdi)</translation>
     </message>
     <message>
         <source>Exceeded max tries.</source>
@@ -4627,6 +4250,10 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Başlatma sırasında cüzdan yeniden taranamadı</translation>
     </message>
     <message>
+        <source>Found enough users, signing…</source>
+        <translation>Yeterli kullanıcı bulundu, imzalanıyor…</translation>
+    </message>
+    <message>
         <source>Invalid P2P permission: '%s'</source>
         <translation>Geçersiz P2P izni: '%s'</translation>
     </message>
@@ -4639,26 +4266,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Geçersiz masternodeblsprivkey. Lütfen dökümanlara göz atın.</translation>
     </message>
     <message>
-        <source>Loading block index...</source>
-        <translation>Blok indeksi yükleniyor...</translation>
-    </message>
-    <message>
-        <source>Loading governance cache...</source>
-        <translation>Yönetim önbelleği yükleniyor...</translation>
-    </message>
-    <message>
-        <source>Loading sporks cache...</source>
-        <translation>Spork önbelleği yükleniyor...</translation>
-    </message>
-    <message>
-        <source>Loading wallet... (%3.2f %%)</source>
-        <translation>Cüzdan yükleniyor... (%3.2f %%)</translation>
-    </message>
-    <message>
-        <source>Loading wallet...</source>
-        <translation>Cüzdan yükleniyor...</translation>
-    </message>
-    <message>
         <source>Masternode queue is full.</source>
         <translation>Ana düğüm kuyruğu dolu.</translation>
     </message>
@@ -4669,6 +4276,10 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Missing input transaction information.</source>
         <translation>Girdi işlem bilgisi eksik.</translation>
+    </message>
+    <message>
+        <source>Mixing in progress…</source>
+        <translation>Karışım devam ediyor…</translation>
     </message>
     <message>
         <source>No errors detected.</source>
@@ -4691,20 +4302,12 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Budama negatif bir değerle yapılandırılamaz.</translation>
     </message>
     <message>
-        <source>Prune mode is incompatible with -blockfilterindex.</source>
-        <translation>Budama modu -blokfiltresiindeksi ile uyumlu değil.</translation>
-    </message>
-    <message>
         <source>Prune mode is incompatible with -disablegovernance=false.</source>
         <translation>Prune modu -disablegovernance=false ile uyumsuz.</translation>
     </message>
     <message>
         <source>Prune mode is incompatible with -txindex.</source>
         <translation>Budama kipi -txindex ile uyumsuzdur.</translation>
-    </message>
-    <message>
-        <source>Pruning blockstore...</source>
-        <translation>Blockstore budanıyor...</translation>
     </message>
     <message>
         <source>Section [%s] is not recognized.</source>
@@ -4721,16 +4324,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Specified -walletdir "%s" is not a directory</source>
         <translation>Belirtilen -walletdir "%s" dizin değildir</translation>
-    </message>
-    <message>
-        <source>Synchronizing blockchain...</source>
-        <translation>Blok zinciri eşleniyor...</translation>
-    </message>
-    <message>
-        <source>The specified config file %s does not exist
-</source>
-        <translation>Belirtilen yapılandırma dosyası %s mevcut değil
-</translation>
     </message>
     <message>
         <source>The wallet will avoid paying less than the minimum relay fee.</source>
@@ -4765,10 +4358,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>İşlem çok büyük</translation>
     </message>
     <message>
-        <source>Trying to connect...</source>
-        <translation>Bağlanmaya çalışılıyor...</translation>
-    </message>
-    <message>
         <source>Unable to bind to %s on this computer. %s is probably already running.</source>
         <translation>Bu bilgisayarda %s unsuruna bağlanılamadı. %s muhtemelen hâlihazırda çalışmaktadır.</translation>
     </message>
@@ -4789,12 +4378,16 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>UTXO veritabanı yükseltiliyor</translation>
     </message>
     <message>
-        <source>Wallet needed to be rewritten: restart %s to complete</source>
-        <translation>Cüzdanın tekrar yazılması gerekiyordu: işlemi tamamlamak için %s programını yeniden başlatınız</translation>
+        <source>Verifying blocks…</source>
+        <translation>Bloklar kontrol ediliyor…</translation>
     </message>
     <message>
-        <source>Warning: unknown new rules activated (versionbit %i)</source>
-        <translation>Uyarı: bilinmeyen yeni kurallar etkinleştirilmiştir (versionbit %i)</translation>
+        <source>Verifying wallet(s)…</source>
+        <translation>Cüzdan(lar) doğrulanıyor…</translation>
+    </message>
+    <message>
+        <source>Wallet needed to be rewritten: restart %s to complete</source>
+        <translation>Cüzdanın tekrar yazılması gerekiyordu: işlemi tamamlamak için %s programını yeniden başlatınız</translation>
     </message>
     <message>
         <source>Wasn't able to create wallet backup folder %s!</source>
@@ -4865,10 +4458,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>İşlem ücret tahminleri mevcut olmadığında ödeyebileceğiniz işlem ücreti budur.</translation>
     </message>
     <message>
-        <source>This product includes software developed by the OpenSSL Project for use in the OpenSSL Toolkit %s and cryptographic software written by Eric Young and UPnP software written by Thomas Bernard.</source>
-        <translation>Bu ürün OpenSSL Projesi tarafından geliştirilen OpenSSL araç takımınında kullanılmak üzere yazılan yazılımları %s Eric Young  tarafından yazılmış şifreleme yazılımını ve Thomas Bernard tarafından yazılmış UPnP yazılımını içerir.</translation>
-    </message>
-    <message>
         <source>Unable to replay blocks. You will need to rebuild the database using -reindex-chainstate.</source>
         <translation>Bloklar tekrarlanamıyor. -Reindex-chainstate kullanarak veritabanını yeniden kurmanız gerekecek.</translation>
     </message>
@@ -4877,16 +4466,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Uyarı: Özel anahtarların devre dışı bırakıldığı {%s} cüzdanında özel anahtarlar algılandı</translation>
     </message>
     <message>
-        <source>%d of last 100 blocks have unexpected version</source>
-        <translation>Son 100 bloğun %d'si beklenmedik versiyona sahip</translation>
-    </message>
-    <message>
         <source>%s is not a valid backup folder!</source>
         <translation>%s geçerli bir yedek klasörü değil!</translation>
-    </message>
-    <message>
-        <source>%s is only allowed with a single wallet file</source>
-        <translation>%s'ye yalnızca tek bir cüzdan dosyasıyla izin verilir</translation>
     </message>
     <message>
         <source>%s is set very high!</source>
@@ -4949,16 +4530,24 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>%s yüklenirken hata: Zaten var olan bir HD cüzdanda HD'yi kapatamazsınız.</translation>
     </message>
     <message>
-        <source>Error loading wallet %s. Duplicate -wallet filename specified.</source>
-        <translation>%s cüzdan yüklenirken hata oluştu. Bu dosya adı zaten mevcut.</translation>
-    </message>
-    <message>
         <source>Error upgrading chainstate database</source>
         <translation>Zincirdurumu veritabanı yükseltme hatası</translation>
     </message>
     <message>
-        <source>Error: failed to add socket to kqueuefd (kevent returned error %s)</source>
-        <translation>Hata: kqueuefd'ye soket eklenemedi (kevent %s hatası verdi)</translation>
+        <source>Loading P2P addresses…</source>
+        <translation>P2P adresleri yükleniyor…</translation>
+    </message>
+    <message>
+        <source>Loading banlist…</source>
+        <translation>Yasaklama listesi yükleniyor…</translation>
+    </message>
+    <message>
+        <source>Loading block index…</source>
+        <translation>Blok indeksi yükleniyor…</translation>
+    </message>
+    <message>
+        <source>Loading wallet…</source>
+        <translation>Cüzdan yükleniyor…</translation>
     </message>
     <message>
         <source>Failed to clear fulfilled requests cache at %s</source>
@@ -4997,6 +4586,10 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Yeni bir karışım kuyruğu başlatılamadı</translation>
     </message>
     <message>
+        <source>Importing…</source>
+        <translation>İçe aktarılıyor…</translation>
+    </message>
+    <message>
         <source>Incorrect -rescan mode, falling back to default value</source>
         <translation>Yanlış -rescan modu, varsayılan değere geri dönüyor.</translation>
     </message>
@@ -5025,20 +4618,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>-sporkaddr ile yanlış spork adresi belirtildi</translation>
     </message>
     <message>
-        <source>Loading P2P addresses...</source>
-        <translation>P2P adresleri yükleniyor...</translation>
-    </message>
-    <message>
         <source>Reducing -maxconnections from %d to %d, because of system limitations.</source>
         <translation>Sistem sınırlamaları sebebiyle -maxconnections %d değerinden %d değerine düşürülmüştür.</translation>
-    </message>
-    <message>
-        <source>Replaying blocks...</source>
-        <translation>Tekrarlanan bloklar...</translation>
-    </message>
-    <message>
-        <source>Rescanning...</source>
-        <translation>Yeniden tarama...</translation>
     </message>
     <message>
         <source>Session not complete!</source>
@@ -5065,20 +4646,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>%s bozuk. Bir yedeği kurtarmak veya geri yüklemek için cüzdan aracı dash-wallet'ı kullanmayı deneyin.</translation>
     </message>
     <message>
-        <source>Can't generate a change-address key. No keys in the internal keypool and can't generate any keys.</source>
-        <translation>Adres değişikliği anahtarı oluşturulamıyor. Dahili anahtar anahtar havuzunda yok ve herhangi bir anahtar üretemez.</translation>
-    </message>
-    <message>
         <source>Last successful action was too recent.</source>
         <translation>Son başarılı eylemi çok yakında yapıldı.</translation>
-    </message>
-    <message>
-        <source>Starting network threads...</source>
-        <translation>Ağ iş parçacıkları başlatılıyor...</translation>
-    </message>
-    <message>
-        <source>Synchronizing governance objects...</source>
-        <translation>Yönetim nesneleri eşleniyor...</translation>
     </message>
     <message>
         <source>The source code is available from %s.</source>
@@ -5107,6 +4676,10 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Transaction not valid.</source>
         <translation>İşlem geçerli değil.</translation>
+    </message>
+    <message>
+        <source>Trying to connect…</source>
+        <translation>Bağlanmaya çalışılıyor…</translation>
     </message>
     <message>
         <source>Unable to bind to %s on this computer (bind returned error %s)</source>
@@ -5141,10 +4714,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>txindex veritabanını yükseltme</translation>
     </message>
     <message>
-        <source>Verifying blocks...</source>
-        <translation>Bloklar kontrol ediliyor...</translation>
-    </message>
-    <message>
         <source>Very low number of keys left: %d</source>
         <translation>Çok az sayıda anahtar kaldı: %d</translation>
     </message>
@@ -5161,6 +4730,10 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Uyarı: %s yanlış parametre, yol mevcut olmalı! Varsayılan yol kullanılıyor.</translation>
     </message>
     <message>
+        <source>Will retry…</source>
+        <translation>Tekrar denenecek…</translation>
+    </message>
+    <message>
         <source>You are starting with governance validation disabled.</source>
         <translation>Yönetim doğrulama devre dışı bırakılmış bir şekilde başlıyorsunuz.</translation>
     </message>
@@ -5171,10 +4744,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Your entries added successfully.</source>
         <translation>Girdileriniz başarıyla eklendi.</translation>
-    </message>
-    <message>
-        <source>Zapping all transactions from wallet...</source>
-        <translation>Cüzdandaki tüm muameleler kaldırılıyor...</translation>
     </message>
 </context>
 </TS>

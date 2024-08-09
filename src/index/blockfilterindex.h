@@ -1,10 +1,11 @@
-// Copyright (c) 2018 The Bitcoin Core developers
+// Copyright (c) 2018-2020 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef BITCOIN_INDEX_BLOCKFILTERINDEX_H
 #define BITCOIN_INDEX_BLOCKFILTERINDEX_H
 
+#include <attributes.h>
 #include <blockfilter.h>
 #include <chain.h>
 #include <flatfile.h>
@@ -47,9 +48,9 @@ protected:
 
     bool Rewind(const CBlockIndex* current_tip, const CBlockIndex* new_tip) override;
 
-    BaseIndex::DB& GetDB() const override { return *m_db; }
+    BaseIndex::DB& GetDB() const LIFETIMEBOUND override { return *m_db; }
 
-    const char* GetName() const override { return m_name.c_str(); }
+    const char* GetName() const LIFETIMEBOUND override { return m_name.c_str(); }
 
 public:
     /** Constructs the index, which becomes available to be queried. */
@@ -62,7 +63,7 @@ public:
     bool LookupFilter(const CBlockIndex* block_index, BlockFilter& filter_out) const;
 
     /** Get a single filter header by block. */
-    bool LookupFilterHeader(const CBlockIndex* block_index, uint256& header_out);
+    bool LookupFilterHeader(const CBlockIndex* block_index, uint256& header_out) EXCLUSIVE_LOCKS_REQUIRED(!m_cs_headers_cache);
 
     /** Get a range of filters between two heights on a chain. */
     bool LookupFilterRange(int start_height, const CBlockIndex* stop_index,

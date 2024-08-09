@@ -1,12 +1,9 @@
-# Dash Core version v20.0.2
+# Dash Core version v21.1.0
 
-Release is now available from:
+This is a new minor version release, bringing important bugfixes.
 
-  <https://www.dash.org/downloads/#wallets>
-
-This is a new patch version release, bringing small bug fixes and build system enhancements.
-
-This release is optional for all nodes.
+This release is **mandatory** for all masternodes.
+This release is optional but recommended for all other nodes.
 
 Please report bugs using the issue tracker at GitHub:
 
@@ -20,12 +17,14 @@ Please report bugs using the issue tracker at GitHub:
 If you are running an older version, shut it down. Wait until it has completely
 shut down (which might take a few minutes for older versions), then run the
 installer (on Windows) or just copy over /Applications/Dash-Qt (on Mac) or
-dashd/dash-qt (on Linux). If you upgrade after DIP0003 activation and you were
-using version < 0.13 you will have to reindex (start with -reindex-chainstate
-or -reindex) to make sure your wallet has all the new data synced. Upgrading
-from version 0.13 should not require any additional actions.
+dashd/dash-qt (on Linux).
 
 ## Downgrade warning
+
+### Downgrade to a version < v21.0.0
+
+Downgrading to a version older than v21.0.0 may not be supported due to changes
+if you are using descriptor wallets.
 
 ### Downgrade to a version < v19.2.0
 
@@ -35,20 +34,20 @@ reindex or re-sync the whole chain.
 
 # Notable changes
 
-## Masternode fix
+Allow EHF Resigning
+-------------------
 
-A problem has been fixed in the old quorum data cleanup mechanism. It was slowing down masternodes during DKG sessions and causing them to get PoSe scored.
+During implementation, the values for requestID and msgHash for EHF signing were switched. As a result, a masternode
+which participated in an earlier failed attempt to form an EHF message is unable to participate in subsequent
+attempts. This is because the LLMQ Signing System requires that the requestID be unique, and that a node will not
+sign two different msgHash for the same requestID. See the [forum post](https://www.dash.org/forum/index.php?threads/ehf-activation-issues.55146/)
+explaining it further.
 
-## Testnet Crash
+As there is no need to restrict double signing for EHF, we now allow signing of multiple msgHash's for a single EHF
+requestID. Once a sufficient number of masternodes upgrade to v21.1, the EHF message will be automatically signed and
+mined.
 
-A fix has been implemented for the reported crash that could occur when upgrading from v19.x to v20.0.0 after v20 activation without re-indexing.
-
-## Other changes
-
-Implemented improvements in Github CI and build system for macOS. Fixed compilation issues on FreeBSD.
-
-
-# v20.0.2 Change log
+# v21.1.0 Change log
 
 See detailed [set of changes][set-of-changes].
 
@@ -56,36 +55,25 @@ See detailed [set of changes][set-of-changes].
 
 Thanks to everyone who directly contributed to this release:
 
-- Konstantin Akimov (knst)
-- Odysseas Gabrielides (ogabrielides)
+- Konstantin Akimov
 - PastaPastaPasta
 - UdjinM6
+- ogabrielides
 
 As well as everyone that submitted issues, reviewed pull requests and helped
 debug the release candidates.
 
 # Older releases
 
-Dash was previously known as Darkcoin.
-
-Darkcoin tree 0.8.x was a fork of Litecoin tree 0.8, original name was XCoin
-which was first released on Jan/18/2014.
-
-Darkcoin tree 0.9.x was the open source implementation of masternodes based on
-the 0.8.x tree and was first released on Mar/13/2014.
-
-Darkcoin tree 0.10.x used to be the closed source implementation of Darksend
-which was released open source on Sep/25/2014.
-
-Dash Core tree 0.11.x was a fork of Bitcoin Core tree 0.9,
-Darkcoin was rebranded to Dash.
-
-Dash Core tree 0.12.0.x was a fork of Bitcoin Core tree 0.10.
-
-Dash Core tree 0.12.1.x was a fork of Bitcoin Core tree 0.12.
-
 These release are considered obsolete. Old release notes can be found here:
 
+- [v21.0.2](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-21.0.2.md) released Aug/1/2024
+- [v21.0.0](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-21.0.0.md) released Jul/25/2024
+- [v20.1.1](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-20.1.1.md) released April/3/2024
+- [v20.1.0](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-20.1.0.md) released March/5/2024
+- [v20.0.4](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-20.0.4.md) released Jan/13/2024
+- [v20.0.3](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-20.0.3.md) released December/26/2023
+- [v20.0.2](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-20.0.2.md) released December/06/2023
 - [v20.0.1](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-20.0.1.md) released November/18/2023
 - [v20.0.0](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-20.0.0.md) released November/15/2023
 - [v19.3.0](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-19.3.0.md) released July/31/2023
@@ -130,4 +118,4 @@ These release are considered obsolete. Old release notes can be found here:
 - [v0.10.x](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-0.10.0.md) released Sep/25/2014
 - [v0.9.x](https://github.com/dashpay/dash/blob/master/doc/release-notes/dash/release-notes-0.9.0.md) released Mar/13/2014
 
-[set-of-changes]: https://github.com/dashpay/dash/compare/v20.0.1...dashpay:v20.0.2
+[set-of-changes]: https://github.com/dashpay/dash/compare/v21.0.2...dashpay:v21.1.0

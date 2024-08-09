@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2019 The Bitcoin Core developers
+// Copyright (c) 2009-2020 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -149,4 +149,14 @@ bool FillableSigningProvider::GetCScript(const CScriptID &hash, CScript& redeemS
         return true;
     }
     return false;
+}
+
+CKeyID GetKeyForDestination(const SigningProvider& store, const CTxDestination& dest)
+{
+    // Only supports destinations which map to single public keys, i.e. P2PKH
+    const PKHash *pkhash = std::get_if<PKHash>(&dest);
+
+    if (pkhash != nullptr) return ToKeyID(*pkhash);
+
+    return CKeyID();
 }

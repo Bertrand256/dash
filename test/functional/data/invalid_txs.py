@@ -21,6 +21,7 @@ Invalid tx cases not covered here can be found by running:
 """
 import abc
 
+from typing import Optional
 from test_framework.messages import (
     COutPoint,
     CTransaction,
@@ -39,7 +40,7 @@ class BadTxTemplate:
     __metaclass__ = abc.ABCMeta
 
     # The expected error code given by bitcoind upon submission of the tx.
-    reject_reason = ""
+    reject_reason: Optional[str] = ""
 
     # Only specified if it differs from mempool acceptance error.
     block_reject_reason = ""
@@ -77,9 +78,9 @@ class InputMissing(BadTxTemplate):
     reject_reason = "bad-txns-vin-empty"
     expect_disconnect = True
 
+    # We use a blank transaction to align with bitcoin's implementation
     def get_tx(self):
         tx = CTransaction()
-        tx.vout.append(CTxOut(0, sc.CScript([sc.OP_TRUE] * 100)))
         tx.calc_sha256()
         return tx
 
@@ -124,6 +125,19 @@ class DuplicateInput(BadTxTemplate):
         tx = CTransaction()
         tx.vin.append(self.valid_txin)
         tx.vin.append(self.valid_txin)
+        tx.vout.append(CTxOut(1, basic_p2sh))
+        tx.calc_sha256()
+        return tx
+
+
+class PrevoutNullInput(BadTxTemplate):
+    reject_reason = 'bad-txns-prevout-null'
+    expect_disconnect = True
+
+    def get_tx(self):
+        tx = CTransaction()
+        tx.vin.append(self.valid_txin)
+        tx.vin.append(CTxIn(COutPoint(hash=0, n=0xffffffff)))
         tx.vout.append(CTxOut(1, basic_p2sh))
         tx.calc_sha256()
         return tx

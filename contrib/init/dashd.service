@@ -11,10 +11,14 @@
 
 [Unit]
 Description=Dash daemon
-After=network.target
+Documentation=https://github.com/dashpay/dash/blob/master/doc/init.md
+
+# https://www.freedesktop.org/wiki/Software/systemd/NetworkTarget/
+After=network-online.target
+Wants=network-online.target
 
 [Service]
-ExecStart=/usr/bin/dashd -daemon \
+ExecStart=/usr/bin/dashd -daemonwait \
                                                             -pid=/run/dashd/dashd.pid \
                                                             -conf=/etc/dash/dash.conf  \
                                                             -datadir=/var/lib/dashd
@@ -29,6 +33,7 @@ ExecStartPre=/bin/chgrp dashcore /etc/dash
 Type=forking
 PIDFile=/run/dashd/dashd.pid
 Restart=on-failure
+TimeoutStartSec=infinity
 TimeoutStopSec=600
 
 # Directory creation and permissions

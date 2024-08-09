@@ -1,4 +1,4 @@
-// Copyright (c) 2015 The Bitcoin Core developers
+// Copyright (c) 2015-2020 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -33,12 +33,12 @@ bool CZMQAbstractNotifier::NotifyTransactionLock(const CTransactionRef &/*transa
     return true;
 }
 
-bool CZMQAbstractNotifier::NotifyGovernanceVote(const std::shared_ptr<const CGovernanceVote> & /*vote*/)
+bool CZMQAbstractNotifier::NotifyGovernanceVote(const CDeterministicMNList& /*tip_mn_list*/, const std::shared_ptr<const CGovernanceVote> & /*vote*/)
 {
     return true;
 }
 
-bool CZMQAbstractNotifier::NotifyGovernanceObject(const std::shared_ptr<const CGovernanceObject> & /*object*/)
+bool CZMQAbstractNotifier::NotifyGovernanceObject(const std::shared_ptr<const Governance::Object> & /*object*/)
 {
     return true;
 }

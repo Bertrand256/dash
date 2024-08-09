@@ -23,7 +23,6 @@ from test_framework.messages import (
     CTransaction,
     CTxIn,
     CTxOut,
-    ToHex,
 )
 from test_framework.script import (
     CScript,
@@ -180,7 +179,7 @@ class CoinStatsIndexTest(BitcoinTestFramework):
         tx2 = CTransaction()
         tx2.vin.append(CTxIn(COutPoint(int(tx1_txid, 16), n), b''))
         tx2.vout.append(CTxOut(int(20.99 * COIN), CScript([OP_RETURN] + [OP_FALSE]*30)))
-        tx2_hex = self.nodes[0].signrawtransactionwithwallet(ToHex(tx2))['hex']
+        tx2_hex = self.nodes[0].signrawtransactionwithwallet(tx2.serialize().hex())['hex']
         self.nodes[0].sendrawtransaction(tx2_hex)
 
         # Include both txs in a block
@@ -216,7 +215,7 @@ class CoinStatsIndexTest(BitcoinTestFramework):
         block_time = self.nodes[0].getblock(tip)['time'] + 1
         block = create_block(int(tip, 16), cb, block_time)
         block.solve()
-        self.nodes[0].submitblock(ToHex(block))
+        self.nodes[0].submitblock(block.serialize().hex())
         self.sync_all()
 
         for hash_option in index_hash_options:
@@ -286,6 +285,7 @@ class CoinStatsIndexTest(BitcoinTestFramework):
         # Add another block, so we don't depend on reconsiderblock remembering which
         # blocks were touched by invalidateblock
         index_node.generate(1)
+        self.sync_all()
 
         # Ensure that removing and re-adding blocks yields consistent results
         block = index_node.getblockhash(99)
@@ -293,14 +293,6 @@ class CoinStatsIndexTest(BitcoinTestFramework):
         index_node.reconsiderblock(block)
         res3 = index_node.gettxoutsetinfo(hash_type='muhash', hash_or_height=112)
         assert_equal(res2, res3)
-
-        self.log.info("Test that a node aware of stale blocks syncs them as well")
-        node = self.nodes[0]
-        # Ensure the node is aware of a stale block prior to restart
-        node.getblock(reorg_block)
-
-        self.restart_node(0, ["-coinstatsindex"])
-        assert_raises_rpc_error(-32603, "Unable to get data because coinstatsindex is still syncing.", node.gettxoutsetinfo, 'muhash', reorg_block)
 
     def _test_index_rejects_hash_serialized(self):
         self.log.info("Test that the rpc raises if the legacy hash is passed with the index")

@@ -72,18 +72,14 @@ bool ReadBlockFromDisk(CBlock& block, const FlatFilePos& pos, const Consensus::P
 
 bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus::Params& consensusParams)
 {
-    FlatFilePos blockPos;
-    {
-        LOCK(cs_main);
-        blockPos = pindex->GetBlockPos();
-    }
+    const FlatFilePos block_pos{WITH_LOCK(cs_main, return pindex->GetBlockPos())};
 
-    if (!ReadBlockFromDisk(block, blockPos, consensusParams)) {
+    if (!ReadBlockFromDisk(block, block_pos, consensusParams)) {
         return false;
     }
     if (block.GetHash() != pindex->GetBlockHash()) {
         return error("ReadBlockFromDisk(CBlock&, CBlockIndex*): GetHash() doesn't match index for %s at %s",
-                     pindex->ToString(), pindex->GetBlockPos().ToString());
+                     pindex->ToString(), block_pos.ToString());
     }
     return true;
 }
@@ -123,7 +119,8 @@ struct CImportingNow {
     }
 };
 
-void ThreadImport(ChainstateManager& chainman, CDSNotificationInterface& dsnfi, std::vector<fs::path> vImportFiles, const ArgsManager& args)
+void ThreadImport(ChainstateManager& chainman, CDeterministicMNManager& dmnman, CDSNotificationInterface& dsnfi,
+                  std::vector<fs::path> vImportFiles, CActiveMasternodeManager* const mn_activeman, const ArgsManager& args)
 {
     ScheduleBatchPriority();
 
@@ -204,17 +201,16 @@ void ThreadImport(ChainstateManager& chainman, CDSNotificationInterface& dsnfi, 
         LogPrintf("Filling coin cache with masternode UTXOs...\n");
         LOCK(cs_main);
         int64_t nStart = GetTimeMillis();
-        auto mnList = deterministicMNManager->GetListAtChainTip();
+        auto mnList = dmnman.GetListAtChainTip();
         mnList.ForEachMN(false, [&](auto& dmn) {
             Coin coin;
-            GetUTXOCoin(dmn.collateralOutpoint, coin);
+            GetUTXOCoin(chainman.ActiveChainstate(), dmn.collateralOutpoint, coin);
         });
         LogPrintf("Filling coin cache with masternode UTXOs: done in %dms\n", GetTimeMillis() - nStart);
     }
 
-    if (fMasternodeMode) {
-        assert(activeMasternodeManager);
-        activeMasternodeManager->Init(::ChainActive().Tip());
+    if (mn_activeman != nullptr) {
+        mn_activeman->Init(chainman.ActiveTip());
     }
 
     g_wallet_init_interface.AutoLockMasternodeCollaterals();

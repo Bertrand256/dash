@@ -23,16 +23,6 @@
 #include <utility>
 #include <vector>
 
-#ifdef DEBUG_LOCKCONTENTION
-#if !defined(HAVE_THREAD_LOCAL)
-static_assert(false, "thread_local is not supported");
-#endif
-void PrintLockContention(const char* pszName, const char* pszFile, int nLine)
-{
-    LogPrintf("LOCKCONTENTION: %s Locker: %s:%d\n", pszName, pszFile, nLine);
-}
-#endif /* DEBUG_LOCKCONTENTION */
-
 #ifdef DEBUG_LOCKORDER
 //
 // Early deadlock detection.
@@ -140,7 +130,7 @@ static void potential_deadlock_detected(const LockPair& mismatch, const LockStac
     throw std::logic_error(strprintf("potential deadlock detected: %s -> %s -> %s", mutex_b, mutex_a, mutex_b));
 }
 
-static void double_lock_detected(const void* mutex, LockStack& lock_stack)
+static void double_lock_detected(const void* mutex, const LockStack& lock_stack)
 {
     LogPrintf("DOUBLE LOCK DETECTED\n");
     LogPrintf("Lock order:\n");
@@ -151,7 +141,9 @@ static void double_lock_detected(const void* mutex, LockStack& lock_stack)
         LogPrintf(" %s\n", i.second.ToString());
     }
     if (g_debug_lockorder_abort) {
-        tfm::format(std::cerr, "Assertion failed: detected double lock at %s:%i, details in debug log.\n", __FILE__, __LINE__);
+        tfm::format(std::cerr,
+                    "Assertion failed: detected double lock for %s, details in debug log.\n",
+                    lock_stack.back().second.ToString());
         abort();
     }
     throw std::logic_error("double lock detected");
@@ -221,8 +213,10 @@ void EnterCritical(const char* pszName, const char* pszFile, int nLine, MutexTyp
 }
 template void EnterCritical(const char*, const char*, int, Mutex*, bool);
 template void EnterCritical(const char*, const char*, int, RecursiveMutex*, bool);
+template void EnterCritical(const char*, const char*, int, SharedMutex*, bool);
 template void EnterCritical(const char*, const char*, int, std::mutex*, bool);
 template void EnterCritical(const char*, const char*, int, std::recursive_mutex*, bool);
+template void EnterCritical(const char*, const char*, int, std::shared_mutex*, bool);
 
 void CheckLastCritical(void* cs, std::string& lockname, const char* guardname, const char* file, int line)
 {
@@ -289,6 +283,7 @@ void AssertLockHeldInternal(const char* pszName, const char* pszFile, int nLine,
 }
 template void AssertLockHeldInternal(const char*, const char*, int, Mutex*);
 template void AssertLockHeldInternal(const char*, const char*, int, RecursiveMutex*);
+template void AssertLockHeldInternal(const char*, const char*, int, SharedMutex*);
 
 void AssertLockNotHeldInternal(const char* pszName, const char* pszFile, int nLine, void* cs)
 {

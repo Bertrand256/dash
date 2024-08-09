@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2015-2022 The Dash Core developers
+# Copyright (c) 2015-2024 The Dash Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -11,14 +11,16 @@ Checks LLMQs based ChainLocks
 '''
 
 import time
+from io import BytesIO
 
+from test_framework.messages import CBlock, CCbTx
 from test_framework.test_framework import DashTestFramework
-from test_framework.util import force_finish_mnsync, assert_equal, assert_raises_rpc_error
+from test_framework.util import assert_equal, assert_raises_rpc_error, force_finish_mnsync, hex_str_to_bytes, softfork_active
 
 
 class LLMQChainLocksTest(DashTestFramework):
     def set_test_params(self):
-        self.set_dash_test_params(4, 3, fast_dip3_enforcement=True)
+        self.set_dash_test_params(5, 4, fast_dip3_enforcement=True)
 
     def run_test(self):
 
@@ -40,20 +42,36 @@ class LLMQChainLocksTest(DashTestFramework):
         self.test_coinbase_best_cl(self.nodes[0], expected_cl_in_cb=False)
 
         # v20 is active, no quorums, no CLs - null CL in CbTx
-        self.nodes[0].generate(1)
+        nocl_block_hash = self.nodes[0].generate(1)[0]
         self.test_coinbase_best_cl(self.nodes[0], expected_cl_in_cb=True, expected_null_cl=True)
+        cbtx = self.nodes[0].getspecialtxes(nocl_block_hash, 5, 1, 0, 2)[0]
+        assert_equal(cbtx["instantlock"], False)
+        assert_equal(cbtx["instantlock_internal"], False)
+        assert_equal(cbtx["chainlock"], False)
+
 
         self.nodes[0].sporkupdate("SPORK_17_QUORUM_DKG_ENABLED", 0)
         self.wait_for_sporks_same()
 
-        self.log.info("Mining 4 quorums")
-        for i in range(4):
-            self.mine_quorum()
+        self.move_to_next_cycle()
+        self.log.info("Cycle H height:" + str(self.nodes[0].getblockcount()))
+        self.move_to_next_cycle()
+        self.log.info("Cycle H+C height:" + str(self.nodes[0].getblockcount()))
+        self.move_to_next_cycle()
+        self.log.info("Cycle H+2C height:" + str(self.nodes[0].getblockcount()))
+        self.mine_cycle_quorum(llmq_type_name="llmq_test_dip0024", llmq_type=103)
+
 
         self.log.info("Mine single block, wait for chainlock")
         self.nodes[0].generate(1)
         self.wait_for_chainlocked_block_all_nodes(self.nodes[0].getbestblockhash())
         self.test_coinbase_best_cl(self.nodes[0])
+
+        # ChainLock locks all the blocks below it so nocl_block_hash should be locked too
+        cbtx = self.nodes[0].getspecialtxes(nocl_block_hash, 5, 1, 0, 2)[0]
+        assert_equal(cbtx["instantlock"], True)
+        assert_equal(cbtx["instantlock_internal"], False)
+        assert_equal(cbtx["chainlock"], True)
 
         self.log.info("Mine many blocks, wait for chainlock")
         self.nodes[0].generate(20)
@@ -66,11 +84,14 @@ class LLMQChainLocksTest(DashTestFramework):
             block = self.nodes[0].getblock(self.nodes[0].getblockhash(h))
             assert block['chainlock']
 
-        # Update spork to SPORK_19_CHAINLOCKS_ENABLED and test its behaviour
+        self.log.info(f"Test submitchainlock for too high block")
+        assert_raises_rpc_error(-1, f"No quorum found. Current tip height: {self.nodes[1].getblockcount()}", self.nodes[1].submitchainlock, '0000000000000000000000000000000000000000000000000000000000000000', 'a5c69505b5744524c9ed6551d8a57dc520728ea013496f46baa8a73df96bfd3c86e474396d747a4af11aaef10b17dbe80498b6a2fe81938fe917a3fedf651361bfe5367c800d23d3125820e6ee5b42189f0043be94ce27e73ea13620c9ef6064', self.nodes[1].getblockcount() + 300)
+
+        self.log.info("Update spork to SPORK_19_CHAINLOCKS_ENABLED and test its behaviour")
         self.nodes[0].sporkupdate("SPORK_19_CHAINLOCKS_ENABLED", 1)
         self.wait_for_sporks_same()
 
-        # Generate new blocks and verify that they are not chainlocked
+        self.log.info("Generate new blocks and verify that they are not chainlocked")
         previous_block_hash = self.nodes[0].getbestblockhash()
         for _ in range(2):
             block_hash = self.nodes[0].generate(1)[0]
@@ -92,6 +113,28 @@ class LLMQChainLocksTest(DashTestFramework):
         self.nodes[1].generatetoaddress(1, node0_mining_addr)
         self.wait_for_chainlocked_block_all_nodes(self.nodes[1].getbestblockhash())
         self.test_coinbase_best_cl(self.nodes[0])
+
+        self.log.info("Isolate node, mine on another, reconnect and submit CL via RPC")
+        self.isolate_node(0)
+        self.nodes[1].generate(1)
+        self.wait_for_chainlocked_block(self.nodes[1], self.nodes[1].getbestblockhash())
+        best_0 = self.nodes[0].getbestchainlock()
+        best_1 = self.nodes[1].getbestchainlock()
+        assert best_0['blockhash'] != best_1['blockhash']
+        assert best_0['height'] != best_1['height']
+        assert best_0['signature'] != best_1['signature']
+        assert_equal(best_0['known_block'], True)
+        node_height = self.nodes[1].submitchainlock(best_0['blockhash'], best_0['signature'], best_0['height'])
+        rpc_height = self.nodes[0].submitchainlock(best_1['blockhash'], best_1['signature'], best_1['height'])
+        assert_equal(best_1['height'], node_height)
+        assert_equal(best_1['height'], rpc_height)
+        best_0 = self.nodes[0].getbestchainlock()
+        assert_equal(best_0['blockhash'], best_1['blockhash'])
+        assert_equal(best_0['height'], best_1['height'])
+        assert_equal(best_0['signature'], best_1['signature'])
+        assert_equal(best_0['known_block'], False)
+        self.reconnect_isolated_node(0, 1)
+        self.sync_all()
 
         self.log.info("Isolate node, mine on both parts of the network, and reconnect")
         self.isolate_node(0)
@@ -160,7 +203,7 @@ class LLMQChainLocksTest(DashTestFramework):
         force_finish_mnsync(self.nodes[0])
         self.isolate_node(0)
         txs = []
-        for i in range(3):
+        for _ in range(3):
             txs.append(self.nodes[0].sendtoaddress(self.nodes[0].getnewaddress(), 1))
         txs += self.create_chained_txs(self.nodes[0], 1)
         self.log.info("Assert that after block generation these TXs are NOT included (as they are \"unsafe\")")
@@ -195,7 +238,7 @@ class LLMQChainLocksTest(DashTestFramework):
             self.log.info("Add a new node and let it sync")
             self.dynamically_add_masternode(evo=False)
             added_idx = len(self.nodes) - 1
-            assert_raises_rpc_error(-32603, "Unable to find any chainlock", self.nodes[added_idx].getbestchainlock)
+            assert_raises_rpc_error(-32603, "Unable to find any ChainLock", self.nodes[added_idx].getbestchainlock)
 
             self.log.info("Test that new node can mine without Chainlock info")
             tip_0 = self.nodes[0].getblock(self.nodes[0].getbestblockhash(), 2)
@@ -204,6 +247,15 @@ class LLMQChainLocksTest(DashTestFramework):
             tip_1 = self.nodes[0].getblock(self.nodes[0].getbestblockhash(), 2)
             assert_equal(tip_1['cbTx']['bestCLSignature'], tip_0['cbTx']['bestCLSignature'])
             assert_equal(tip_1['cbTx']['bestCLHeightDiff'], tip_0['cbTx']['bestCLHeightDiff'] + 1)
+
+        self.log.info("Test that bestCLHeightDiff conditions are relaxed before mn_rr")
+        self.test_bestCLHeightDiff(False)
+
+        self.activate_mn_rr()
+        self.log.info("Activated mn_rr at height:" + str(self.nodes[0].getblockcount()))
+
+        self.log.info("Test that bestCLHeightDiff conditions are stricter after mn_rr")
+        self.test_bestCLHeightDiff(True)
 
     def create_chained_txs(self, node, amount):
         txid = node.sendtoaddress(node.getnewaddress(), amount)
@@ -245,6 +297,73 @@ class LLMQChainLocksTest(DashTestFramework):
             assert node.verifychainlock(target_block_hash, best_cl_signature, best_cl_height)
         else:
             assert "bestCLHeightDiff" not in cbtx and "bestCLSignature" not in cbtx
+
+    def test_bestCLHeightDiff(self, mn_rr_active):
+        # We need 2 blocks we can grab clsigs from
+        for _ in range(2):
+            self.wait_for_chainlocked_block_all_nodes(self.nodes[0].generate(1)[0])
+        assert_equal(softfork_active(self.nodes[1], "mn_rr"), mn_rr_active)
+        tip1_hash = self.nodes[1].getbestblockhash()
+
+        self.isolate_node(1)
+        tip0_hash = self.nodes[0].generate(1)[0]
+        block_hex = self.nodes[0].getblock(tip0_hash, 0)
+        mal_block = CBlock()
+        mal_block.deserialize(BytesIO(hex_str_to_bytes(block_hex)))
+        cbtx = CCbTx()
+        cbtx.deserialize(BytesIO(mal_block.vtx[0].vExtraPayload))
+        assert_equal(cbtx.bestCLHeightDiff, 0)
+
+        cbtx.bestCLHeightDiff = 1
+        mal_block.vtx[0].vExtraPayload = cbtx.serialize()
+        mal_block.vtx[0].rehash()
+        mal_block.hashMerkleRoot = mal_block.calc_merkle_root()
+        mal_block.solve()
+        result = self.nodes[1].submitblock(mal_block.serialize().hex())
+        assert_equal(result, "bad-cbtx-invalid-clsig")
+        assert_equal(self.nodes[1].getbestblockhash(), tip1_hash)
+
+        # Update the sig too and it should pass now
+        cbtx.bestCLSignature = hex_str_to_bytes(self.nodes[1].getblock(tip1_hash, 2)["tx"][0]["cbTx"]["bestCLSignature"])
+        mal_block.vtx[0].vExtraPayload = cbtx.serialize()
+        mal_block.vtx[0].rehash()
+        mal_block.hashMerkleRoot = mal_block.calc_merkle_root()
+        mal_block.solve()
+        result = self.nodes[1].submitblock(mal_block.serialize().hex())
+        assert_equal(result, None)
+        assert not self.nodes[1].getbestblockhash() == tip1_hash
+
+        # Revert to test another use case
+        self.nodes[1].invalidateblock(self.nodes[1].getbestblockhash())
+        assert_equal(self.nodes[1].getbestblockhash(), tip1_hash)
+
+        # Now it's too old but fails because of another reason when mn_rr is active
+        cbtx.bestCLHeightDiff = 2
+        mal_block.vtx[0].vExtraPayload = cbtx.serialize()
+        mal_block.vtx[0].rehash()
+        mal_block.hashMerkleRoot = mal_block.calc_merkle_root()
+        mal_block.solve()
+        result = self.nodes[1].submitblock(mal_block.serialize().hex())
+        assert_equal(result, "bad-cbtx-older-clsig" if mn_rr_active else "bad-cbtx-invalid-clsig")
+        assert_equal(self.nodes[1].getbestblockhash(), tip1_hash)
+
+        # Update the sig too and it should pass now when mn_rr is not active and fail otherwise
+        old_blockhash = self.nodes[1].getblockhash(self.nodes[1].getblockcount() - 1)
+        cbtx.bestCLSignature = hex_str_to_bytes(self.nodes[1].getblock(old_blockhash, 2)["tx"][0]["cbTx"]["bestCLSignature"])
+        mal_block.vtx[0].vExtraPayload = cbtx.serialize()
+        mal_block.vtx[0].rehash()
+        mal_block.hashMerkleRoot = mal_block.calc_merkle_root()
+        mal_block.solve()
+        result = self.nodes[1].submitblock(mal_block.serialize().hex())
+        if mn_rr_active:
+            assert_equal(result, "bad-cbtx-older-clsig")
+            assert_equal(self.nodes[1].getbestblockhash(), tip1_hash)
+        else:
+            assert_equal(result, None)
+            assert not self.nodes[1].getbestblockhash() == tip1_hash
+
+        self.reconnect_isolated_node(1, 0)
+        self.sync_all()
 
 
 if __name__ == '__main__':

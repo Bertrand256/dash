@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2022 The Dash Core developers
+// Copyright (c) 2020-2023 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -61,7 +61,7 @@ class StatsdClient {
         static void cleanup(std::string& key);
 
     protected:
-        std::unique_ptr<struct _StatsdClientData> d;
+        const std::unique_ptr<struct _StatsdClientData> d;
 };
 
 } // namespace statsd

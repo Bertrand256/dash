@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2020-2022 The Dash Core developers
+# Copyright (c) 2020-2023 The Dash Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test that commands submitted by the platform user are filtered."""
@@ -42,7 +42,7 @@ class HTTPBasicsTest(BitcoinTestFramework):
     def run_test(self):
         url = urllib.parse.urlparse(self.nodes[0].url)
 
-        def test_command(method, params, auth, expexted_status, should_not_match=False):
+        def test_command(method, params, auth, expected_status, should_not_match=False):
             conn = http.client.HTTPConnection(url.hostname, url.port)
             conn.connect()
             body = {"method": method}
@@ -51,16 +51,18 @@ class HTTPBasicsTest(BitcoinTestFramework):
             conn.request('POST', '/', json.dumps(body), {"Authorization": "Basic " + str_to_b64str(auth)})
             resp = conn.getresponse()
             if should_not_match:
-                assert resp.status != expexted_status
+                assert resp.status != expected_status
             else:
-                assert_equal(resp.status, expexted_status)
+                assert_equal(resp.status, expected_status)
             conn.close()
 
-        whitelisted = ["getbestblockhash",
+        whitelisted = ["getassetunlockstatuses",
+                       "getbestblockhash",
                        "getblockhash",
                        "getblockcount",
                        "getbestchainlock",
                        "quorum",
+                       "submitchainlock",
                        "verifyislock"]
 
         help_output = self.nodes[0].help().split('\n')
@@ -110,6 +112,25 @@ class HTTPBasicsTest(BitcoinTestFramework):
 
         self.log.info('Try running a not whitelisted command as the operator...')
         test_command("debug", ["1"], rpcuser_authpair_operator, 200)
+
+
+        self.log.info("Restart node with -rpcexternaluser")
+        self.restart_node(0, extra_args=["-rpcexternaluser=platform-user"])
+
+        external_log_str = "HTTP: Calling handler for external user"
+        expected_log_str = "ThreadRPCServer method="
+        with self.nodes[0].assert_debug_log(expected_msgs=[expected_log_str, external_log_str]):
+            test_command("getbestblockhash", [], rpcuser_authpair_platform, 200)
+        with self.nodes[0].assert_debug_log(expected_msgs=[expected_log_str], unexpected_msgs = [external_log_str]):
+            test_command("getbestblockhash", [], rpcuser_authpair_operator, 200)
+
+        self.log.info("Restart node with multiple external users")
+        self.restart_node(0, extra_args=["-rpcexternaluser=platform-user,operator"])
+        with self.nodes[0].assert_debug_log(expected_msgs=[expected_log_str, external_log_str]):
+            test_command("getbestblockhash", [], rpcuser_authpair_platform, 200)
+        with self.nodes[0].assert_debug_log(expected_msgs=[expected_log_str, external_log_str]):
+            test_command("getbestblockhash", [], rpcuser_authpair_operator, 200)
+
 
 
 if __name__ == '__main__':

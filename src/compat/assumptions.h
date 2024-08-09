@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2019 The Bitcoin Core developers
+// Copyright (c) 2009-2020 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -35,11 +35,6 @@ static_assert(std::numeric_limits<double>::is_iec559, "IEEE 754 double assumed")
 //             trust -- verify!).
 // Example(s): Everywhere :-)
 static_assert(std::numeric_limits<unsigned char>::digits == 8, "8-bit byte assumed");
-
-// Assumption: We assume floating-point widths.
-// Example(s): Type punning in serialization code (ser_{float,double}_to_uint{32,64}).
-static_assert(sizeof(float) == 4, "32-bit float assumed");
-static_assert(sizeof(double) == 8, "64-bit double assumed");
 
 // Assumption: We assume integer widths.
 // Example(s): GetSizeOfCompactSize and WriteCompactSize in the serialization

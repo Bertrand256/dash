@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2022 The Dash Core developers
+// Copyright (c) 2018-2024 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -7,25 +7,41 @@
 #include <llmq/commitment.h>
 #include <llmq/debug.h>
 #include <llmq/dkgsessionmgr.h>
+#include <llmq/options.h>
+#include <llmq/utils.h>
 
 #include <evo/deterministicmns.h>
 #include <evo/specialtx.h>
 
-#include <masternode/node.h>
-#include <masternode/meta.h>
+#include <batchedlogger.h>
 #include <chainparams.h>
-#include <netmessagemaker.h>
-#include <univalue.h>
-#include <validation.h>
-
 #include <cxxtimer.hpp>
-#include <atomic>
-#include <memory>
+#include <deploymentstatus.h>
+#include <logging.h>
+#include <masternode/meta.h>
+#include <masternode/node.h>
+#include <net_processing.h>
+#include <netmessagemaker.h>
+#include <validation.h>
 #include <util/irange.h>
 #include <util/underlying.h>
 
+#include <univalue.h>
+#include <atomic>
+#include <memory>
+
 namespace llmq
 {
+
+class CDKGLogger : public CBatchedLogger
+{
+public:
+    CDKGLogger(const CDKGSession& _quorumDkg, std::string_view _func, int source_line) :
+        CDKGLogger(_quorumDkg.params.name, _quorumDkg.quorumIndex, _quorumDkg.m_quorum_base_block_index->GetBlockHash(), _quorumDkg.m_quorum_base_block_index->nHeight, _quorumDkg.AreWeMember(), _func, source_line){};
+    CDKGLogger(std::string_view _llmqTypeName, int _quorumIndex, const uint256& _quorumHash, int _height, bool _areWeMember, std::string_view _func, int source_line) :
+        CBatchedLogger(BCLog::LLMQ_DKG, strprintf("QuorumDKG(type=%s, qIndex=%d, h=%d, member=%d)", _llmqTypeName, _quorumIndex, _height, _areWeMember), __FILE__, source_line){};
+};
+
 static std::array<std::atomic<double>, ToUnderlying(DKGError::type::_COUNT)> simDkgErrorMap{};
 
 void SetSimulatedDKGErrorRate(DKGError::type type, double rate)
@@ -85,9 +101,9 @@ bool CDKGSession::Init(gsl::not_null<const CBlockIndex*> _pQuorumBaseBlockIndex,
         }
     }
 
-    CDKGLogger logger(*this, __func__);
+    CDKGLogger logger(*this, __func__, __LINE__);
 
-    if (LogAcceptCategory(BCLog::LLMQ) && utils::IsQuorumRotationEnabled(params, m_quorum_base_block_index)) {
+    if (LogAcceptCategory(BCLog::LLMQ) && IsQuorumRotationEnabled(params, m_quorum_base_block_index)) {
         int cycleQuorumBaseHeight = m_quorum_base_block_index->nHeight - quorumIndex;
         const CBlockIndex* pCycleQuorumBaseBlockIndex = m_quorum_base_block_index->GetAncestor(cycleQuorumBaseHeight);
         std::stringstream ss;
@@ -104,7 +120,7 @@ bool CDKGSession::Init(gsl::not_null<const CBlockIndex*> _pQuorumBaseBlockIndex,
 
     if (!myProTxHash.IsNull()) {
         dkgDebugManager.InitLocalSessionStatus(params, quorumIndex, m_quorum_base_block_index->GetBlockHash(), m_quorum_base_block_index->nHeight);
-        relayMembers = utils::GetQuorumRelayMembers(params, m_quorum_base_block_index, myProTxHash, true);
+        relayMembers = utils::GetQuorumRelayMembers(params, m_dmnman, m_quorum_base_block_index, myProTxHash, true);
         if (LogAcceptCategory(BCLog::LLMQ)) {
             std::stringstream ss;
             for (const auto& r : relayMembers) {
@@ -125,7 +141,7 @@ bool CDKGSession::Init(gsl::not_null<const CBlockIndex*> _pQuorumBaseBlockIndex,
 
 void CDKGSession::Contribute(CDKGPendingMessages& pendingMessages)
 {
-    CDKGLogger logger(*this, __func__);
+    CDKGLogger logger(*this, __func__, __LINE__);
 
     if (!AreWeMember()) {
         return;
@@ -146,7 +162,7 @@ void CDKGSession::Contribute(CDKGPendingMessages& pendingMessages)
 
 void CDKGSession::SendContributions(CDKGPendingMessages& pendingMessages)
 {
-    CDKGLogger logger(*this, __func__);
+    CDKGLogger logger(*this, __func__, __LINE__);
 
     assert(AreWeMember());
 
@@ -184,22 +200,22 @@ void CDKGSession::SendContributions(CDKGPendingMessages& pendingMessages)
 
     logger.Batch("encrypted contributions. time=%d", t1.count());
 
-    qc.sig = WITH_LOCK(activeMasternodeInfoCs, return activeMasternodeInfo.blsKeyOperator->Sign(qc.GetSignHash()));
+    qc.sig = m_mn_activeman->Sign(qc.GetSignHash());
 
     logger.Flush();
 
     dkgDebugManager.UpdateLocalSessionStatus(params.type, quorumIndex, [&](CDKGDebugSessionStatus& status) {
-        status.sentContributions = true;
+        status.statusBits.sentContributions = true;
         return true;
     });
 
-    pendingMessages.PushPendingMessage(-1, qc);
+    pendingMessages.PushPendingMessage(-1, nullptr, qc);
 }
 
 // only performs cheap verifications, but not the signature of the message. this is checked with batched verification
 bool CDKGSession::PreVerifyMessage(const CDKGContribution& qc, bool& retBan) const
 {
-    CDKGLogger logger(*this, __func__);
+    CDKGLogger logger(*this, __func__, __LINE__);
 
     retBan = false;
 
@@ -245,9 +261,7 @@ bool CDKGSession::PreVerifyMessage(const CDKGContribution& qc, bool& retBan) con
 
 void CDKGSession::ReceiveMessage(const CDKGContribution& qc, bool& retBan)
 {
-    LOCK(cs_pending);
-
-    CDKGLogger logger(*this, __func__);
+    CDKGLogger logger(*this, __func__, __LINE__);
 
     retBan = false;
 
@@ -272,7 +286,7 @@ void CDKGSession::ReceiveMessage(const CDKGContribution& qc, bool& retBan)
     RelayInvToParticipants(inv);
 
     dkgDebugManager.UpdateLocalMemberStatus(params.type, quorumIndex, member->idx, [&](CDKGDebugMemberStatus& status) {
-        status.receivedContribution = true;
+        status.statusBits.receivedContribution = true;
         return true;
     });
 
@@ -301,7 +315,7 @@ void CDKGSession::ReceiveMessage(const CDKGContribution& qc, bool& retBan)
 
     bool complain = false;
     CBLSSecretKey skContribution;
-    if (!qc.contributions->Decrypt(*myIdx, WITH_LOCK(activeMasternodeInfoCs, return *activeMasternodeInfo.blsKeyOperator), skContribution, PROTOCOL_VERSION)) {
+    if (!m_mn_activeman->Decrypt(*qc.contributions, *myIdx, skContribution, PROTOCOL_VERSION)) {
         logger.Batch("contribution from %s could not be decrypted", member->dmn->proTxHash.ToString());
         complain = true;
     } else if (member->idx != myIdx && ShouldSimulateError(DKGError::type::COMPLAIN_LIE)) {
@@ -312,7 +326,7 @@ void CDKGSession::ReceiveMessage(const CDKGContribution& qc, bool& retBan)
     if (complain) {
         member->weComplain = true;
         dkgDebugManager.UpdateLocalMemberStatus(params.type, quorumIndex, member->idx, [&](CDKGDebugMemberStatus& status) {
-            status.weComplain = true;
+            status.statusBits.weComplain = true;
             return true;
         });
         return;
@@ -320,15 +334,11 @@ void CDKGSession::ReceiveMessage(const CDKGContribution& qc, bool& retBan)
 
     logger.Batch("decrypted our contribution share. time=%d", t2.count());
 
-    bool verifyPending = false;
     receivedSkContributions[member->idx] = skContribution;
     vecEncryptedContributions[member->idx] = qc.contributions;
+    LOCK(cs_pending);
     pendingContributionVerifications.emplace_back(member->idx);
     if (pendingContributionVerifications.size() >= 32) {
-        verifyPending = true;
-    }
-
-    if (verifyPending) {
         VerifyPendingContributions();
     }
 }
@@ -342,12 +352,11 @@ void CDKGSession::VerifyPendingContributions()
 {
     AssertLockHeld(cs_pending);
 
-    CDKGLogger logger(*this, __func__);
+    CDKGLogger logger(*this, __func__, __LINE__);
 
     cxxtimer::Timer t1(true);
 
-    std::vector<size_t> pend = std::move(pendingContributionVerifications);
-    if (pend.empty()) {
+    if (pendingContributionVerifications.empty()) {
         return;
     }
 
@@ -355,7 +364,7 @@ void CDKGSession::VerifyPendingContributions()
     std::vector<BLSVerificationVectorPtr> vvecs;
     std::vector<CBLSSecretKey> skContributions;
 
-    for (const auto& idx : pend) {
+    for (const auto& idx : pendingContributionVerifications) {
         const auto& m = members[idx];
         if (m->bad || m->weComplain) {
             continue;
@@ -380,7 +389,7 @@ void CDKGSession::VerifyPendingContributions()
             logger.Batch("invalid contribution from %s. will complain later", m->dmn->proTxHash.ToString());
             m->weComplain = true;
             dkgDebugManager.UpdateLocalMemberStatus(params.type, quorumIndex, m->idx, [&](CDKGDebugMemberStatus& status) {
-                status.weComplain = true;
+                status.statusBits.weComplain = true;
                 return true;
             });
         } else {
@@ -389,7 +398,8 @@ void CDKGSession::VerifyPendingContributions()
         }
     }
 
-    logger.Batch("verified %d pending contributions. time=%d", pend.size(), t1.count());
+    logger.Batch("verified %d pending contributions. time=%d", pendingContributionVerifications.size(), t1.count());
+    pendingContributionVerifications.clear();
 }
 
 void CDKGSession::VerifyAndComplain(CDKGPendingMessages& pendingMessages)
@@ -403,7 +413,7 @@ void CDKGSession::VerifyAndComplain(CDKGPendingMessages& pendingMessages)
         VerifyPendingContributions();
     }
 
-    CDKGLogger logger(*this, __func__);
+    CDKGLogger logger(*this, __func__, __LINE__);
 
     // we check all members if they sent us their contributions
     // we consider members as bad if they missed to send anything or if they sent multiple
@@ -435,11 +445,13 @@ void CDKGSession::VerifyAndComplain(CDKGPendingMessages& pendingMessages)
 
 void CDKGSession::VerifyConnectionAndMinProtoVersions() const
 {
-    if (!utils::IsQuorumPoseEnabled(params.type)) {
+    assert(m_mn_metaman.IsValid());
+
+    if (!IsQuorumPoseEnabled(params.type, m_sporkman)) {
         return;
     }
 
-    CDKGLogger logger(*this, __func__);
+    CDKGLogger logger(*this, __func__, __LINE__);
 
     std::unordered_map<uint256, int, StaticSaltedHasher> protoMap;
     connman.ForEachNode([&](const CNode* pnode) {
@@ -450,7 +462,7 @@ void CDKGSession::VerifyConnectionAndMinProtoVersions() const
         protoMap.emplace(verifiedProRegTxHash, pnode->nVersion);
     });
 
-    bool fShouldAllMembersBeConnected = utils::IsAllMembersConnectedEnabled(params.type);
+    bool fShouldAllMembersBeConnected = IsAllMembersConnectedEnabled(params.type, m_sporkman);
     for (const auto& m : members) {
         if (m->dmn->proTxHash == myProTxHash) {
             continue;
@@ -465,7 +477,7 @@ void CDKGSession::VerifyConnectionAndMinProtoVersions() const
             logger.Batch("%s does not have min proto version %d (has %d)", m->dmn->proTxHash.ToString(), MIN_MASTERNODE_PROTO_VERSION, it->second);
         }
 
-        if (mmetaman->GetMetaInfo(m->dmn->proTxHash)->OutboundFailedTooManyTimes()) {
+        if (m_mn_metaman.GetMetaInfo(m->dmn->proTxHash)->OutboundFailedTooManyTimes()) {
             m->badConnection = true;
             logger.Batch("%s failed to connect to it too many times", m->dmn->proTxHash.ToString());
         }
@@ -474,7 +486,7 @@ void CDKGSession::VerifyConnectionAndMinProtoVersions() const
 
 void CDKGSession::SendComplaint(CDKGPendingMessages& pendingMessages)
 {
-    CDKGLogger logger(*this, __func__);
+    CDKGLogger logger(*this, __func__, __LINE__);
 
     assert(AreWeMember());
 
@@ -502,22 +514,22 @@ void CDKGSession::SendComplaint(CDKGPendingMessages& pendingMessages)
 
     logger.Batch("sending complaint. badCount=%d, complaintCount=%d", badCount, complaintCount);
 
-    qc.sig = WITH_LOCK(activeMasternodeInfoCs, return activeMasternodeInfo.blsKeyOperator->Sign(qc.GetSignHash()));
+    qc.sig = m_mn_activeman->Sign(qc.GetSignHash());
 
     logger.Flush();
 
     dkgDebugManager.UpdateLocalSessionStatus(params.type, quorumIndex, [&](CDKGDebugSessionStatus& status) {
-        status.sentComplaint = true;
+        status.statusBits.sentComplaint = true;
         return true;
     });
 
-    pendingMessages.PushPendingMessage(-1, qc);
+    pendingMessages.PushPendingMessage(-1, nullptr, qc);
 }
 
 // only performs cheap verifications, but not the signature of the message. this is checked with batched verification
 bool CDKGSession::PreVerifyMessage(const CDKGComplaint& qc, bool& retBan) const
 {
-    CDKGLogger logger(*this, __func__);
+    CDKGLogger logger(*this, __func__, __LINE__);
 
     retBan = false;
 
@@ -559,7 +571,7 @@ bool CDKGSession::PreVerifyMessage(const CDKGComplaint& qc, bool& retBan) const
 
 void CDKGSession::ReceiveMessage(const CDKGComplaint& qc, bool& retBan)
 {
-    CDKGLogger logger(*this, __func__);
+    CDKGLogger logger(*this, __func__, __LINE__);
 
     retBan = false;
 
@@ -580,7 +592,7 @@ void CDKGSession::ReceiveMessage(const CDKGComplaint& qc, bool& retBan)
     RelayInvToParticipants(inv);
 
     dkgDebugManager.UpdateLocalMemberStatus(params.type, quorumIndex, member->idx, [&](CDKGDebugMemberStatus& status) {
-        status.receivedComplaint = true;
+        status.statusBits.receivedComplaint = true;
         return true;
     });
 
@@ -626,7 +638,7 @@ void CDKGSession::VerifyAndJustify(CDKGPendingMessages& pendingMessages)
         return;
     }
 
-    CDKGLogger logger(*this, __func__);
+    CDKGLogger logger(*this, __func__, __LINE__);
 
     std::set<uint256> justifyFor;
 
@@ -648,8 +660,9 @@ void CDKGSession::VerifyAndJustify(CDKGPendingMessages& pendingMessages)
             continue;
         }
 
-        const auto& qc = WITH_LOCK(invCs, return std::move(complaints.at(*m->complaints.begin())));
-        if (qc.complainForMembers[*myIdx]) {
+        LOCK(invCs);
+        if (const auto& qc = complaints.at(*m->complaints.begin());
+                qc.complainForMembers[*myIdx]) {
             justifyFor.emplace(qc.proTxHash);
         }
     }
@@ -662,7 +675,7 @@ void CDKGSession::VerifyAndJustify(CDKGPendingMessages& pendingMessages)
 
 void CDKGSession::SendJustification(CDKGPendingMessages& pendingMessages, const std::set<uint256>& forMembers)
 {
-    CDKGLogger logger(*this, __func__);
+    CDKGLogger logger(*this, __func__, __LINE__);
 
     assert(AreWeMember());
 
@@ -674,7 +687,7 @@ void CDKGSession::SendJustification(CDKGPendingMessages& pendingMessages, const 
     qj.proTxHash = myProTxHash;
     qj.contributions.reserve(forMembers.size());
 
-    for (const auto i : irange::range(members.size())) {
+    for (const uint32_t i : irange::range(members.size())) {
         const auto& m = members[i];
         if (forMembers.count(m->dmn->proTxHash) == 0) {
             continue;
@@ -688,7 +701,7 @@ void CDKGSession::SendJustification(CDKGPendingMessages& pendingMessages, const 
             skContribution.MakeNewKey();
         }
 
-        qj.contributions.emplace_back(i, skContribution);
+        qj.contributions.emplace_back(CDKGJustification::Contribution{i, skContribution});
     }
 
     if (ShouldSimulateError(DKGError::type::JUSTIFY_OMIT)) {
@@ -696,22 +709,22 @@ void CDKGSession::SendJustification(CDKGPendingMessages& pendingMessages, const 
         return;
     }
 
-    qj.sig = WITH_LOCK(activeMasternodeInfoCs, return activeMasternodeInfo.blsKeyOperator->Sign(qj.GetSignHash()));
+    qj.sig = m_mn_activeman->Sign(qj.GetSignHash());
 
     logger.Flush();
 
     dkgDebugManager.UpdateLocalSessionStatus(params.type, quorumIndex, [&](CDKGDebugSessionStatus& status) {
-        status.sentJustification = true;
+        status.statusBits.sentJustification = true;
         return true;
     });
 
-    pendingMessages.PushPendingMessage(-1, qj);
+    pendingMessages.PushPendingMessage(-1, nullptr, qj);
 }
 
 // only performs cheap verifications, but not the signature of the message. this is checked with batched verification
 bool CDKGSession::PreVerifyMessage(const CDKGJustification& qj, bool& retBan) const
 {
-    CDKGLogger logger(*this, __func__);
+    CDKGLogger logger(*this, __func__, __LINE__);
 
     retBan = false;
 
@@ -735,19 +748,19 @@ bool CDKGSession::PreVerifyMessage(const CDKGJustification& qj, bool& retBan) co
 
     std::set<size_t> contributionsSet;
     for (const auto& p : qj.contributions) {
-        if (p.first > members.size()) {
+        if (p.index > members.size()) {
             logger.Batch("invalid contribution index");
             retBan = true;
             return false;
         }
 
-        if (!contributionsSet.emplace(p.first).second) {
+        if (!contributionsSet.emplace(p.index).second) {
             logger.Batch("duplicate contribution index");
             retBan = true;
             return false;
         }
 
-        const auto& skShare = p.second;
+        const auto& skShare = p.key;
         if (!skShare.IsValid()) {
             logger.Batch("invalid contribution");
             retBan = true;
@@ -769,7 +782,7 @@ bool CDKGSession::PreVerifyMessage(const CDKGJustification& qj, bool& retBan) co
 
 void CDKGSession::ReceiveMessage(const CDKGJustification& qj, bool& retBan)
 {
-    CDKGLogger logger(*this, __func__);
+    CDKGLogger logger(*this, __func__, __LINE__);
 
     retBan = false;
 
@@ -791,7 +804,7 @@ void CDKGSession::ReceiveMessage(const CDKGJustification& qj, bool& retBan)
     RelayInvToParticipants(inv);
 
     dkgDebugManager.UpdateLocalMemberStatus(params.type, quorumIndex, member->idx, [&](CDKGDebugMemberStatus& status) {
-        status.receivedJustification = true;
+        status.statusBits.receivedJustification = true;
         return true;
     });
 
@@ -810,7 +823,7 @@ void CDKGSession::ReceiveMessage(const CDKGJustification& qj, bool& retBan)
     }
 
     for (const auto& p : qj.contributions) {
-        const auto& member2 = members[p.first];
+        const auto& member2 = members[p.index];
 
         if (member->complaintsFromOthers.count(member2->dmn->proTxHash) == 0) {
             logger.Batch("got justification from %s for %s even though he didn't complain",
@@ -825,17 +838,15 @@ void CDKGSession::ReceiveMessage(const CDKGJustification& qj, bool& retBan)
     cxxtimer::Timer t1(true);
 
     std::list<std::future<bool>> futures;
-    for (const auto& p : qj.contributions) {
-        const auto& member2 = members[p.first];
-        const auto& skContribution = p.second;
+    for (const auto& [index, skContribution] : qj.contributions) {
+        const auto& member2 = members[index];
 
         // watch out to not bail out before these async calls finish (they rely on valid references)
         futures.emplace_back(blsWorker.AsyncVerifyContributionShare(member2->id, receivedVvecs[member->idx], skContribution));
     }
     auto resultIt = futures.begin();
-    for (const auto& p : qj.contributions) {
-        const auto& member2 = members[p.first];
-        const auto& skContribution = p.second;
+    for (const auto& [index, skContribution] : qj.contributions) {
+        const auto& member2 = members[index];
 
         bool result = (resultIt++)->get();
         if (!result) {
@@ -869,7 +880,7 @@ void CDKGSession::VerifyAndCommit(CDKGPendingMessages& pendingMessages)
         return;
     }
 
-    CDKGLogger logger(*this, __func__);
+    CDKGLogger logger(*this, __func__, __LINE__);
 
     std::vector<size_t> badMembers;
     badMembers.reserve(members.size());
@@ -910,7 +921,7 @@ void CDKGSession::VerifyAndCommit(CDKGPendingMessages& pendingMessages)
 
 void CDKGSession::SendCommitment(CDKGPendingMessages& pendingMessages)
 {
-    CDKGLogger logger(*this, __func__);
+    CDKGLogger logger(*this, __func__, __LINE__);
 
     assert(AreWeMember());
 
@@ -984,13 +995,13 @@ void CDKGSession::SendCommitment(CDKGPendingMessages& pendingMessages)
         (*qc.quorumVvecHash.begin())++;
     }
 
-    uint256 commitmentHash = utils::BuildCommitmentHash(qc.llmqType, qc.quorumHash, qc.validMembers, qc.quorumPublicKey, qc.quorumVvecHash);
+    uint256 commitmentHash = BuildCommitmentHash(qc.llmqType, qc.quorumHash, qc.validMembers, qc.quorumPublicKey, qc.quorumVvecHash);
 
     if (lieType == 2) {
         (*commitmentHash.begin())++;
     }
 
-    qc.sig = WITH_LOCK(activeMasternodeInfoCs, return activeMasternodeInfo.blsKeyOperator->Sign(commitmentHash));
+    qc.sig = m_mn_activeman->Sign(commitmentHash);
     qc.quorumSig = skShare.Sign(commitmentHash);
 
     if (lieType == 3) {
@@ -1015,17 +1026,17 @@ void CDKGSession::SendCommitment(CDKGPendingMessages& pendingMessages)
     logger.Flush();
 
     dkgDebugManager.UpdateLocalSessionStatus(params.type, quorumIndex, [&](CDKGDebugSessionStatus& status) {
-        status.sentPrematureCommitment = true;
+        status.statusBits.sentPrematureCommitment = true;
         return true;
     });
 
-    pendingMessages.PushPendingMessage(-1, qc);
+    pendingMessages.PushPendingMessage(-1, nullptr, qc);
 }
 
 // only performs cheap verifications, but not the signature of the message. this is checked with batched verification
 bool CDKGSession::PreVerifyMessage(const CDKGPrematureCommitment& qc, bool& retBan) const
 {
-    CDKGLogger logger(*this, __func__);
+    CDKGLogger logger(*this, __func__, __LINE__);
 
     retBan = false;
 
@@ -1086,7 +1097,7 @@ bool CDKGSession::PreVerifyMessage(const CDKGPrematureCommitment& qc, bool& retB
 
 void CDKGSession::ReceiveMessage(const CDKGPrematureCommitment& qc, bool& retBan)
 {
-    CDKGLogger logger(*this, __func__);
+    CDKGLogger logger(*this, __func__, __LINE__);
 
     retBan = false;
 
@@ -1152,7 +1163,7 @@ void CDKGSession::ReceiveMessage(const CDKGPrematureCommitment& qc, bool& retBan
     RelayInvToParticipants(inv);
 
     dkgDebugManager.UpdateLocalMemberStatus(params.type, quorumIndex, member->idx, [&](CDKGDebugMemberStatus& status) {
-        status.receivedPrematureCommitment = true;
+        status.statusBits.receivedPrematureCommitment = true;
         return true;
     });
 
@@ -1169,7 +1180,7 @@ std::vector<CFinalCommitment> CDKGSession::FinalizeCommitments()
         return {};
     }
 
-    CDKGLogger logger(*this, __func__);
+    CDKGLogger logger(*this, __func__, __LINE__);
 
     using Key = std::vector<bool>;
     std::map<Key, std::vector<CDKGPrematureCommitment>> commitmentsMap;
@@ -1213,15 +1224,11 @@ std::vector<CFinalCommitment> CDKGSession::FinalizeCommitments()
         fqc.quorumPublicKey = first.quorumPublicKey;
         fqc.quorumVvecHash = first.quorumVvecHash;
 
-        if (utils::IsQuorumRotationEnabled(params, m_quorum_base_block_index)) {
-            fqc.nVersion = utils::IsV19Active(m_quorum_base_block_index) ? CFinalCommitment::BASIC_BLS_INDEXED_QUORUM_VERSION : CFinalCommitment::LEGACY_BLS_INDEXED_QUORUM_VERSION;
-            fqc.quorumIndex = quorumIndex;
-        } else {
-            fqc.nVersion = utils::IsV19Active(m_quorum_base_block_index) ? CFinalCommitment::BASIC_BLS_NON_INDEXED_QUORUM_VERSION : CFinalCommitment::LEGACY_BLS_NON_INDEXED_QUORUM_VERSION;
-            fqc.quorumIndex = 0;
-        }
+        const bool isQuorumRotationEnabled{IsQuorumRotationEnabled(params, m_quorum_base_block_index)};
+        fqc.nVersion = CFinalCommitment::GetVersion(isQuorumRotationEnabled, DeploymentActiveAfter(m_quorum_base_block_index, Params().GetConsensus(), Consensus::DEPLOYMENT_V19));
+        fqc.quorumIndex = isQuorumRotationEnabled ? quorumIndex : 0;
 
-        uint256 commitmentHash = utils::BuildCommitmentHash(fqc.llmqType, fqc.quorumHash, fqc.validMembers, fqc.quorumPublicKey, fqc.quorumVvecHash);
+        uint256 commitmentHash = BuildCommitmentHash(fqc.llmqType, fqc.quorumHash, fqc.validMembers, fqc.quorumPublicKey, fqc.quorumVvecHash);
 
         std::vector<CBLSSignature> aggSigs;
         std::vector<CBLSPublicKey> aggPks;
@@ -1257,7 +1264,7 @@ std::vector<CFinalCommitment> CDKGSession::FinalizeCommitments()
         t2.stop();
 
         cxxtimer::Timer t3(true);
-        if (!fqc.Verify(m_quorum_base_block_index, true)) {
+        if (!fqc.Verify(m_dmnman, m_quorum_base_block_index, true)) {
             logger.Batch("failed to verify final commitment");
             continue;
         }
@@ -1291,7 +1298,7 @@ void CDKGSession::MarkBadMember(size_t idx)
         return;
     }
     dkgDebugManager.UpdateLocalMemberStatus(params.type, quorumIndex, idx, [&](CDKGDebugMemberStatus& status) {
-        status.bad = true;
+        status.statusBits.bad = true;
         return true;
     });
     member->bad = true;
@@ -1299,7 +1306,7 @@ void CDKGSession::MarkBadMember(size_t idx)
 
 void CDKGSession::RelayInvToParticipants(const CInv& inv) const
 {
-    CDKGLogger logger(*this, __func__);
+    CDKGLogger logger(*this, __func__, __LINE__);
     std::stringstream ss;
     for (const auto& r : relayMembers) {
         ss << r.ToString().substr(0, 4) << " | ";
@@ -1307,23 +1314,23 @@ void CDKGSession::RelayInvToParticipants(const CInv& inv) const
     logger.Batch("RelayInvToParticipants inv[%s] relayMembers[%d] GetNodeCount[%d] GetNetworkActive[%d] HasMasternodeQuorumNodes[%d] for quorumHash[%s] forMember[%s] relayMembers[%s]",
                  inv.ToString(),
                  relayMembers.size(),
-                 connman.GetNodeCount(CConnman::CONNECTIONS_ALL),
+                 connman.GetNodeCount(ConnectionDirection::Both),
                  connman.GetNetworkActive(),
                  connman.HasMasternodeQuorumNodes(params.type, m_quorum_base_block_index->GetBlockHash()),
                  m_quorum_base_block_index->GetBlockHash().ToString(),
                  myProTxHash.ToString().substr(0, 4), ss.str());
 
     std::stringstream ss2;
-    connman.ForEachNode([&](CNode* pnode) {
+    connman.ForEachNode([&](const CNode* pnode) {
         if (pnode->qwatch ||
                 (!pnode->GetVerifiedProRegTxHash().IsNull() && (relayMembers.count(pnode->GetVerifiedProRegTxHash()) != 0))) {
-            pnode->PushInventory(inv);
+            Assert(m_peerman)->PushInventory(pnode->GetId(), inv);
         }
 
         if (pnode->GetVerifiedProRegTxHash().IsNull()) {
             logger.Batch("node[%d:%s] not mn",
                          pnode->GetId(),
-                         pnode->GetAddrName());
+                         pnode->m_addr_name);
         } else if (relayMembers.count(pnode->GetVerifiedProRegTxHash()) == 0) {
             ss2 << pnode->GetVerifiedProRegTxHash().ToString().substr(0, 4) << " | ";
         }

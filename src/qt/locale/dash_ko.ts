@@ -106,16 +106,8 @@
         <translation>주소 목록 추출</translation>
     </message>
     <message>
-        <source>Comma separated file (*.csv)</source>
-        <translation>쉼표로 구분된 파일 (*.csv)</translation>
-    </message>
-    <message>
         <source>Exporting Failed</source>
         <translation>추출에 실패하였습니다.</translation>
-    </message>
-    <message>
-        <source>There was an error trying to save the address list to %1. Please try again.</source>
-        <translation>%1에 주소 리스트를 저장하는 동안 오류가 발생했습니다. 다시 시도해주세요.</translation>
     </message>
 </context>
 <context>
@@ -211,14 +203,6 @@
         <translation>지갑 잠금 해제</translation>
     </message>
     <message>
-        <source>This operation needs your wallet passphrase to decrypt the wallet.</source>
-        <translation>지갑을 해독하기 위한 작업에는 사용자 지갑의 암호문이 필요합니다.</translation>
-    </message>
-    <message>
-        <source>Decrypt wallet</source>
-        <translation>지갑 해독</translation>
-    </message>
-    <message>
         <source>Change passphrase</source>
         <translation>암호문 변경</translation>
     </message>
@@ -291,10 +275,6 @@
         <translation>지갑 해독을 위해 입력한 암호문이 틀립니다.</translation>
     </message>
     <message>
-        <source>Wallet decryption failed</source>
-        <translation>지갑 해독 실패</translation>
-    </message>
-    <message>
         <source>Wallet passphrase was successfully changed.</source>
         <translation>지갑 암호문이 성공적으로 변경되었습니다.</translation>
     </message>
@@ -322,11 +302,10 @@
     </message>
 </context>
 <context>
+    <name>BitcoinApplication</name>
+    </context>
+<context>
     <name>BitcoinGUI</name>
-    <message>
-        <source>A fatal error occurred. Dash Core can no longer continue safely and will quit.</source>
-        <translation>치명적인 오류가 발생하였습니다. 더 이상 대시 코어가 안전하지 않을 가능성이 있으며 대시 코어는 곧 종료될 예정입니다.</translation>
-    </message>
     <message>
         <source>&amp;Overview</source>
         <translation>개요(&amp;O)</translation>
@@ -352,6 +331,34 @@
         <translation>지불 요청하기 (QR코드와 대시 URI가 생성됩니다.)</translation>
     </message>
     <message>
+        <source>&amp;Options…</source>
+        <translation>옵션(&amp;O)</translation>
+    </message>
+    <message>
+        <source>&amp;Encrypt Wallet…</source>
+        <translation>지갑 암호화(&amp;E)…</translation>
+    </message>
+    <message>
+        <source>&amp;Backup Wallet…</source>
+        <translation>지갑 백업(&amp;B)…</translation>
+    </message>
+    <message>
+        <source>&amp;Change Passphrase…</source>
+        <translation>암호문 변경(&amp;C)…</translation>
+    </message>
+    <message>
+        <source>&amp;Unlock Wallet…</source>
+        <translation>지갑 잠금해제 (&amp;U)</translation>
+    </message>
+    <message>
+        <source>Sign &amp;message…</source>
+        <translation>메시지 서명…(&amp;M)</translation>
+    </message>
+    <message>
+        <source>&amp;Verify message…</source>
+        <translation>메시지 검증…(&amp;V)</translation>
+    </message>
+    <message>
         <source>&amp;Sending addresses</source>
         <translation>보내기 주소(&amp;S)</translation>
     </message>
@@ -360,16 +367,16 @@
         <translation>받기 주소(&amp;R)</translation>
     </message>
     <message>
+        <source>Open &amp;URI…</source>
+        <translation>URI 열기(&amp;U)…</translation>
+    </message>
+    <message>
         <source>Open Wallet</source>
         <translation>지갑 열기</translation>
     </message>
     <message>
         <source>Open a wallet</source>
         <translation>지갑을 엽니다</translation>
-    </message>
-    <message>
-        <source>Close Wallet...</source>
-        <translation>지갑을 닫습니다...</translation>
     </message>
     <message>
         <source>Close wallet</source>
@@ -428,10 +435,6 @@
         <translation>Qt 정보를 표시합니다</translation>
     </message>
     <message>
-        <source>&amp;Options...</source>
-        <translation>옵션(&amp;O)</translation>
-    </message>
-    <message>
         <source>&amp;About %1</source>
         <translation>%1 정보(&amp;A)</translation>
     </message>
@@ -452,32 +455,16 @@
         <translation>메인창 보이기 또는 숨기기</translation>
     </message>
     <message>
-        <source>&amp;Encrypt Wallet...</source>
-        <translation>지갑 암호화(&amp;E)...</translation>
-    </message>
-    <message>
         <source>Encrypt the private keys that belong to your wallet</source>
         <translation>지갑에 해당하는 개인 키 암호화하기</translation>
-    </message>
-    <message>
-        <source>&amp;Backup Wallet...</source>
-        <translation>지갑 백업(&amp;B)...</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
         <translation>지갑을 다른 장소에 백업</translation>
     </message>
     <message>
-        <source>&amp;Change Passphrase...</source>
-        <translation>암호문 변경(&amp;C)...</translation>
-    </message>
-    <message>
         <source>Change the passphrase used for wallet encryption</source>
         <translation>지갑 암호화에 사용되는 암호문을 변경합니다</translation>
-    </message>
-    <message>
-        <source>&amp;Unlock Wallet...</source>
-        <translation>지갑 잠금해제 (&amp;U)</translation>
     </message>
     <message>
         <source>Unlock wallet</source>
@@ -488,16 +475,8 @@
         <translation>지갑 잠금(&amp;L)</translation>
     </message>
     <message>
-        <source>Sign &amp;message...</source>
-        <translation>메시지 서명...(&amp;M)</translation>
-    </message>
-    <message>
         <source>Sign messages with your Dash addresses to prove you own them</source>
         <translation>본인의 대시 주소임을 증명하기 위하여 메시지에 서명합니다.</translation>
-    </message>
-    <message>
-        <source>&amp;Verify message...</source>
-        <translation>메시지 검증...(&amp;V)</translation>
     </message>
     <message>
         <source>Verify messages to ensure they were signed with specified Dash addresses</source>
@@ -514,10 +493,6 @@
     <message>
         <source>&amp;Debug console</source>
         <translation>디버그 콘솔(&amp;D)</translation>
-    </message>
-    <message>
-        <source>Open debugging console</source>
-        <translation>디버깅 콘솔을 엽니다.</translation>
     </message>
     <message>
         <source>&amp;Network Monitor</source>
@@ -568,14 +543,6 @@
         <translation>사용한 받기 주소와 라벨을 표시합니다.</translation>
     </message>
     <message>
-        <source>Open &amp;URI...</source>
-        <translation>URI 열기(&amp;U)...</translation>
-    </message>
-    <message>
-        <source>Open a dash: URI or payment request</source>
-        <translation>Dash: URI 또는 지불 요청을 엽니다.</translation>
-    </message>
-    <message>
         <source>&amp;Command-line options</source>
         <translation>명령줄 옵션(&amp;C)</translation>
     </message>
@@ -608,10 +575,6 @@
     <message>
         <source>Show information about %1</source>
         <translation>%1에 관한 정보를 표시합니다</translation>
-    </message>
-    <message>
-        <source>Create Wallet...</source>
-        <translation>지갑을 생성합니다...</translation>
     </message>
     <message>
         <source>Create a new wallet</source>
@@ -653,30 +616,6 @@
         <source>Network activity disabled</source>
         <translation>네트워크 활동 정지</translation>
     </message>
-    <message>
-        <source>Syncing Headers (%1%)...</source>
-        <translation>헤더 동기화중 (%1%)...</translation>
-    </message>
-    <message>
-        <source>Synchronizing with network...</source>
-        <translation>네트워크와 동기화중...</translation>
-    </message>
-    <message>
-        <source>Indexing blocks on disk...</source>
-        <translation>디스크에서 블록 색인중...</translation>
-    </message>
-    <message>
-        <source>Processing blocks on disk...</source>
-        <translation>디스크에서 블록 처리중...</translation>
-    </message>
-    <message>
-        <source>Reindexing blocks on disk...</source>
-        <translation>디스크에서 블록 다시 색인중...</translation>
-    </message>
-    <message>
-        <source>Connecting to peers...</source>
-        <translation>피어에 연결중...</translation>
-    </message>
     <message numerus="yes">
         <source>Processed %n block(s) of transaction history.</source>
         <translation><numerusform>거래 히스토리의 %n 블록을 처리하였습니다.</numerusform></translation>
@@ -686,8 +625,40 @@
         <translation>%1 전의 정보 처리 중</translation>
     </message>
     <message>
-        <source>Catching up...</source>
-        <translation>블록 따라잡기...</translation>
+        <source>Close Wallet…</source>
+        <translation>지갑을 닫습니다…</translation>
+    </message>
+    <message>
+        <source>Create Wallet…</source>
+        <translation>지갑을 생성합니다…</translation>
+    </message>
+    <message>
+        <source>Syncing Headers (%1%)…</source>
+        <translation>헤더 동기화중 (%1%)…</translation>
+    </message>
+    <message>
+        <source>Synchronizing with network…</source>
+        <translation>네트워크와 동기화중…</translation>
+    </message>
+    <message>
+        <source>Indexing blocks on disk…</source>
+        <translation>디스크에서 블록 색인중…</translation>
+    </message>
+    <message>
+        <source>Processing blocks on disk…</source>
+        <translation>디스크에서 블록 처리중…</translation>
+    </message>
+    <message>
+        <source>Reindexing blocks on disk…</source>
+        <translation>디스크에서 블록 다시 색인중…</translation>
+    </message>
+    <message>
+        <source>Connecting to peers…</source>
+        <translation>피어에 연결중…</translation>
+    </message>
+    <message>
+        <source>Catching up…</source>
+        <translation>블록 따라잡기…</translation>
     </message>
     <message>
         <source>Last received block was generated %1 ago.</source>
@@ -971,10 +942,6 @@
         <translation>일부 코인은 이미 사용되어 선택되지 않았습니다.</translation>
     </message>
     <message>
-        <source>Some coins were unselected because they do not have enough mixing rounds.</source>
-        <translation>일부 코인은 믹싱 라운드가 충분하지 않아 선택되지 않았습니다.</translation>
-    </message>
-    <message>
         <source>Show all coins</source>
         <translation>모든 코인을 보여줍니다</translation>
     </message>
@@ -1010,8 +977,8 @@
 <context>
     <name>CreateWalletActivity</name>
     <message>
-        <source>Creating Wallet &lt;b&gt;%1&lt;/b&gt;...</source>
-        <translation>지갑 &lt;b&gt;%1&lt;/b&gt; 생성중...</translation>
+        <source>Creating Wallet &lt;b&gt;%1&lt;/b&gt;…</source>
+        <translation>지갑 &lt;b&gt;%1&lt;/b&gt; 생성중…</translation>
     </message>
     <message>
         <source>Create wallet failed</source>
@@ -1060,7 +1027,7 @@
         <source>Create</source>
         <translation>생성하기</translation>
     </message>
-</context>
+    </context>
 <context>
     <name>EditAddressDialog</name>
     <message>
@@ -1150,10 +1117,6 @@
         <translation>필터 목록:</translation>
     </message>
     <message>
-        <source>Filter propsal list</source>
-        <translation>제안서 목록 필터</translation>
-    </message>
-    <message>
         <source>Proposal Count:</source>
         <translation>제안서 수:</translation>
     </message>
@@ -1204,10 +1167,6 @@
         <translation>프로그램을 처음으로 실행합니다. 어디에 %1 데이터를 저장 할 지 선택할 수 있습니다. </translation>
     </message>
     <message>
-        <source>When you click OK, %1 will begin to download and process the full %4 block chain (%2GB) starting with the earliest transactions in %3 when %4 initially launched.</source>
-        <translation>확인을 클릭하면 %1은 모든 %4블록 체인 (%2GB) 장부를 %3 안에 다운로드하고 처리하기 시작합니다.  이는 %4가 시작될 때 생성된 가장 오래된 트랜잭션부터 시작합니다.</translation>
-    </message>
-    <message>
         <source>This initial synchronisation is very demanding, and may expose hardware problems with your computer that had previously gone unnoticed. Each time you run %1, it will continue downloading where it left off.</source>
         <translation>초기 동기화는 매우 오래 걸리며 이전에는 본 적 없는  하드웨어 문제가 발생할 수 있습니다. %1을 실행할 때마다 중단 된 곳에서 다시 계속 다운로드 됩니다.</translation>
     </message>
@@ -1246,14 +1205,6 @@
     <message>
         <source>Error</source>
         <translation>오류</translation>
-    </message>
-    <message>
-        <source>%1 GB of free space available</source>
-        <translation>저장 공간이 %1 GB 남았습니다.</translation>
-    </message>
-    <message>
-        <source>(of %1 GB needed)</source>
-        <translation>(필요한 %1 GB 중)</translation>
     </message>
 </context>
 <context>
@@ -1335,8 +1286,12 @@
         <translation>콜래트럴 아웃포인트 복사</translation>
     </message>
     <message>
-        <source>Updating...</source>
-        <translation>업데이트 중...</translation>
+        <source>Please wait…</source>
+        <translation>기다려주십시오…</translation>
+    </message>
+    <message>
+        <source>Updating…</source>
+        <translation>업데이트 중…</translation>
     </message>
     <message>
         <source>ENABLED</source>
@@ -1371,10 +1326,6 @@
         <translation>모든 속성으로 검색하기 (예: 주소 혹은 protx 해시)</translation>
     </message>
     <message>
-        <source>Please wait...</source>
-        <translation>기다려주십시오...</translation>
-    </message>
-    <message>
         <source>Additional information for DIP3 Masternode %1</source>
         <translation>DIP3 마스터노드 %1에 대한 추가 정보</translation>
     </message>
@@ -1398,8 +1349,12 @@
         <translation>남은 블록의 수</translation>
     </message>
     <message>
-        <source>Unknown...</source>
-        <translation>알 수 없음...</translation>
+        <source>Unknown…</source>
+        <translation>알 수 없음…</translation>
+    </message>
+    <message>
+        <source>calculating…</source>
+        <translation>계산 중…</translation>
     </message>
     <message>
         <source>Last block time</source>
@@ -1414,10 +1369,6 @@
         <translation>시간당 진행 증가율</translation>
     </message>
     <message>
-        <source>calculating...</source>
-        <translation>계산 중...</translation>
-    </message>
-    <message>
         <source>Estimated time left until synced</source>
         <translation>동기화 완료까지 예상 시간</translation>
     </message>
@@ -1426,8 +1377,8 @@
         <translation>숨기기</translation>
     </message>
     <message>
-        <source>Unknown. Syncing Headers (%1, %2%)...</source>
-        <translation>알 수 없음. 헤더 동기화중 (%1, %2%)...</translation>
+        <source>Unknown. Syncing Headers (%1, %2%)…</source>
+        <translation>알 수 없음. 헤더 동기화중 (%1, %2%)…</translation>
     </message>
 </context>
 <context>
@@ -1437,20 +1388,8 @@
         <translation>URI 열기</translation>
     </message>
     <message>
-        <source>Open payment request from URI or file</source>
-        <translation>지급 요청 URI 또는 파일 열기</translation>
-    </message>
-    <message>
         <source>URI:</source>
         <translation>URI:</translation>
-    </message>
-    <message>
-        <source>Select payment request file</source>
-        <translation>지불 요청 파일을 선택하세요.</translation>
-    </message>
-    <message>
-        <source>Select payment request file to open</source>
-        <translation>열려는 지불 요청 파일을 선택하세요.</translation>
     </message>
 </context>
 <context>
@@ -1468,8 +1407,8 @@
         <translation>기본 지갑</translation>
     </message>
     <message>
-        <source>Opening Wallet &lt;b&gt;%1&lt;/b&gt;...</source>
-        <translation>지갑 &lt;b&gt;%1&lt;/b&gt; 여는 중...</translation>
+        <source>Opening Wallet &lt;b&gt;%1&lt;/b&gt;…</source>
+        <translation>지갑 &lt;b&gt;%1&lt;/b&gt; 여는 중…</translation>
     </message>
 </context>
 <context>
@@ -1591,10 +1530,6 @@
         <translation>라우터에서 대시 코어 클라이언트를 자동으로 엽니다. 이 기능은 당신의 라우터가 UPnP를 지원하고 해당 기능이 작동하는 경우에만 가능합니다.</translation>
     </message>
     <message>
-        <source>Automatically open the Bitcoin client port on the router. This only works when your router supports NAT-PMP and it is enabled. The external port could be random.</source>
-        <translation>라우터에서 비트코인 클라이언트를 자동으로 엽니다. 이 기능은 당신의 라우터가 NAT-PMP를 지원하고 해당 기능이 작동하는 경우에만 가능합니다. 외부 포트는 랜덤일 수 있습니다.</translation>
-    </message>
-    <message>
         <source>Map port using NA&amp;T-PMP</source>
         <translation>NAT-PMP를 사용하는 맵 포트(&amp;T)</translation>
     </message>
@@ -1619,20 +1554,8 @@
         <translation>선택된 기본 SOCKS5 프록시가 이 네트워크 유형을 통해 피어에 연결하는 경우에 보여주기</translation>
     </message>
     <message>
-        <source>Use separate SOCKS&amp;5 proxy to reach peers via Tor hidden services:</source>
-        <translation>Tor 숨김 서비스로 피어에 접속하기 위해 별도의 SOCKS&amp;5 프록시 사용:</translation>
-    </message>
-    <message>
         <source>Options set in this dialog are overridden by the command line or in the configuration file:</source>
         <translation>이 대화의 옵션 세트는 명령줄에 의해, 혹은 설정 파일에서 중단됩니다:</translation>
-    </message>
-    <message>
-        <source>Hide the icon from the system tray.</source>
-        <translation>시스템 트레이에서 아이콘을 숨깁니다.</translation>
-    </message>
-    <message>
-        <source>&amp;Hide tray icon</source>
-        <translation>트레이 아이콘 숨김(&amp;H)</translation>
     </message>
     <message>
         <source>Minimize instead of exit the application when the window is closed. When this option is enabled, the application will be closed only after selecting Exit in the menu.</source>
@@ -1715,10 +1638,6 @@
         <translation>Tor</translation>
     </message>
     <message>
-        <source>Connect to the Dash network through a separate SOCKS5 proxy for Tor hidden services.</source>
-        <translation>Tor 숨김 서비스를 위한 별도의 SOCKS5 프록시를 사용하여 대시 네트워크에 연결</translation>
-    </message>
-    <message>
         <source>Show only a tray icon after minimizing the window.</source>
         <translation>창을 최소화한 후 트레이 아이콘만 표시합니다.</translation>
     </message>
@@ -1741,12 +1660,6 @@
     <message>
         <source>The user interface language can be set here. This setting will take effect after restarting %1.</source>
         <translation>이곳에서 사용자 인터페이스 언어를 설정 할 수 있습니다. 이 설정은 %1을/를 다시 시작할 때 적용됩니다.</translation>
-    </message>
-    <message>
-        <source>Language missing or translation incomplete? Help contributing translations here:
-https://www.transifex.com/projects/p/dash/</source>
-        <translation>지정하려는 언어가 목록에 없거나 번역이 완성되지 않았다면? 다음의 주소에서 번역을 도와주세요:
-https://www.transifex.com/projects/p/dash/</translation>
     </message>
     <message>
         <source>&amp;Unit to show amounts in:</source>
@@ -2029,6 +1942,9 @@ https://www.transifex.com/projects/p/dash/</translation>
     </message>
 </context>
 <context>
+    <name>PSBTOperationsDialog</name>
+    </context>
+<context>
     <name>PaymentServer</name>
     <message>
         <source>Payment request error</source>
@@ -2047,18 +1963,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>'dash://' 는 유효하지 않은 URI 입니다. 'dash:' 를 사용하세요.</translation>
     </message>
     <message>
-        <source>Payment request fetch URL is invalid: %1</source>
-        <translation>지불 요청을 위해 불러온 URL이 유효하지 않습니다: %1</translation>
-    </message>
-    <message>
-        <source>Cannot process payment request because BIP70 support was not compiled in.</source>
-        <translation>BIP70 포트가 컴파일되지 않아 지불 요청을 처리할 수 없습니다.</translation>
-    </message>
-    <message>
-        <source>Invalid payment address %1</source>
-        <translation>유효하지 않은 지불 주소 %1</translation>
-    </message>
-    <message>
         <source>URI cannot be parsed! This can be caused by an invalid Dash address or malformed URI parameters.</source>
         <translation>URI를 분석할 수 없습니다! 대시 주소가 유효하지 않거나 URI 파라미터 구성에 오류가 존재할 수 있습니다.</translation>
     </message>
@@ -2066,94 +1970,30 @@ https://www.transifex.com/projects/p/dash/</translation>
         <source>Payment request file handling</source>
         <translation>지불 요청 파일 처리</translation>
     </message>
-    <message>
-        <source>Payment request file cannot be read! This can be caused by an invalid payment request file.</source>
-        <translation>지불 요청 파일을 읽을 수 없습니다! 잘못된 지불 요청 파일에 의해 발생하는 오류일 수 있습니다.</translation>
-    </message>
-    <message>
-        <source>Payment request rejected</source>
-        <translation>지불 요청이 거부됨</translation>
-    </message>
-    <message>
-        <source>Payment request network doesn't match client network.</source>
-        <translation>지급 요청 네트워크가 클라이언트 네트워크와 일치하지 않습니다.</translation>
-    </message>
-    <message>
-        <source>Payment request expired.</source>
-        <translation>지불 요청이 만료됨</translation>
-    </message>
-    <message>
-        <source>Payment request is not initialized.</source>
-        <translation>지불 요청이 초기화 되지 않았습니다.</translation>
-    </message>
-    <message>
-        <source>Unverified payment requests to custom payment scripts are unsupported.</source>
-        <translation>임의로 변경한 결제 스크립트 기반의 지불 요청 양식은 검증되기 전까지는 지원되지 않습니다.</translation>
-    </message>
-    <message>
-        <source>Invalid payment request.</source>
-        <translation>잘못된 지불 요청입니다.</translation>
-    </message>
-    <message>
-        <source>Requested payment amount of %1 is too small (considered dust).</source>
-        <translation>(더스트를 고려할 때) 요청한 금액 %1의 양이 너무 적습니다. </translation>
-    </message>
-    <message>
-        <source>Refund from %1</source>
-        <translation>%1 으로부터 환불</translation>
-    </message>
-    <message>
-        <source>Payment request %1 is too large (%2 bytes, allowed %3 bytes).</source>
-        <translation>지불 요청 금액인 %1은/는 너무 큽니다 (%2 바이트, %3 바이트까지 허용).</translation>
-    </message>
-    <message>
-        <source>Error communicating with %1: %2</source>
-        <translation>%1과의 소통 에러: %2</translation>
-    </message>
-    <message>
-        <source>Payment request cannot be parsed!</source>
-        <translation>지불 요청을 분석 할 수 없습니다!</translation>
-    </message>
-    <message>
-        <source>Bad response from server %1</source>
-        <translation>%1 서버로부터 잘못된 응답을 받았습니다.</translation>
-    </message>
-    <message>
-        <source>Network request error</source>
-        <translation>네트워크 요청 에러</translation>
-    </message>
-    <message>
-        <source>Payment acknowledged</source>
-        <translation>지불이 진행 중입니다.</translation>
-    </message>
 </context>
 <context>
     <name>PeerTableModel</name>
     <message>
-        <source>NodeId</source>
-        <translation>노드 ID</translation>
-    </message>
-    <message>
-        <source>Node/Service</source>
-        <translation>노드/서비스</translation>
-    </message>
-    <message>
         <source>User Agent</source>
+        <extracomment>Title of Peers Table column which contains the peer's User Agent string.</extracomment>
         <translation>사용자 에이전트</translation>
     </message>
     <message>
         <source>Ping</source>
+        <extracomment>Title of Peers Table column which indicates the current latency of the connection with the peer.</extracomment>
         <translation>Ping</translation>
     </message>
     <message>
         <source>Sent</source>
+        <extracomment>Title of Peers Table column which indicates the total amount of network information we have sent to the peer.</extracomment>
         <translation>보냄</translation>
     </message>
     <message>
         <source>Received</source>
+        <extracomment>Title of Peers Table column which indicates the total amount of network information we have received from the peer.</extracomment>
         <translation>받음</translation>
     </message>
-</context>
+    </context>
 <context>
     <name>Proposal</name>
     <message>
@@ -2239,10 +2079,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>GUI를 통해 수정된 모든 설정을 초기화</translation>
     </message>
     <message>
-        <source>Set SSL root certificates for payment request (default: -system-)</source>
-        <translation>지불 요청을 위한 SSL 루트 인증서 설정 (기본값: -system-)</translation>
-    </message>
-    <message>
         <source>Show splash screen on startup (default: %u)</source>
         <translation>실행시 시작 화면 보기 (기본값: %u)</translation>
     </message>
@@ -2287,8 +2123,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>오류: %1 CSS 파일이 -custom-css-dir 경로에서 누락되었습니다.</translation>
     </message>
     <message>
-        <source>%1 didn't yet exit safely...</source>
-        <translation>%1가 아직 안전하게 종료되지 않았습니다...</translation>
+        <source>%1 didn't yet exit safely…</source>
+        <translation>%1가 아직 안전하게 종료되지 않았습니다…</translation>
     </message>
     <message>
         <source>Amount</source>
@@ -2398,38 +2234,15 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>QR 코드</translation>
     </message>
     <message>
-        <source>&amp;Save Image...</source>
-        <translation>이미지 저장(&amp;S)...</translation>
-    </message>
-    <message>
-        <source>Error creating QR Code.</source>
-        <translation>QR 코드를 생성하는 데 에러가 발생하였습니다.</translation>
-    </message>
-</context>
-<context>
-    <name>QRGeneralImageWidget</name>
-    <message>
-        <source>&amp;Save Image...</source>
-        <translation>이미지 저장(&amp;S)...</translation>
-    </message>
-    <message>
-        <source>&amp;Copy Image</source>
-        <translation>이미지 복사(&amp;C)</translation>
-    </message>
-    <message>
-        <source>Save QR Code</source>
-        <translation>QR 코드 저장</translation>
-    </message>
-    <message>
-        <source>PNG Image (*.png)</source>
-        <translation>PNG 이미지 (*.png)</translation>
+        <source>&amp;Save Image…</source>
+        <translation>이미지 저장(&amp;S)…</translation>
     </message>
 </context>
 <context>
     <name>QRImageWidget</name>
     <message>
-        <source>&amp;Save Image...</source>
-        <translation>이미지 저장(&amp;S)...</translation>
+        <source>&amp;Save Image…</source>
+        <translation>이미지 저장(&amp;S)…</translation>
     </message>
     <message>
         <source>&amp;Copy Image</source>
@@ -2451,11 +2264,7 @@ https://www.transifex.com/projects/p/dash/</translation>
         <source>Save QR Code</source>
         <translation>QR 코드 저장</translation>
     </message>
-    <message>
-        <source>PNG Image (*.png)</source>
-        <translation>PNG 이미지 (*.png)</translation>
-    </message>
-</context>
+    </context>
 <context>
     <name>RPCConsole</name>
     <message>
@@ -2511,10 +2320,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>블록 체인</translation>
     </message>
     <message>
-        <source>Number of Masternodes</source>
-        <translation>마스터노드 수</translation>
-    </message>
-    <message>
         <source>Memory Pool</source>
         <translation>메모리 풀</translation>
     </message>
@@ -2563,14 +2368,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>자세한 정보를 보려면 피어를 선택하세요.</translation>
     </message>
     <message>
-        <source>Whitelisted</source>
-        <translation>화이트리스트에 포함</translation>
-    </message>
-    <message>
-        <source>Direction</source>
-        <translation>방향</translation>
-    </message>
-    <message>
         <source>Version</source>
         <translation>버전</translation>
     </message>
@@ -2605,10 +2402,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>-rescan=2: Rescan the block chain for missing wallet transactions starting from genesis block.</source>
         <translation>-rescan=2: 제네시스 블록에서부터 누락된 지갑 거래를 위해 블록체인을 다시 스캔합니다.</translation>
-    </message>
-    <message>
-        <source>Wallet Path</source>
-        <translation>지갑 경로</translation>
     </message>
     <message>
         <source>User Agent</source>
@@ -2683,10 +2476,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>서비스</translation>
     </message>
     <message>
-        <source>Ban Score</source>
-        <translation>밴 스코어</translation>
-    </message>
-    <message>
         <source>Connection Time</source>
         <translation>접속 시간</translation>
     </message>
@@ -2721,30 +2510,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>&amp;Wallet Repair</source>
         <translation>지갑 복구(&amp;W)</translation>
-    </message>
-    <message>
-        <source>Recover transactions 1</source>
-        <translation>거래 1 복구</translation>
-    </message>
-    <message>
-        <source>Recover transactions 2</source>
-        <translation>거래 2 복구</translation>
-    </message>
-    <message>
-        <source>Upgrade wallet format</source>
-        <translation>지갑 포맷 업그레이드</translation>
-    </message>
-    <message>
-        <source>-zapwallettxes=1: Recover transactions from blockchain (keep meta-data, e.g. account owner).</source>
-        <translation>-zapwallettxes=1: 블록체인에서 거래를 복원합니다 (메타 데이터는 유지, 예: 계정 소유자).</translation>
-    </message>
-    <message>
-        <source>-zapwallettxes=2: Recover transactions from blockchain (drop meta-data).</source>
-        <translation>-zapwallettxes=2: 블록체인에서 거래를 복원합니다 (메타 데이터 유지하지 않음).</translation>
-    </message>
-    <message>
-        <source>-upgradewallet: Upgrade wallet to latest format on startup. (Note: this is NOT an update of the wallet itself!)</source>
-        <translation>-upgradewallet: 시작 시 지갑을 최신 포맷으로 업그레이드합니다 (주의: 이 옵션은 지갑 자체의 업그레이드가 아닙니다!)</translation>
     </message>
     <message>
         <source>Wallet repair options.</source>
@@ -2831,32 +2596,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>"%1" 지갑을 이용하여 명령 수행하기</translation>
     </message>
     <message>
-        <source>(node id: %1)</source>
-        <translation>(노드 ID: %1)</translation>
-    </message>
-    <message>
         <source>via %1</source>
         <translation>%1 경유</translation>
-    </message>
-    <message>
-        <source>never</source>
-        <translation>없음</translation>
-    </message>
-    <message>
-        <source>Inbound</source>
-        <translation>인바운드</translation>
-    </message>
-    <message>
-        <source>Outbound</source>
-        <translation>아웃바운드</translation>
-    </message>
-    <message>
-        <source>Yes</source>
-        <translation>예</translation>
-    </message>
-    <message>
-        <source>No</source>
-        <translation>아니오</translation>
     </message>
     <message>
         <source>Regular</source>
@@ -2874,7 +2615,7 @@ https://www.transifex.com/projects/p/dash/</translation>
         <source>Unknown</source>
         <translation>알 수 없음</translation>
     </message>
-</context>
+    </context>
 <context>
     <name>ReceiveCoinsDialog</name>
     <message>
@@ -2969,13 +2710,9 @@ https://www.transifex.com/projects/p/dash/</translation>
         <source>Copy amount</source>
         <translation>거래액 복사</translation>
     </message>
-</context>
+    </context>
 <context>
     <name>ReceiveRequestDialog</name>
-    <message>
-        <source>QR Code</source>
-        <translation>QR 코드</translation>
-    </message>
     <message>
         <source>Copy &amp;URI</source>
         <translation>URI 복사(&amp;U)</translation>
@@ -2985,8 +2722,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>주소 복사(&amp;A)</translation>
     </message>
     <message>
-        <source>&amp;Save Image...</source>
-        <translation>이미지 저장(&amp;S)...</translation>
+        <source>&amp;Save Image…</source>
+        <translation>이미지 저장(&amp;S)…</translation>
     </message>
     <message>
         <source>Request payment to %1</source>
@@ -2995,30 +2732,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Payment information</source>
         <translation>지불 정보</translation>
-    </message>
-    <message>
-        <source>URI</source>
-        <translation>URI</translation>
-    </message>
-    <message>
-        <source>Address</source>
-        <translation>주소</translation>
-    </message>
-    <message>
-        <source>Amount</source>
-        <translation>거래액</translation>
-    </message>
-    <message>
-        <source>Label</source>
-        <translation>라벨</translation>
-    </message>
-    <message>
-        <source>Message</source>
-        <translation>메시지</translation>
-    </message>
-    <message>
-        <source>Wallet</source>
-        <translation>지갑</translation>
     </message>
 </context>
 <context>
@@ -3063,10 +2776,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>코인 컨트롤 기능</translation>
     </message>
     <message>
-        <source>Inputs...</source>
-        <translation>입력...</translation>
-    </message>
-    <message>
         <source>automatically selected</source>
         <translation>자동 선택</translation>
     </message>
@@ -3095,6 +2804,10 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>더스트:</translation>
     </message>
     <message>
+        <source>Inputs…</source>
+        <translation>입력…</translation>
+    </message>
+    <message>
         <source>After Fee:</source>
         <translation>수수료 이후:</translation>
     </message>
@@ -3115,8 +2828,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>거래 수수료:</translation>
     </message>
     <message>
-        <source>Choose...</source>
-        <translation>선택...</translation>
+        <source>(Smart fee not initialized yet. This usually takes a few blocks…)</source>
+        <translation>(Smart fee가 아직 초기화 되지 않았습니다. 이 과정에는 수 블록이 소요됩니다…)</translation>
     </message>
     <message>
         <source>Confirmation time target:</source>
@@ -3127,16 +2840,16 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>만일 사용자 지정 수수료가 1000 더프로 설정되어 있으나 거래는 250바이트에 불과한 경우, 'KB 당'은 오직 250 더프를 수수료로 지불하는 한편 &lt;br /&gt;'최소'는 1000더프를 지불합니다. 1 KB보다 큰 거래를 진행하는 경우 두 옵션 모두 KB 당으로 지불합니다.</translation>
     </message>
     <message>
-        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks.&lt;br /&gt;But be aware that this can end up in a never confirming transaction once there is more demand for dash transactions than the network can process.</source>
-        <translation>최소한의 수수료만 지불하기는 블록체인 내의 공간보다 적은 거래가 진행 중인 경우에만 제대로 작동합니다.&lt;br /&gt;이 옵션을 선택하면 대시 네트워크가 처리할 수 있는 것 보다 많은 거래가 진행되는 경우 거래 확인이 이루어지지 않을 수도 있다는 점을 주의하세요.</translation>
-    </message>
-    <message>
         <source>per kilobyte</source>
         <translation>킬로바이트 당</translation>
     </message>
     <message>
         <source>Using the fallbackfee can result in sending a transaction that will take several hours or days (or never) to confirm. Consider choosing your fee manually or wait until you have validated the complete chain.</source>
         <translation>폴백수수료(fallbackfee)를 사용하는 경우 거래를 전송하는 데 수 시간, 수 일이 소요되거나 거래가 전송되지 않을 수 있습니다. 수수료를 수동으로 선택하시거나 완전한 블록체인에 승인할 때 까지 기다리실 것을 권장합니다.</translation>
+    </message>
+    <message>
+        <source>Choose…</source>
+        <translation>선택…</translation>
     </message>
     <message>
         <source>Note: Not enough data for fee estimation, using the fallback fee instead.</source>
@@ -3151,20 +2864,12 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>숨기기</translation>
     </message>
     <message>
-        <source>(read the tooltip)</source>
-        <translation>(도구 팁을 읽어보세요)</translation>
-    </message>
-    <message>
         <source>Recommended:</source>
         <translation>권장:</translation>
     </message>
     <message>
         <source>Custom:</source>
         <translation>사용자 정의:</translation>
-    </message>
-    <message>
-        <source>(Smart fee not initialized yet. This usually takes a few blocks...)</source>
-        <translation>(Smart fee가 아직 초기화 되지 않았습니다. 이 과정에는 수 블록이 소요됩니다...)</translation>
     </message>
     <message>
         <source>Confirm the send action</source>
@@ -3225,10 +2930,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>%1 (%2 blocks)</source>
         <translation>%1 (%2 블록)</translation>
-    </message>
-    <message>
-        <source>from wallet %1</source>
-        <translation>지갑 %1에서</translation>
     </message>
     <message>
         <source>using</source>
@@ -3329,14 +3030,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>A fee higher than %1 is considered an absurdly high fee.</source>
         <translation>%1 보다 높은 수수료는 너무 높은 수수료 입니다.</translation>
-    </message>
-    <message>
-        <source>Payment request expired.</source>
-        <translation>지불 요청이 만료 되었습니다.</translation>
-    </message>
-    <message>
-        <source>Pay only the required fee of %1</source>
-        <translation>오직 %1 만의 수수료를 지불하기</translation>
     </message>
     <message numerus="yes">
         <source>Estimated to begin confirmation within %n block(s).</source>
@@ -3445,23 +3138,12 @@ https://www.transifex.com/projects/p/dash/</translation>
         <source>Memo:</source>
         <translation>메모:</translation>
     </message>
-    <message>
-        <source>Enter a label for this address to add it to your address book</source>
-        <translation>주소록에 추가하기 위해서는 라벨을 입력하세요.</translation>
-    </message>
-</context>
-<context>
-    <name>SendConfirmationDialog</name>
-    <message>
-        <source>Send</source>
-        <translation>보내기</translation>
-    </message>
 </context>
 <context>
     <name>ShutdownWindow</name>
     <message>
-        <source>%1 is shutting down...</source>
-        <translation>%1 을/를 종료 중입니다...</translation>
+        <source>%1 is shutting down…</source>
+        <translation>%1 을/를 종료 중입니다…</translation>
     </message>
     <message>
         <source>Do not shut down the computer until this window disappears.</source>
@@ -3628,13 +3310,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     </message>
 </context>
 <context>
-    <name>SplashScreen</name>
-    <message>
-        <source>[testnet]</source>
-        <translation>[테스트넷]</translation>
-    </message>
-</context>
-<context>
     <name>TrafficGraphWidget</name>
     <message>
         <source>KB/s</source>
@@ -3790,14 +3465,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Transaction total size</source>
         <translation>총 거래 크기</translation>
-    </message>
-    <message>
-        <source> (Certificate was not verified)</source>
-        <translation>(인증서가 검증되지 않음)</translation>
-    </message>
-    <message>
-        <source>Merchant</source>
-        <translation>사업체</translation>
     </message>
     <message>
         <source>Generated coins must mature %1 blocks before they can be spent. When you generated this block, it was broadcast to the network to be added to the block chain. If it fails to get into the chain, its state will change to "not accepted" and it won't be spendable. This may occasionally happen if another node generates a block within a few seconds of yours.</source>
@@ -4005,8 +3672,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>올 해</translation>
     </message>
     <message>
-        <source>Range...</source>
-        <translation>범위...</translation>
+        <source>Range…</source>
+        <translation>범위…</translation>
     </message>
     <message>
         <source>Most Common</source>
@@ -4105,10 +3772,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>거래 기록 내보내기</translation>
     </message>
     <message>
-        <source>Comma separated file (*.csv)</source>
-        <translation>쉼표로 구분된 파일 (*.csv)</translation>
-    </message>
-    <message>
         <source>Confirmed</source>
         <translation>확인 완료</translation>
     </message>
@@ -4186,14 +3849,10 @@ https://www.transifex.com/projects/p/dash/</translation>
         <source>Closing the wallet for too long can result in having to resync the entire chain if pruning is enabled.</source>
         <translation>지갑을 닫는 데 너무 오랜 시간이 걸리는 경우 정리가 활성화될 때 전체 체인을 다시 동기화해야 할 수 있습니다.</translation>
     </message>
-</context>
+    </context>
 <context>
     <name>WalletFrame</name>
-    <message>
-        <source>No wallet has been loaded.</source>
-        <translation>불러올 지갑이 없습니다.</translation>
-    </message>
-</context>
+    </context>
 <context>
     <name>WalletModel</name>
     <message>
@@ -4222,10 +3881,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Backup Wallet</source>
         <translation>지갑 백업</translation>
-    </message>
-    <message>
-        <source>Wallet Data (*.dat)</source>
-        <translation>지갑 데이터 (*.dat)</translation>
     </message>
     <message>
         <source>Backup Failed</source>
@@ -4267,20 +3922,12 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>출시 전의 테스트 빌드 입니다 - 스스로의 책임하에 사용하십시오 - 채굴이나 상업적 프로그램으로 사용하지 마십시오</translation>
     </message>
     <message>
-        <source>Warning: The network does not appear to fully agree! Some miners appear to be experiencing issues.</source>
-        <translation>경고 : 모든 네트워크가 완전히 일치하지 않은 것으로 보입니다! 일부 채굴자들이 문제를 겪고 있을 수 있습니다.</translation>
-    </message>
-    <message>
         <source>Warning: We do not appear to fully agree with our peers! You may need to upgrade, or other nodes may need to upgrade.</source>
         <translation>경고: 피어와 완전히 일치하지 않는 것으로 보입니다! 당신 혹은 다른 노드들의 업그레이드가 필요합니다.</translation>
     </message>
     <message>
         <source>Already have that input.</source>
         <translation>이미 입력된 값입니다.</translation>
-    </message>
-    <message>
-        <source>Cannot downgrade wallet</source>
-        <translation>지갑을 다운그레이드 할 수 없습니다.</translation>
     </message>
     <message>
         <source>Collateral not valid.</source>
@@ -4363,14 +4010,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>충분한 사용자를 감지하였습니다. 신호를 보내는 중입니다. ( %s 기다리기 )</translation>
     </message>
     <message>
-        <source>Found enough users, signing ...</source>
-        <translation>충분한 사용자를 감지하였습니다. 신호를 보내는 중입니다...</translation>
-    </message>
-    <message>
-        <source>Importing...</source>
-        <translation>가져오는 중...</translation>
-    </message>
-    <message>
         <source>Incompatible mode.</source>
         <translation>호환 불가 모드</translation>
     </message>
@@ -4403,28 +4042,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>-minsporkkeys로 지정된 스포크 서명자의 최소 숫자가 유효하지 않습니다.</translation>
     </message>
     <message>
-        <source>Keypool ran out, please call keypoolrefill first</source>
-        <translation>Keypool을 모두 사용하였습니다. 우선 keypoolrefill을 호출하십시오.</translation>
-    </message>
-    <message>
-        <source>Loading banlist...</source>
-        <translation>추방 리스트를 불러오는 중...</translation>
-    </message>
-    <message>
-        <source>Loading fulfilled requests cache...</source>
-        <translation>수행된 요청 캐시를 불러오는 중...</translation>
-    </message>
-    <message>
-        <source>Loading masternode cache...</source>
-        <translation>마스터노드 캐시를 불러오는 중...</translation>
-    </message>
-    <message>
         <source>Lock is already in place.</source>
         <translation>이미 잠금 상태입니다.</translation>
-    </message>
-    <message>
-        <source>Mixing in progress...</source>
-        <translation>믹싱이 진행 중입니다...</translation>
     </message>
     <message>
         <source>Need to specify a port with -whitebind: '%s'</source>
@@ -4447,12 +4066,36 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>마스터노드 리스트에 없습니다.</translation>
     </message>
     <message>
+        <source>Pruning blockstore…</source>
+        <translation>블록 데이터를 축소 중입니다..</translation>
+    </message>
+    <message>
+        <source>Replaying blocks…</source>
+        <translation>블록 재실행 중…</translation>
+    </message>
+    <message>
+        <source>Rescanning…</source>
+        <translation>다시 스캔 중…</translation>
+    </message>
+    <message>
+        <source>Starting network threads…</source>
+        <translation>네트워크 스레드 시작중…</translation>
+    </message>
+    <message>
         <source>Submitted to masternode, waiting in queue %s</source>
         <translation>마스터노드에 제출, 대기열에서 기다리는 중 %s</translation>
     </message>
     <message>
         <source>Synchronization finished</source>
         <translation>동기화가 끝났습니다.</translation>
+    </message>
+    <message>
+        <source>Synchronizing blockchain…</source>
+        <translation>블록체인 동기화 중…</translation>
+    </message>
+    <message>
+        <source>Synchronizing governance objects…</source>
+        <translation>거버넌스 객체 동기화중…</translation>
     </message>
     <message>
         <source>Unable to start HTTP server. See debug log for details.</source>
@@ -4465,14 +4108,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>User Agent comment (%s) contains unsafe characters.</source>
         <translation>사용자 정의 코멘트 (%s)에 안전하지 못한 글자가 포함되어 있습니다.</translation>
-    </message>
-    <message>
-        <source>Verifying wallet(s)...</source>
-        <translation>지갑(들)을 검증 중...</translation>
-    </message>
-    <message>
-        <source>Will retry...</source>
-        <translation>다시 시도할 예정입니다...</translation>
     </message>
     <message>
         <source>Can't find random Masternode.</source>
@@ -4517,10 +4152,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Prune: last wallet synchronisation goes beyond pruned data. You need to -reindex (download the whole blockchain again in case of pruned node)</source>
         <translation>블록 축소: 마지막 지갑 동기화가 축소된 데이터보다 오래 되었습니다. -reindex가 필요합니다. (축소된 노드의 경우 모든 블록체인을 재다운로드 하십시오)</translation>
-    </message>
-    <message>
-        <source>Rescans are not possible in pruned mode. You will need to use -reindex which will download the whole blockchain again.</source>
-        <translation>블록 축소 모드에서는 재검색이 불가능 합니다. -reindex 명령을 사용해서 모든 블록체인을 다시 다운로드 해야 합니다.</translation>
     </message>
     <message>
         <source>The block database contains a block which appears to be from the future. This may be due to your computer's date and time being set incorrectly. Only rebuild the block database if you are sure that your computer's date and time are correct</source>
@@ -4591,16 +4222,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>에볼루션 데이터베이스 업그레이드 중 오류가 발생했습니다</translation>
     </message>
     <message>
-        <source>Error: A fatal internal error occurred, see debug.log for details</source>
-        <translation>에러: 치명적인 내부 오류가 발생했습니다, 자세한 내용은 debug.log 를 확인해주세요.</translation>
-    </message>
-    <message>
         <source>Error: Disk space is low for %s</source>
         <translation>에러: %s를 위한 디스크 공간이 부족합니다</translation>
-    </message>
-    <message>
-        <source>Error: failed to add socket to epollfd (epoll_ctl returned error %s)</source>
-        <translation>오류: epollfd에 소켓을 추가하는 데 실패하였습니다 (epoll_ctl 반환 오류 %s)</translation>
     </message>
     <message>
         <source>Exceeded max tries.</source>
@@ -4627,6 +4250,10 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>초기치 설정 중 지갑을 재 스캔하는 데 실패하였습니다</translation>
     </message>
     <message>
+        <source>Found enough users, signing…</source>
+        <translation>충분한 사용자를 감지하였습니다. 신호를 보내는 중입니다…</translation>
+    </message>
+    <message>
         <source>Invalid P2P permission: '%s'</source>
         <translation>유효하지 않은 P2P 허용: '%s'</translation>
     </message>
@@ -4639,26 +4266,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>유효하지 않은 masternodeblsprivkey 입니다. 문서를 확인하세요.</translation>
     </message>
     <message>
-        <source>Loading block index...</source>
-        <translation>블록 인덱스를 불러오는 중...</translation>
-    </message>
-    <message>
-        <source>Loading governance cache...</source>
-        <translation>거버넌스 캐시를 불러오는 중...</translation>
-    </message>
-    <message>
-        <source>Loading sporks cache...</source>
-        <translation>스포크 캐시 로딩중...</translation>
-    </message>
-    <message>
-        <source>Loading wallet... (%3.2f %%)</source>
-        <translation>지갑을 불러오는 중... (%3.2f %%)</translation>
-    </message>
-    <message>
-        <source>Loading wallet...</source>
-        <translation>지갑을 불러오는 중...</translation>
-    </message>
-    <message>
         <source>Masternode queue is full.</source>
         <translation>마스터노드 대기열이 가득 찼습니다.</translation>
     </message>
@@ -4669,6 +4276,10 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Missing input transaction information.</source>
         <translation>누락된 입력값 거래 정보</translation>
+    </message>
+    <message>
+        <source>Mixing in progress…</source>
+        <translation>믹싱이 진행 중입니다…</translation>
     </message>
     <message>
         <source>No errors detected.</source>
@@ -4691,20 +4302,12 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>블록 축소는 음수로 설정할 수 없습니다.</translation>
     </message>
     <message>
-        <source>Prune mode is incompatible with -blockfilterindex.</source>
-        <translation>블록 축소 모드는 -blockfilterindex와 호환되지 않습니다.</translation>
-    </message>
-    <message>
         <source>Prune mode is incompatible with -disablegovernance=false.</source>
         <translation>블록 축소 모드는 -disablegovernance=false와 호환되지 않습니다.</translation>
     </message>
     <message>
         <source>Prune mode is incompatible with -txindex.</source>
         <translation>블록 축소 모드는 -txindex와 호환되지 않습니다.</translation>
-    </message>
-    <message>
-        <source>Pruning blockstore...</source>
-        <translation>블록 데이터를 축소 중입니다..</translation>
     </message>
     <message>
         <source>Section [%s] is not recognized.</source>
@@ -4721,16 +4324,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Specified -walletdir "%s" is not a directory</source>
         <translation>지정된 -walletdir "%s" 은/는 디렉토리가 아닙니다.</translation>
-    </message>
-    <message>
-        <source>Synchronizing blockchain...</source>
-        <translation>블록체인 동기화 중...</translation>
-    </message>
-    <message>
-        <source>The specified config file %s does not exist
-</source>
-        <translation>선택된 설정 파일 %s가 존재하지 않습니다
-</translation>
     </message>
     <message>
         <source>The wallet will avoid paying less than the minimum relay fee.</source>
@@ -4765,10 +4358,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>거래액이 너무 큽니다</translation>
     </message>
     <message>
-        <source>Trying to connect...</source>
-        <translation>연결 시도 중...</translation>
-    </message>
-    <message>
         <source>Unable to bind to %s on this computer. %s is probably already running.</source>
         <translation>이 컴퓨터의 %s에 바인딩 할 수 없습니다. %s이 이미 실행 중인 것으로 보입니다.</translation>
     </message>
@@ -4789,12 +4378,16 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>UTXO 데이터베이스 업그레이드</translation>
     </message>
     <message>
-        <source>Wallet needed to be rewritten: restart %s to complete</source>
-        <translation>지갑을 새로 써야 합니다:  완성을 위해 %s을/를 다시 시작하십시오.</translation>
+        <source>Verifying blocks…</source>
+        <translation>블록 검증 중…</translation>
     </message>
     <message>
-        <source>Warning: unknown new rules activated (versionbit %i)</source>
-        <translation>경고: 알려지지 않은 새로운 규칙이 활성화되었습니다. (versionbit %i)</translation>
+        <source>Verifying wallet(s)…</source>
+        <translation>지갑(들)을 검증 중…</translation>
+    </message>
+    <message>
+        <source>Wallet needed to be rewritten: restart %s to complete</source>
+        <translation>지갑을 새로 써야 합니다:  완성을 위해 %s을/를 다시 시작하십시오.</translation>
     </message>
     <message>
         <source>Wasn't able to create wallet backup folder %s!</source>
@@ -4865,10 +4458,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>이것은 수수료 견적을 이용할 수 없는 경우 당신이 지불 하게 될 것으로 예상되는 거래 수수료입니다.</translation>
     </message>
     <message>
-        <source>This product includes software developed by the OpenSSL Project for use in the OpenSSL Toolkit %s and cryptographic software written by Eric Young and UPnP software written by Thomas Bernard.</source>
-        <translation>이 제품에는 OpenSSL Project에 의해 penSSL Toolkit %s용으로 사용하기 위해 개발된 소프트웨어, Eric Young이 작성한 암호화 소프트웨어 및 Thomas Bernard가 작성한 UPnP 소프트웨어가 포함되어 있습니다.</translation>
-    </message>
-    <message>
         <source>Unable to replay blocks. You will need to rebuild the database using -reindex-chainstate.</source>
         <translation>블록을 재실행 할 수 없습니다. -reindex-chainstate를 이용해 데이터베이스를 재구성해야 합니다.</translation>
     </message>
@@ -4877,16 +4466,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>경고: 비활성화된 개인 키가 있는 지갑 {%s}에서 개인 키가 감지되었습니다.</translation>
     </message>
     <message>
-        <source>%d of last 100 blocks have unexpected version</source>
-        <translation>지난 100 블록 중 %d가 예상치 못한 버전을 지니고 있습니다</translation>
-    </message>
-    <message>
         <source>%s is not a valid backup folder!</source>
         <translation>%s는 올바른 백업 폴더가 아닙니다!</translation>
-    </message>
-    <message>
-        <source>%s is only allowed with a single wallet file</source>
-        <translation>%s는 단일 지갑 파일에서만 허용됩니다.</translation>
     </message>
     <message>
         <source>%s is set very high!</source>
@@ -4949,16 +4530,24 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>%s 로딩 에러: 이미 존재하는 HD 지갑에서 HD를 비활성화 할 수 없습니다.</translation>
     </message>
     <message>
-        <source>Error loading wallet %s. Duplicate -wallet filename specified.</source>
-        <translation>지갑 %s 로딩 중 에러. 설정된 -wallet 파일명을 복사하세요</translation>
-    </message>
-    <message>
         <source>Error upgrading chainstate database</source>
         <translation>체인 상태 데이터베이스 업그레이드 중 오류가 발생했습니다.</translation>
     </message>
     <message>
-        <source>Error: failed to add socket to kqueuefd (kevent returned error %s)</source>
-        <translation>오류: kqeuefd에 소켓을 추가하는 데 실패하였습니다 (kevent 반환 오류 %s)</translation>
+        <source>Loading P2P addresses…</source>
+        <translation>P2P 주소 불러오는 중…</translation>
+    </message>
+    <message>
+        <source>Loading banlist…</source>
+        <translation>추방 리스트를 불러오는 중…</translation>
+    </message>
+    <message>
+        <source>Loading block index…</source>
+        <translation>블록 인덱스를 불러오는 중…</translation>
+    </message>
+    <message>
+        <source>Loading wallet…</source>
+        <translation>지갑을 불러오는 중…</translation>
     </message>
     <message>
         <source>Failed to clear fulfilled requests cache at %s</source>
@@ -4997,6 +4586,10 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>새로운 믹싱 대기열을 시작하는 데 실패하였습니다.</translation>
     </message>
     <message>
+        <source>Importing…</source>
+        <translation>가져오는 중…</translation>
+    </message>
+    <message>
         <source>Incorrect -rescan mode, falling back to default value</source>
         <translation>잘못된 -rescan 모드, 기본 값으로 돌아갑니다</translation>
     </message>
@@ -5025,20 +4618,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>-sporkaddr로 지정된 스포크 주소가 유효하지 않습니다.</translation>
     </message>
     <message>
-        <source>Loading P2P addresses...</source>
-        <translation>P2P 주소 불러오는 중...</translation>
-    </message>
-    <message>
         <source>Reducing -maxconnections from %d to %d, because of system limitations.</source>
         <translation>시스템 상 한계로 인하여 -maxconnections를 %d 에서 %d로 줄였습니다.</translation>
-    </message>
-    <message>
-        <source>Replaying blocks...</source>
-        <translation>블록 재실행 중...</translation>
-    </message>
-    <message>
-        <source>Rescanning...</source>
-        <translation>다시 스캔 중...</translation>
     </message>
     <message>
         <source>Session not complete!</source>
@@ -5065,20 +4646,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>%s이(가) 손상되었습니다. 지갑 도구 dash-wallet을 사용하여 백업을 복구하거나 복원하십시오.</translation>
     </message>
     <message>
-        <source>Can't generate a change-address key. No keys in the internal keypool and can't generate any keys.</source>
-        <translation>change-address 키를 생성할 수 없습니다. 내부 키풀에 키가 없어 더이상 생성할 수 없습니다.</translation>
-    </message>
-    <message>
         <source>Last successful action was too recent.</source>
         <translation>지난 성공적 액션이 너무 최신입니다.</translation>
-    </message>
-    <message>
-        <source>Starting network threads...</source>
-        <translation>네트워크 스레드 시작중...</translation>
-    </message>
-    <message>
-        <source>Synchronizing governance objects...</source>
-        <translation>거버넌스 객체 동기화중...</translation>
     </message>
     <message>
         <source>The source code is available from %s.</source>
@@ -5107,6 +4676,10 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Transaction not valid.</source>
         <translation>거래가 유효하지 않습니다.</translation>
+    </message>
+    <message>
+        <source>Trying to connect…</source>
+        <translation>연결 시도 중…</translation>
     </message>
     <message>
         <source>Unable to bind to %s on this computer (bind returned error %s)</source>
@@ -5141,10 +4714,6 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>txindex 데이터베이스 업그레이드</translation>
     </message>
     <message>
-        <source>Verifying blocks...</source>
-        <translation>블록 검증 중...</translation>
-    </message>
-    <message>
         <source>Very low number of keys left: %d</source>
         <translation>매우 적은 숫자의 키가 남았습니다: %d</translation>
     </message>
@@ -5161,6 +4730,10 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>경고: 잘못된 %s 파라미터입니다. 경로가 필요합니다! 디폴트 경로를 이용합니다.</translation>
     </message>
     <message>
+        <source>Will retry…</source>
+        <translation>다시 시도할 예정입니다…</translation>
+    </message>
+    <message>
         <source>You are starting with governance validation disabled.</source>
         <translation>거버넌스 유효성 검사를 해제한 상태로 시작합니다.</translation>
     </message>
@@ -5171,10 +4744,6 @@ https://www.transifex.com/projects/p/dash/</translation>
     <message>
         <source>Your entries added successfully.</source>
         <translation>당신의 입력이 성공적으로 추가되었습니다.</translation>
-    </message>
-    <message>
-        <source>Zapping all transactions from wallet...</source>
-        <translation>지갑의 모든 거래 내역 건너뛰는 중...</translation>
     </message>
 </context>
 </TS>

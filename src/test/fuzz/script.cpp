@@ -30,9 +30,6 @@
 
 void initialize_script()
 {
-    // Fuzzers using pubkey must hold an ECCVerifyHandle.
-    static const ECCVerifyHandle verify_handle;
-
     SelectParams(CBaseChainParams::REGTEST);
 }
 
@@ -55,20 +52,53 @@ FUZZ_TARGET_INIT(script, initialize_script)
     }
 
     CTxDestination address;
-    (void)ExtractDestination(script, address);
-
     TxoutType type_ret;
     std::vector<CTxDestination> addresses;
     int required_ret;
-    (void)ExtractDestinations(script, type_ret, addresses, required_ret);
-
-    const FlatSigningProvider signing_provider;
-    (void)InferDescriptor(script, signing_provider);
-
-    (void)IsSolvable(signing_provider, script);
+    bool extract_destinations_ret = ExtractDestinations(script, type_ret, addresses, required_ret);
+    bool extract_destination_ret = ExtractDestination(script, address);
+    if (!extract_destinations_ret) {
+        assert(!extract_destination_ret);
+        if (type_ret == TxoutType::MULTISIG) {
+            assert(addresses.empty() && required_ret == 0);
+        } else {
+            assert(type_ret == TxoutType::PUBKEY ||
+                   type_ret == TxoutType::NONSTANDARD ||
+                   type_ret == TxoutType::NULL_DATA);
+        }
+    } else {
+        assert(required_ret >= 1 && required_ret <= 16);
+        assert((unsigned long)required_ret == addresses.size());
+        assert(type_ret == TxoutType::MULTISIG || required_ret == 1);
+    }
+    if (type_ret == TxoutType::NONSTANDARD || type_ret == TxoutType::NULL_DATA) {
+        assert(!extract_destinations_ret);
+    }
+    if (!extract_destination_ret) {
+        assert(type_ret == TxoutType::PUBKEY ||
+               type_ret == TxoutType::NONSTANDARD ||
+               type_ret == TxoutType::NULL_DATA ||
+               type_ret == TxoutType::MULTISIG);
+    } else {
+        assert(address == addresses[0]);
+    }
+    if (type_ret == TxoutType::NONSTANDARD ||
+        type_ret == TxoutType::NULL_DATA ||
+        type_ret == TxoutType::MULTISIG) {
+        assert(!extract_destination_ret);
+    }
 
     TxoutType which_type;
-    (void)IsStandard(script, which_type);
+    bool is_standard_ret = IsStandard(script, which_type);
+    assert(type_ret == which_type);
+    if (!is_standard_ret) {
+        assert(which_type == TxoutType::NONSTANDARD ||
+               which_type == TxoutType::NULL_DATA ||
+               which_type == TxoutType::MULTISIG);
+    }
+    if (which_type == TxoutType::NONSTANDARD) {
+        assert(!is_standard_ret);
+    }
     if (which_type == TxoutType::NULL_DATA) {
         assert(script.IsUnspendable());
     }
@@ -76,6 +106,10 @@ FUZZ_TARGET_INIT(script, initialize_script)
         assert(which_type == TxoutType::NULL_DATA ||
                which_type == TxoutType::NONSTANDARD);
     }
+
+    const FlatSigningProvider signing_provider;
+    (void)InferDescriptor(script, signing_provider);
+    (void)IsSolvable(signing_provider, script);
 
     (void)RecursiveDynamicUsage(script);
 
@@ -91,9 +125,11 @@ FUZZ_TARGET_INIT(script, initialize_script)
     (void)ScriptToAsmStr(script, true);
 
     UniValue o1(UniValue::VOBJ);
-    ScriptPubKeyToUniv(script, o1, true);
+    ScriptPubKeyToUniv(script, o1, true, true);
+    ScriptPubKeyToUniv(script, o1, true, false);
     UniValue o2(UniValue::VOBJ);
-    ScriptPubKeyToUniv(script, o2, false);
+    ScriptPubKeyToUniv(script, o2, false, true);
+    ScriptPubKeyToUniv(script, o2, false, false);
     UniValue o3(UniValue::VOBJ);
     ScriptToUniv(script, o3, true);
     UniValue o4(UniValue::VOBJ);

@@ -63,7 +63,7 @@ public:
     uint256 GetBestBlock() const override;
     std::vector<uint256> GetHeadBlocks() const override;
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
-    CCoinsViewCursor *Cursor() const override;
+    std::unique_ptr<CCoinsViewCursor> Cursor() const override;
 
     //! Attempt to update from an older database format. Returns whether an error occurred.
     bool Upgrade();
@@ -71,28 +71,6 @@ public:
 
     //! Dynamically alter the underlying leveldb cache size.
     void ResizeCache(size_t new_cache_size) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
-};
-
-/** Specialization of CCoinsViewCursor to iterate over a CCoinsViewDB */
-class CCoinsViewDBCursor: public CCoinsViewCursor
-{
-public:
-    ~CCoinsViewDBCursor() {}
-
-    bool GetKey(COutPoint &key) const override;
-    bool GetValue(Coin &coin) const override;
-    unsigned int GetValueSize() const override;
-
-    bool Valid() const override;
-    void Next() override;
-
-private:
-    CCoinsViewDBCursor(CDBIterator* pcursorIn, const uint256 &hashBlockIn):
-        CCoinsViewCursor(hashBlockIn), pcursor(pcursorIn) {}
-    std::unique_ptr<CDBIterator> pcursor;
-    std::pair<char, COutPoint> keyTmp;
-
-    friend class CCoinsViewDB;
 };
 
 /** Access to the block database (blocks/index/) */
@@ -106,19 +84,24 @@ public:
     bool ReadLastBlockFile(int &nFile);
     bool WriteReindexing(bool fReindexing);
     void ReadReindexing(bool &fReindexing);
-    bool ReadSpentIndex(CSpentIndexKey &key, CSpentIndexValue &value);
-    bool UpdateSpentIndex(const std::vector<std::pair<CSpentIndexKey, CSpentIndexValue> >&vect);
-    bool UpdateAddressUnspentIndex(const std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue > >&vect);
-    bool ReadAddressUnspentIndex(uint160 addressHash, AddressType type,
-                                 std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue> > &vect);
-    bool WriteAddressIndex(const std::vector<std::pair<CAddressIndexKey, CAmount> > &vect);
-    bool EraseAddressIndex(const std::vector<std::pair<CAddressIndexKey, CAmount> > &vect);
-    bool ReadAddressIndex(uint160 addressHash, AddressType type,
-                          std::vector<std::pair<CAddressIndexKey, CAmount> > &addressIndex,
-                          int start = 0, int end = 0);
-    bool WriteTimestampIndex(const CTimestampIndexKey &timestampIndex);
+
+    bool ReadSpentIndex(const CSpentIndexKey key, CSpentIndexValue& value);
+    bool UpdateSpentIndex(const std::vector<CSpentIndexEntry>& vect);
+
+    bool ReadAddressUnspentIndex(const uint160& addressHash, const AddressType type,
+                                 std::vector<CAddressUnspentIndexEntry>& vect);
+    bool UpdateAddressUnspentIndex(const std::vector<CAddressUnspentIndexEntry>& vect);
+
+    bool WriteAddressIndex(const std::vector<CAddressIndexEntry>& vect);
+    bool EraseAddressIndex(const std::vector<CAddressIndexEntry>& vect);
+    bool ReadAddressIndex(const uint160& addressHash, const AddressType type,
+                          std::vector<CAddressIndexEntry>& addressIndex,
+                          const int32_t start = 0, const int32_t end = 0);
+
+    bool WriteTimestampIndex(const CTimestampIndexKey& timestampIndex);
     bool EraseTimestampIndex(const CTimestampIndexKey& timestampIndex);
-    bool ReadTimestampIndex(const unsigned int &high, const unsigned int &low, std::vector<uint256> &vect);
+    bool ReadTimestampIndex(const uint32_t high, const uint32_t low, std::vector<uint256>& hashes);
+
     bool WriteFlag(const std::string &name, bool fValue);
     bool ReadFlag(const std::string &name, bool &fValue);
     bool LoadBlockIndexGuts(const Consensus::Params& consensusParams, std::function<CBlockIndex*(const uint256&)> insertBlockIndex);

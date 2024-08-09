@@ -10,11 +10,14 @@
 #include <util/system.h>
 #include <util/time.h>
 
-#include <codecvt>
-#include <cwchar>
-#include <locale>
+#include <memory>
 #include <stdexcept>
 #include <string>
+
+#ifdef WIN32
+#include <codecvt>
+#include <locale>
+#endif
 
 #ifdef USE_POLL
 #include <poll.h>
@@ -71,9 +74,55 @@ int Sock::Connect(const sockaddr* addr, socklen_t addr_len) const
     return connect(m_socket, addr, addr_len);
 }
 
+int Sock::Bind(const sockaddr* addr, socklen_t addr_len) const
+{
+    return bind(m_socket, addr, addr_len);
+}
+
+int Sock::Listen(int backlog) const
+{
+    return listen(m_socket, backlog);
+}
+
+std::unique_ptr<Sock> Sock::Accept(sockaddr* addr, socklen_t* addr_len) const
+{
+#ifdef WIN32
+    static constexpr auto ERR = INVALID_SOCKET;
+#else
+    static constexpr auto ERR = SOCKET_ERROR;
+#endif
+
+    std::unique_ptr<Sock> sock;
+
+    const auto socket = accept(m_socket, addr, addr_len);
+    if (socket != ERR) {
+        try {
+            sock = std::make_unique<Sock>(socket);
+        } catch (const std::exception&) {
+#ifdef WIN32
+            closesocket(socket);
+#else
+            close(socket);
+#endif
+        }
+    }
+
+    return sock;
+}
+
 int Sock::GetSockOpt(int level, int opt_name, void* opt_val, socklen_t* opt_len) const
 {
     return getsockopt(m_socket, level, opt_name, static_cast<char*>(opt_val), opt_len);
+}
+
+int Sock::SetSockOpt(int level, int opt_name, const void* opt_val, socklen_t opt_len) const
+{
+    return setsockopt(m_socket, level, opt_name, static_cast<const char*>(opt_val), opt_len);
+}
+
+int Sock::GetSockName(sockaddr* name, socklen_t* name_len) const
+{
+    return getsockname(m_socket, name, name_len);
 }
 
 bool Sock::Wait(std::chrono::milliseconds timeout, Event requested, Event* occurred) const
@@ -179,7 +228,7 @@ void Sock::SendComplete(const std::string& data,
         // Wait for a short while (or the socket to become ready for sending) before retrying
         // if nothing was sent.
         const auto wait_time = std::min(deadline - now, std::chrono::milliseconds{MAX_WAIT_FOR_IO});
-        Wait(wait_time, SEND);
+        (void)Wait(wait_time, SEND);
     }
 }
 
@@ -262,7 +311,7 @@ std::string Sock::RecvUntilTerminator(uint8_t terminator,
 
         // Wait for a short while (or the socket to become ready for reading) before retrying.
         const auto wait_time = std::min(deadline - now, std::chrono::milliseconds{MAX_WAIT_FOR_IO});
-        Wait(wait_time, RECV);
+        (void)Wait(wait_time, RECV);
     }
 }
 

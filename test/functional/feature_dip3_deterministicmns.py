@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2015-2022 The Dash Core developers
+# Copyright (c) 2015-2024 The Dash Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -10,7 +10,7 @@
 from decimal import Decimal
 
 from test_framework.blocktools import create_block_with_mnpayments
-from test_framework.messages import CTransaction, FromHex, ToHex
+from test_framework.messages import tx_from_hex
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import assert_equal, force_finish_mnsync, p2p_port
 
@@ -24,7 +24,8 @@ class DIP3Test(BitcoinTestFramework):
         self.setup_clean_chain = True
         self.supports_cli = False
 
-        self.extra_args = ["-budgetparams=10:10:10"]
+        self.extra_args = ["-deprecatedrpc=addresses"]
+        self.extra_args += ["-budgetparams=10:10:10"]
         self.extra_args += ["-sporkkey=cP4EKFyJsHT39LDqgdcB43Y3YXjNyjb5Fuas1GQSeAtjnZWmZEQK"]
         self.extra_args += ["-dip3params=135:150"]
 
@@ -109,18 +110,29 @@ class DIP3Test(BitcoinTestFramework):
             self.assert_mnlists(mns)
 
         self.log.info("test that MNs disappear from the list when the ProTx collateral is spent")
+        # also make sure "protx info" returns correct historical data for spent collaterals
         spend_mns_count = 3
         mns_tmp = [] + mns
         dummy_txins = []
         old_tip = self.nodes[0].getblockcount()
         old_listdiff = self.nodes[0].protx("listdiff", 1, old_tip)
         for i in range(spend_mns_count):
+            old_protx_hash = mns[i].protx_hash
+            old_collateral_address = mns[i].collateral_address
+            old_blockhash = self.nodes[0].getbestblockhash()
+            old_rpc_info = self.nodes[0].protx("info", old_protx_hash)
+            rpc_collateral_address = old_rpc_info["collateralAddress"]
+            assert_equal(rpc_collateral_address, old_collateral_address)
             dummy_txin = self.spend_mn_collateral(mns[i], with_dummy_input_output=True)
             dummy_txins.append(dummy_txin)
             self.nodes[0].generate(1)
             self.sync_all()
             mns_tmp.remove(mns[i])
             self.assert_mnlists(mns_tmp)
+            new_rpc_info = self.nodes[0].protx("info", old_protx_hash, old_blockhash)
+            del old_rpc_info["metaInfo"]
+            del new_rpc_info["metaInfo"]
+            assert_equal(new_rpc_info, old_rpc_info)
         new_listdiff = self.nodes[0].protx("listdiff", 1, old_tip)
         assert_equal(new_listdiff, old_listdiff)
 
@@ -356,7 +368,7 @@ class DIP3Test(BitcoinTestFramework):
 
     def mine_block(self, mns, node, vtx=None, mn_payee=None, mn_amount=None, expected_error=None):
         block = create_block_with_mnpayments(mns, node, vtx, mn_payee, mn_amount)
-        result = node.submitblock(ToHex(block))
+        result = node.submitblock(block.serialize().hex())
         if expected_error is not None and result != expected_error:
             raise AssertionError('mining the block should have failed with error %s, but submitblock returned %s' % (expected_error, result))
         elif expected_error is None and result is not None:
@@ -371,7 +383,7 @@ class DIP3Test(BitcoinTestFramework):
 
         rawtx = node.createrawtransaction(txins, {target_address: amount})
         rawtx = node.signrawtransactionwithwallet(rawtx)['hex']
-        tx = FromHex(CTransaction(), rawtx)
+        tx = tx_from_hex(rawtx)
 
         self.mine_block(mns, node, [tx])
 

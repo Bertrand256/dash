@@ -26,13 +26,13 @@ class GenerateBlockTest(BitcoinTestFramework):
         hash = node.generateblock(address, [])['hash']
         block = node.getblock(hash, 2)
         assert_equal(len(block['tx']), 1)
-        assert_equal(block['tx'][0]['vout'][0]['scriptPubKey']['addresses'][0], address)
+        assert_equal(block['tx'][0]['vout'][0]['scriptPubKey']['address'], address)
 
         self.log.info('Generate an empty block to a descriptor')
         hash = node.generateblock('addr(' + address + ')', [])['hash']
         block = node.getblock(hash, 2)
         assert_equal(len(block['tx']), 1)
-        assert_equal(block['tx'][0]['vout'][0]['scriptPubKey']['addresses'][0], address)
+        assert_equal(block['tx'][0]['vout'][0]['scriptPubKey']['address'], address)
 
         self.log.info('Generate an empty block to a combo descriptor with compressed pubkey')
         combo_key = '0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798'
@@ -40,13 +40,13 @@ class GenerateBlockTest(BitcoinTestFramework):
         hash = node.generateblock('combo(' + combo_key + ')', [])['hash']
         block = node.getblock(hash, 2)
         assert_equal(len(block['tx']), 1)
-        assert_equal(block['tx'][0]['vout'][0]['scriptPubKey']['addresses'][0], combo_address)
+        assert_equal(block['tx'][0]['vout'][0]['scriptPubKey']['address'], combo_address)
 
         # Generate 110 blocks to spend
         node.generatetoaddress(110, address)
 
         # Generate some extra mempool transactions to verify they don't get mined
-        for i in range(10):
+        for _ in range(10):
             node.sendtoaddress(address, 0.001)
 
         self.log.info('Generate block with txid')

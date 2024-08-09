@@ -25,9 +25,11 @@ RUN apt-get update && apt-get install $APT_ARGS \
     ccache \
     clang \
     cmake \
-    git \
     g++ \
     gettext \
+    git \
+    libc++-dev \
+    libc++abi-dev \
     libtool \
     libxcb-icccm4 \
     libxcb-image0 \
@@ -77,6 +79,7 @@ RUN pip3 install \
     lief==0.12.1 \
     pyzmq \
     vulture==2.3 \
+    mypy==0.781 \
     yq \
     multiprocess
 
@@ -101,9 +104,7 @@ RUN apt-get update && apt-get install $APT_ARGS \
     g++-arm-linux-gnueabihf \
     g++-mingw-w64-x86-64 \
     jq \
-    libcap-dev \
     libz-dev \
-    libbz2-dev \
     libncurses5 \
     nsis \
     python3-zmq \
@@ -113,7 +114,7 @@ RUN apt-get update && apt-get install $APT_ARGS \
     wine64 \
     xorriso
 
-ARG CPPCHECK_VERSION=2.10
+ARG CPPCHECK_VERSION=2.13.0
 RUN curl -sL "https://github.com/danmar/cppcheck/archive/${CPPCHECK_VERSION}.tar.gz" | tar -xvzf - --directory /tmp/
 RUN cd /tmp/cppcheck-${CPPCHECK_VERSION} && mkdir build && cd build && cmake .. && cmake --build . -j 8
 ENV PATH "/tmp/cppcheck-${CPPCHECK_VERSION}/build/bin:${PATH}"
@@ -135,7 +136,7 @@ RUN \
   update-alternatives --set x86_64-w64-mingw32-g++  /usr/bin/x86_64-w64-mingw32-g++-posix; \
   exit 0
 
-ARG LLVM_VERSION=15
+ARG LLVM_VERSION=16
 # Setup Clang+LLVM support
 RUN apt-get update && apt-get install $APT_ARGS \
     lsb-release \

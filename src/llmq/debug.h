@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2022 The Dash Core developers
+// Copyright (c) 2018-2023 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -12,14 +12,16 @@
 #include <functional>
 #include <set>
 
-#include <llmq/dkgsessionhandler.h>
-
 class CDataStream;
+class CDeterministicMNManager;
+class ChainstateManager;
 class CInv;
 class CScheduler;
 
 namespace llmq
 {
+
+enum class QuorumPhase;
 
 class CDKGDebugMemberStatus
 {
@@ -37,7 +39,7 @@ public:
             bool receivedComplaint : 1;
             bool receivedJustification : 1;
             bool receivedPrematureCommitment : 1;
-        };
+        } statusBits;
         uint8_t statusBitset;
     };
 
@@ -65,7 +67,7 @@ public:
             bool sentPrematureCommitment : 1;
 
             bool aborted : 1;
-        };
+        } statusBits;
         uint8_t statusBitset;
     };
 
@@ -74,7 +76,8 @@ public:
 public:
     CDKGDebugSessionStatus() : statusBitset(0) {}
 
-    UniValue ToJson(int quorumIndex, int detailLevel) const;
+    UniValue ToJson(CDeterministicMNManager& dmnman, const ChainstateManager& chainman,
+                    int quorumIndex, int detailLevel) const;
 };
 
 class CDKGDebugStatus
@@ -86,14 +89,15 @@ public:
     //std::map<Consensus::LLMQType, CDKGDebugSessionStatus> sessions;
 
 public:
-    UniValue ToJson(int detailLevel) const;
+    UniValue ToJson(CDeterministicMNManager& dmnman, const ChainstateManager& chainman,
+                    int detailLevel) const;
 };
 
 class CDKGDebugManager
 {
 private:
-    mutable RecursiveMutex cs;
-    CDKGDebugStatus localStatus GUARDED_BY(cs);
+    mutable Mutex cs_lockStatus;
+    CDKGDebugStatus localStatus GUARDED_BY(cs_lockStatus);
 
 public:
     CDKGDebugManager();

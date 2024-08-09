@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2014 The Bitcoin Core developers
+// Copyright (c) 2012-2020 The Bitcoin Core developers
 // Copyright (c) 2014-2023 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -11,7 +11,7 @@
  */
 
 
-static const int PROTOCOL_VERSION = 70230;
+static const int PROTOCOL_VERSION = 70233;
 
 //! initial proto version, to be increased after version/verack negotiation
 static const int INIT_PROTO_VERSION = 209;
@@ -20,7 +20,7 @@ static const int INIT_PROTO_VERSION = 209;
 static const int MIN_PEER_PROTO_VERSION = 70215;
 
 //! minimum proto version of masternode to accept in DKGs
-static const int MIN_MASTERNODE_PROTO_VERSION = 70230;
+static const int MIN_MASTERNODE_PROTO_VERSION = 70233;
 
 //! protocol version is included in MNAUTH starting with this version
 static const int MNAUTH_NODE_VER_VERSION = 70218;
@@ -51,6 +51,9 @@ static const int MNLISTDIFF_VERSION_ORDER = 70229;
 
 //! Masternode type was introduced in this version
 static const int MNLISTDIFF_CHAINLOCKS_PROTO_VERSION = 70230;
+
+//! Legacy ISLOCK messages and a corresponding INV were dropped in this version
+static const int NO_LEGACY_ISLOCK_PROTO_VERSION = 70231;
 
 // Make sure that none of the values above collide with `ADDRV2_FORMAT`.
 

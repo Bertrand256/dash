@@ -9,10 +9,11 @@ reset-files.bash
 src/dash
 src/dashd
 src/dash-cli
+src/dash-gui
+src/dash-node
 src/dash-tx
 src/dash-wallet
-src/test/fuzz/*
-!src/test/fuzz/*.*
+src/test/fuzz/fuzz
 src/test/test_dash
 src/qt/test/test_dash-qt
 src/qt/res/css/colors/*
@@ -120,7 +121,10 @@ releases
 /*.info
 test_dash.coverage/
 total.coverage/
+fuzz.coverage/
 coverage_percent.txt
+/cov_tool_wrapper.sh
+qa-assets/
 
 #build tests
 linux-coverage-build
@@ -128,6 +132,7 @@ linux-build
 win32-build
 test/config.ini
 test/cache/*
+test/.mypy_cache/
 
 !src/leveldb*/Makefile
 

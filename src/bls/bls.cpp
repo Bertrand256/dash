@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2022 The Dash Core developers
+// Copyright (c) 2018-2023 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -63,7 +63,7 @@ void CBLSSecretKey::MakeNewKey()
 {
     unsigned char buf[SerSize];
     while (true) {
-        GetStrongRandBytes(buf, sizeof(buf));
+        GetStrongRandBytes({buf, sizeof(buf)});
         try {
             impl = bls::PrivateKey::FromBytes(bls::Bytes(reinterpret_cast<const uint8_t*>(buf), SerSize));
             break;

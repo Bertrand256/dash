@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2016 The Bitcoin Core developers
-# Copyright (c) 2014-2022 The Dash Core developers
+# Copyright (c) 2014-2020 The Bitcoin Core developers
+# Copyright (c) 2014-2024 The Dash Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Base class for RPC testing."""
 
 import configparser
 import copy
-from _decimal import Decimal
+from _decimal import Decimal, ROUND_DOWN
 from enum import Enum
 import argparse
 import logging
@@ -22,21 +22,23 @@ import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor
 
+from typing import List
+from .address import ADDRESS_BCRT1_P2SH_OP_TRUE
 from .authproxy import JSONRPCException
 from test_framework.blocktools import TIME_GENESIS_BLOCK
 from . import coverage
 from .messages import (
-    CTransaction,
-    FromHex,
     hash256,
-    msg_islock,
     msg_isdlock,
     ser_compact_size,
     ser_string,
+    tx_from_hex,
+
+
 )
 from .script import hash160
+from .p2p import NetworkThread
 from .test_node import TestNode
-from .mininode import NetworkThread
 from .util import (
     PortSeed,
     MAX_NODES,
@@ -48,12 +50,11 @@ from .util import (
     get_datadir_path,
     hex_str_to_bytes,
     initialize_datadir,
-    make_change,
     p2p_port,
     set_node_times,
     satoshi_round,
     softfork_active,
-    wait_until,
+    wait_until_helper,
     get_chain_folder, rpc_port,
 )
 
@@ -112,18 +113,21 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
 
     This class also contains various public and private helper methods."""
 
+    chain = None  # type: str
+    setup_clean_chain = None  # type: bool
+
     def __init__(self):
         """Sets test framework defaults. Do not override this method. Instead, override the set_test_params() method"""
-        self.chain = 'regtest'
-        self.setup_clean_chain = False
-        self.nodes = []
+        self.chain: str = 'regtest'
+        self.setup_clean_chain: bool = False
+        self.nodes: List[TestNode] = []
         self.network_thread = None
         self.mocktime = 0
         self.rpc_timeout = 60  # Wait for up to 60 seconds for the RPC server to respond
         self.supports_cli = True
         self.bind_to_localhost_only = True
         self.parse_args()
-        self.default_wallet_name = "default_wallet" if self.options.is_sqlite_only else ""
+        self.default_wallet_name = "default_wallet" if self.options.descriptors else ""
         self.wallet_data_filename = "wallet.dat"
         self.extra_args_from_options = []
         # Optional list of wallet names that can be set in set_test_params to
@@ -179,6 +183,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
             sys.exit(exit_code)
 
     def parse_args(self):
+        previous_releases_path = os.getenv("PREVIOUS_RELEASES_DIR") or os.getcwd() + "/releases"
         parser = argparse.ArgumentParser(usage="%(prog)s [options]")
         parser.add_argument("--nocleanup", dest="nocleanup", default=False, action="store_true",
                             help="Leave dashds and test.* datadir on exit or error")
@@ -193,6 +198,9 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
                             help="Print out all RPC calls as they are made")
         parser.add_argument("--portseed", dest="port_seed", default=os.getpid(), type=int,
                             help="The seed to use for assigning port numbers (default: current process id)")
+        parser.add_argument("--previous-releases", dest="prev_releases", action="store_true",
+                            default=os.path.isdir(previous_releases_path) and bool(os.listdir(previous_releases_path)),
+                            help="Force test of previous releases (default: %(default)s)")
         parser.add_argument("--coveragedir", dest="coveragedir",
                             help="Write tested RPC commands into this directory")
         parser.add_argument("--configfile", dest="configfile",
@@ -214,25 +222,40 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
                             help="set a random seed for deterministically reproducing a previous test run")
         parser.add_argument('--timeout-factor', dest="timeout_factor", type=float, default=1.0, help='adjust test timeouts by a factor. Setting it to 0 disables all timeouts')
 
+        group = parser.add_mutually_exclusive_group()
+        group.add_argument("--descriptors", action='store_const', const=True,
+                            help="Run test using a descriptor wallet", dest='descriptors')
+        group.add_argument("--legacy-wallet", action='store_const', const=False,
+                            help="Run test using legacy wallets", dest='descriptors')
+
         self.add_options(parser)
         self.options = parser.parse_args()
+        self.options.previous_releases_path = previous_releases_path
 
         config = configparser.ConfigParser()
         config.read_file(open(self.options.configfile))
         self.config = config
-
-        # Passthrough SQLite-only availability check output as option
-        self.options.is_sqlite_only = self.is_sqlite_compiled() and not self.is_bdb_compiled()
 
         # Running TestShell in a Jupyter notebook causes an additional -f argument
         # To keep TestShell from failing with an "unrecognized argument" error, we add a dummy "-f" argument
         # source: https://stackoverflow.com/questions/48796169/how-to-fix-ipykernel-launcher-py-error-unrecognized-arguments-in-jupyter/56349168#56349168
         parser.add_argument("-f", "--fff", help="a dummy argument to fool ipython", default="1")
 
-    def setup(self):
-        """Call this method to start up the test framework object with options set."""
+        if self.options.descriptors is None:
+            # Prefer BDB unless it isn't available
+            if self.is_bdb_compiled():
+                self.options.descriptors = False
+            elif self.is_sqlite_compiled():
+                self.options.descriptors = True
+            else:
+                # If neither are compiled, tests requiring a wallet will be skipped and the value of self.options.descriptors won't matter
+                # It still needs to exist and be None in order for tests to work however.
+                self.options.descriptors = None
 
         PortSeed.n = self.options.port_seed
+
+    def setup(self):
+        """Call this method to start up the test framework object with options set."""
 
         check_json_precision()
 
@@ -243,19 +266,17 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         fname_bitcoind = os.path.join(
             config["environment"]["BUILDDIR"],
             "src",
-            "dashd" + config["environment"]["EXEEXT"]
+            "dashd" + config["environment"]["EXEEXT"],
         )
         fname_bitcoincli = os.path.join(
             config["environment"]["BUILDDIR"],
             "src",
-            "dash-cli" + config["environment"]["EXEEXT"]
+            "dash-cli" + config["environment"]["EXEEXT"],
         )
         self.options.bitcoind = os.getenv("BITCOIND", default=fname_bitcoind)
         self.options.bitcoincli = os.getenv("BITCOINCLI", default=fname_bitcoincli)
 
         self.extra_args_from_options = self.options.dashd_extra_args
-
-        self.options.previous_releases_path = os.getenv("PREVIOUS_RELEASES_DIR") or os.getcwd() + "/releases"
 
         os.environ['PATH'] = os.pathsep.join([
             os.path.join(config['environment']['BUILDDIR'], 'src'),
@@ -417,7 +438,9 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
 
     def setup_nodes(self):
         """Override this method to customize test node setup"""
-        extra_args = None
+
+        """If this method is updated - backport changes to  DashTestFramework.setup_nodes"""
+        extra_args = [[]] * self.num_nodes
         if hasattr(self, "extra_args"):
             extra_args = self.extra_args
         self.add_nodes(self.num_nodes, extra_args)
@@ -448,8 +471,8 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         if wallet_name is not False:
             n = self.nodes[i]
             if wallet_name is not None:
-                n.createwallet(wallet_name=wallet_name, load_on_startup=True)
-            n.importprivkey(privkey=n.get_deterministic_priv_key().key, label='coinbase')
+                n.createwallet(wallet_name=wallet_name, descriptors=self.options.descriptors, load_on_startup=True)
+            n.importprivkey(privkey=n.get_deterministic_priv_key().key, label='coinbase', rescan=True)
 
     def run_test(self):
         """Tests must override this method to define test logic"""
@@ -457,7 +480,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
 
     # Public helper methods. These can be accessed by the subclass test scripts.
 
-    def add_nodes(self, num_nodes, extra_args=None, *, rpchost=None, binary=None, binary_cli=None, versions=None):
+    def add_nodes(self, num_nodes: int, extra_args=None, *, rpchost=None, binary=None, binary_cli=None, versions=None):
         """Instantiate TestNode objects.
 
         Should only be called once after the nodes have been specified in
@@ -500,7 +523,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         assert_equal(len(binary_cli), num_nodes)
         old_num_nodes = len(self.nodes)
         for i in range(num_nodes):
-            self.nodes.append(TestNode(
+            test_node_i = TestNode(
                 old_num_nodes + i,
                 get_datadir_path(self.options.tmpdir, old_num_nodes + i),
                 self.extra_args_from_options,
@@ -519,7 +542,16 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
                 use_cli=self.options.usecli,
                 start_perf=self.options.perf,
                 use_valgrind=self.options.valgrind,
-            ))
+                descriptors=self.options.descriptors,
+            )
+            self.nodes.append(test_node_i)
+            if not test_node_i.version_is_at_least(160000):
+                # adjust conf for pre 16
+                conf_file = test_node_i.bitcoinconf
+                with open(conf_file, 'r', encoding='utf8') as conf:
+                    conf_data = conf.read()
+                with open(conf_file, 'w', encoding='utf8') as conf:
+                    conf.write(conf_data.replace('[regtest]', ''))
 
     def add_dynamically_node(self, extra_args=None, *, rpchost=None, binary=None):
         if self.bind_to_localhost_only:
@@ -666,8 +698,8 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
             # See comments in net_processing:
             # * Must have a version message before anything else
             # * Must have a verack message before anything else
-            wait_until(lambda: all(peer['version'] != 0 for peer in from_connection.getpeerinfo()))
-            wait_until(lambda: all(peer['bytesrecv_per_msg'].pop('verack', 0) == 24 for peer in from_connection.getpeerinfo()))
+            wait_until_helper(lambda: all(peer['version'] != 0 for peer in from_connection.getpeerinfo()))
+            wait_until_helper(lambda: all(peer['bytesrecv_per_msg'].pop('verack', 0) == 24 for peer in from_connection.getpeerinfo()))
 
         connect_nodes_helper(self.nodes[a], b)
 
@@ -698,13 +730,13 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
                         raise
 
             # wait to disconnect
-            wait_until(lambda: not get_peer_ids(), timeout=5)
+            wait_until_helper(lambda: not get_peer_ids(), timeout=5)
 
         disconnect_nodes_helper(self.nodes[a], b)
 
     def isolate_node(self, node_num, timeout=5):
         self.nodes[node_num].setnetworkactive(False)
-        wait_until(lambda: self.nodes[node_num].getconnectioncount() == 0, timeout=timeout)
+        wait_until_helper(lambda: self.nodes[node_num].getconnectioncount() == 0, timeout=timeout)
 
     def reconnect_isolated_node(self, a, b):
         self.nodes[a].setnetworkactive(True)
@@ -800,6 +832,9 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         for node in self.nodes:
             node.mocktime = self.mocktime
 
+    def wait_until(self, test_function, timeout=60, lock=None):
+        return wait_until_helper(test_function, timeout=timeout, lock=lock, timeout_factor=self.options.timeout_factor)
+
     # Private helper methods. These should not be accessed by the subclass test scripts.
 
     def _start_logging(self):
@@ -860,6 +895,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
                     mocktime=self.mocktime,
                     coverage_dir=None,
                     cwd=self.options.tmpdir,
+                    descriptors=self.options.descriptors,
                 ))
             self.start_node(CACHE_NODE_ID)
             cache_node = self.nodes[CACHE_NODE_ID]
@@ -870,18 +906,19 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
             # Set a time in the past, so that blocks don't end up in the future
             cache_node.setmocktime(cache_node.getblockheader(cache_node.getbestblockhash())['time'])
 
-            # Create a 199-block-long chain; each of the 4 first nodes
+            # Create a 199-block-long chain; each of the 3 first nodes
             # gets 25 mature blocks and 25 immature.
-            # The 4th node gets only 24 immature blocks so that the very last
+            # The 4th address gets 25 mature and only 24 immature blocks so that the very last
             # block in the cache does not age too much (have an old tip age).
             # This is needed so that we are out of IBD when the test starts,
             # see the tip age check in IsInitialBlockDownload().
             self.set_genesis_mocktime()
+            gen_addresses = [k.address for k in TestNode.PRIV_KEYS] + [ADDRESS_BCRT1_P2SH_OP_TRUE]
             for i in range(8):
                 self.bump_mocktime((25 if i != 7 else 24) * 156)
                 cache_node.generatetoaddress(
                     nblocks=25 if i != 7 else 24,
-                    address=TestNode.PRIV_KEYS[i % 4].address,
+                    address=gen_addresses[i % 4],
                 )
 
             assert_equal(cache_node.getblockchaininfo()["blocks"], 199)
@@ -931,6 +968,10 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         self.requires_wallet = True
         if not self.is_wallet_compiled():
             raise SkipTest("wallet has not been compiled.")
+        if self.options.descriptors:
+            self.skip_if_no_sqlite()
+        else:
+            self.skip_if_no_bdb()
 
     def skip_if_no_sqlite(self):
         """Skip the running test if sqlite has not been compiled."""
@@ -959,17 +1000,11 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
 
     def has_previous_releases(self):
         """Checks whether previous releases are present and enabled."""
-        if os.getenv("TEST_PREVIOUS_RELEASES") == "false":
-            # disabled
-            return False
-
         if not os.path.isdir(self.options.previous_releases_path):
-            if os.getenv("TEST_PREVIOUS_RELEASES") == "true":
-                raise AssertionError("TEST_PREVIOUS_RELEASES=true but releases missing: {}".format(
+            if self.options.prev_releases:
+                raise AssertionError("Force test of previous releases but releases missing: {}".format(
                     self.options.previous_releases_path))
-            # missing
-            return False
-        return True
+        return self.options.prev_releases
 
     def is_cli_compiled(self):
         """Checks whether dash-cli was compiled."""
@@ -1127,19 +1162,23 @@ class DashTestFramework(BitcoinTestFramework):
     def activate_v20(self, expected_activation_height=None):
         self.activate_by_name('v20', expected_activation_height)
 
-    def activate_mn_rr(self, expected_activation_height=None):
+    def activate_ehf_by_name(self, name, expected_activation_height=None):
         self.nodes[0].sporkupdate("SPORK_24_TEST_EHF", 0)
         self.wait_for_sporks_same()
-        mn_rr_height = 0
-        while mn_rr_height == 0:
+        assert get_bip9_details(self.nodes[0], name)['ehf']
+        ehf_height = 0
+        while ehf_height == 0:
             time.sleep(1)
             try:
-                mn_rr_height = get_bip9_details(self.nodes[0], 'mn_rr')['ehf_height']
+                ehf_height = get_bip9_details(self.nodes[0], name)['ehf_height']
             except KeyError:
                 pass
             self.nodes[0].generate(1)
             self.sync_all()
-        self.activate_by_name('mn_rr', expected_activation_height)
+        self.activate_by_name(name, expected_activation_height)
+
+    def activate_mn_rr(self, expected_activation_height=None):
+        self.activate_ehf_by_name('mn_rr', expected_activation_height)
 
     def set_dash_llmq_test_params(self, llmq_size, llmq_threshold):
         self.llmq_size = llmq_size
@@ -1148,13 +1187,14 @@ class DashTestFramework(BitcoinTestFramework):
             self.extra_args[i].append("-llmqtestparams=%d:%d" % (self.llmq_size, self.llmq_threshold))
             self.extra_args[i].append("-llmqtestinstantsendparams=%d:%d" % (self.llmq_size, self.llmq_threshold))
 
-    def create_simple_node(self):
+    def create_simple_node(self, extra_args=None):
         idx = len(self.nodes)
-        self.add_nodes(1, extra_args=[self.extra_args[idx]])
+        self.add_nodes(1, extra_args=[extra_args[idx]])
         self.start_node(idx)
         for i in range(0, idx):
             self.connect_nodes(i, idx)
 
+    # TODO: to let creating Evo Nodes without instant-send available
     def dynamically_add_masternode(self, evo=False, rnd=None, should_be_rejected=False):
         mn_idx = len(self.nodes)
 
@@ -1404,21 +1444,23 @@ class DashTestFramework(BitcoinTestFramework):
         self.start_node(mnidx, extra_args=args)
         force_finish_mnsync(self.nodes[mnidx])
 
-    def setup_network(self):
+    def setup_nodes(self):
+        extra_args = [[]] * self.num_nodes
+        if hasattr(self, "extra_args"):
+            extra_args = self.extra_args
         self.log.info("Creating and starting controller node")
-        self.add_nodes(1, extra_args=[self.extra_args[0]])
-        self.start_node(0)
-        self.import_deterministic_coinbase_privkeys()
+        num_simple_nodes = self.num_nodes - self.mn_count
+        self.log.info("Creating and starting %s simple nodes", num_simple_nodes)
+        for i in range(0, num_simple_nodes):
+            self.create_simple_node(extra_args)
+        if self.requires_wallet:
+            self.import_deterministic_coinbase_privkeys()
         required_balance = EVONODE_COLLATERAL * self.evo_count
         required_balance += MASTERNODE_COLLATERAL * (self.mn_count - self.evo_count) + 100
         self.log.info("Generating %d coins" % required_balance)
         while self.nodes[0].getbalance() < required_balance:
             self.bump_mocktime(1)
             self.nodes[0].generate(10)
-        num_simple_nodes = self.num_nodes - self.mn_count - 1
-        self.log.info("Creating and starting %s simple nodes", num_simple_nodes)
-        for i in range(0, num_simple_nodes):
-            self.create_simple_node()
 
         self.log.info("Activating DIP3")
         if not self.fast_dip3_enforcement:
@@ -1429,12 +1471,17 @@ class DashTestFramework(BitcoinTestFramework):
         # create masternodes
         self.prepare_masternodes()
         self.prepare_datadirs()
-        self.start_masternodes()
+
+    def setup_network(self):
+        self.setup_nodes()
 
         # non-masternodes where disconnected from the control node during prepare_datadirs,
         # let's reconnect them back to make sure they receive updates
+        num_simple_nodes = self.num_nodes - self.mn_count - 1
         for i in range(0, num_simple_nodes):
             self.connect_nodes(i+1, 0)
+
+        self.start_masternodes()
 
         self.bump_mocktime(1)
         self.nodes[0].generate(1)
@@ -1456,6 +1503,26 @@ class DashTestFramework(BitcoinTestFramework):
             assert status == 'ENABLED'
 
     def create_raw_tx(self, node_from, node_to, amount, min_inputs, max_inputs):
+
+        # helper which has been supposed to be removed with bitcoin#20159 but we use it
+        def make_change(from_node, amount_in, amount_out, fee):
+            """
+            Create change output(s), return them
+            """
+            outputs = {}
+            amount = amount_out + fee
+            change = amount_in - amount
+            if change > amount * 2:
+                # Create an extra change output to break up big inputs
+                change_address = from_node.getnewaddress()
+                # Split change in two, being careful of rounding:
+                outputs[change_address] = Decimal(change / 2).quantize(Decimal('0.00000001'), rounding=ROUND_DOWN)
+                change = amount_in - amount - outputs[change_address]
+            if change > 0:
+                outputs[from_node.getnewaddress()] = change
+            return outputs
+
+
         assert min_inputs <= max_inputs
         # fill inputs
         fee = 0.001
@@ -1507,11 +1574,11 @@ class DashTestFramework(BitcoinTestFramework):
                 return node.getrawtransaction(txid)
             except:
                 return False
-        if wait_until(check_tx, timeout=timeout, sleep=1, do_assert=expected) and not expected:
+        if wait_until_helper(check_tx, timeout=timeout, sleep=1, do_assert=expected) and not expected:
             raise AssertionError("waiting unexpectedly succeeded")
 
-    def create_islock(self, hextx, deterministic=False):
-        tx = FromHex(CTransaction(), hextx)
+    def create_isdlock(self, hextx):
+        tx = tx_from_hex(hextx)
         tx.rehash()
 
         request_id_buf = ser_string(b"islock") + ser_compact_size(len(tx.vin))
@@ -1522,18 +1589,15 @@ class DashTestFramework(BitcoinTestFramework):
         request_id = hash256(request_id_buf)[::-1].hex()
         message_hash = tx.hash
 
-        llmq_type = 103 if deterministic else 104
+        llmq_type = 103
 
         rec_sig = self.get_recovered_sig(request_id, message_hash, llmq_type=llmq_type)
 
-        if deterministic:
-            block_count = self.mninfo[0].node.getblockcount()
-            cycle_hash = int(self.mninfo[0].node.getblockhash(block_count - (block_count % 24)), 16)
-            islock = msg_isdlock(1, inputs, tx.sha256, cycle_hash, hex_str_to_bytes(rec_sig['sig']))
-        else:
-            islock = msg_islock(inputs, tx.sha256, hex_str_to_bytes(rec_sig['sig']))
+        block_count = self.mninfo[0].node.getblockcount()
+        cycle_hash = int(self.mninfo[0].node.getblockhash(block_count - (block_count % 24)), 16)
+        isdlock = msg_isdlock(1, inputs, tx.sha256, cycle_hash, hex_str_to_bytes(rec_sig['sig']))
 
-        return islock
+        return isdlock
 
     def wait_for_instantlock(self, txid, node, expected=True, timeout=60):
         def check_instantlock():
@@ -1542,7 +1606,7 @@ class DashTestFramework(BitcoinTestFramework):
                 return node.getrawtransaction(txid, True)["instantlock"]
             except:
                 return False
-        if wait_until(check_instantlock, timeout=timeout, sleep=1, do_assert=expected) and not expected:
+        if wait_until_helper(check_instantlock, timeout=timeout, sleep=1, do_assert=expected) and not expected:
             raise AssertionError("waiting unexpectedly succeeded")
 
     def wait_for_chainlocked_block(self, node, block_hash, expected=True, timeout=15):
@@ -1552,7 +1616,7 @@ class DashTestFramework(BitcoinTestFramework):
                 return block["confirmations"] > 0 and block["chainlock"]
             except:
                 return False
-        if wait_until(check_chainlocked_block, timeout=timeout, sleep=0.1, do_assert=expected) and not expected:
+        if wait_until_helper(check_chainlocked_block, timeout=timeout, sleep=0.1, do_assert=expected) and not expected:
             raise AssertionError("waiting unexpectedly succeeded")
 
     def wait_for_chainlocked_block_all_nodes(self, block_hash, timeout=15, expected=True):
@@ -1560,14 +1624,14 @@ class DashTestFramework(BitcoinTestFramework):
             self.wait_for_chainlocked_block(node, block_hash, expected=expected, timeout=timeout)
 
     def wait_for_best_chainlock(self, node, block_hash, timeout=15):
-        wait_until(lambda: node.getbestchainlock()["blockhash"] == block_hash, timeout=timeout, sleep=0.1)
+        wait_until_helper(lambda: node.getbestchainlock()["blockhash"] == block_hash, timeout=timeout, sleep=0.1)
 
     def wait_for_sporks_same(self, timeout=30):
         def check_sporks_same():
             self.bump_mocktime(1)
             sporks = self.nodes[0].spork('show')
             return all(node.spork('show') == sporks for node in self.nodes[1:])
-        wait_until(check_sporks_same, timeout=timeout, sleep=0.5)
+        wait_until_helper(check_sporks_same, timeout=timeout, sleep=0.5)
 
     def wait_for_quorum_connections(self, quorum_hash, expected_connections, mninfos, llmq_type_name="llmq_test", timeout = 60, wait_proc=None):
         def check_quorum_connections():
@@ -1606,7 +1670,7 @@ class DashTestFramework(BitcoinTestFramework):
             # no sessions at all - not ok
             return ret()
 
-        wait_until(check_quorum_connections, timeout=timeout, sleep=1)
+        wait_until_helper(check_quorum_connections, timeout=timeout, sleep=1)
 
     def wait_for_masternode_probes(self, quorum_hash, mninfos, timeout = 30, wait_proc=None, llmq_type_name="llmq_test"):
         def check_probes():
@@ -1644,7 +1708,7 @@ class DashTestFramework(BitcoinTestFramework):
                                         return ret()
             return True
 
-        wait_until(check_probes, timeout=timeout, sleep=1)
+        wait_until_helper(check_probes, timeout=timeout, sleep=1)
 
     def wait_for_quorum_phase(self, quorum_hash, phase, expected_member_count, check_received_messages, check_received_messages_count, mninfos, llmq_type_name="llmq_test", timeout=30, sleep=0.5):
         def check_dkg_session():
@@ -1666,7 +1730,7 @@ class DashTestFramework(BitcoinTestFramework):
                     break
             return member_count >= expected_member_count
 
-        wait_until(check_dkg_session, timeout=timeout, sleep=sleep)
+        wait_until_helper(check_dkg_session, timeout=timeout, sleep=sleep)
 
     def wait_for_quorum_commitment(self, quorum_hash, nodes, llmq_type=100, timeout=15):
         def check_dkg_comitments():
@@ -1687,7 +1751,7 @@ class DashTestFramework(BitcoinTestFramework):
                     return False
             return True
 
-        wait_until(check_dkg_comitments, timeout=timeout, sleep=1)
+        wait_until_helper(check_dkg_comitments, timeout=timeout, sleep=1)
 
     def wait_for_quorum_list(self, quorum_hash, nodes, timeout=15, sleep=2, llmq_type_name="llmq_test"):
         def wait_func():
@@ -1698,7 +1762,7 @@ class DashTestFramework(BitcoinTestFramework):
             self.nodes[0].generate(1)
             self.sync_blocks(nodes)
             return False
-        wait_until(wait_func, timeout=timeout, sleep=sleep)
+        wait_until_helper(wait_func, timeout=timeout, sleep=sleep)
 
     def wait_for_quorums_list(self, quorum_hash_0, quorum_hash_1, nodes, llmq_type_name="llmq_test",  timeout=15, sleep=2):
         def wait_func():
@@ -1710,7 +1774,7 @@ class DashTestFramework(BitcoinTestFramework):
             self.nodes[0].generate(1)
             self.sync_blocks(nodes)
             return False
-        wait_until(wait_func, timeout=timeout, sleep=sleep)
+        wait_until_helper(wait_func, timeout=timeout, sleep=sleep)
 
     def move_blocks(self, nodes, num_blocks):
         time.sleep(1)
@@ -1967,15 +2031,18 @@ class DashTestFramework(BitcoinTestFramework):
                 if not mn.node.quorum("hasrecsig", llmq_type, rec_sig_id, rec_sig_msg_hash):
                     return False
             return True
-        wait_until(check_recovered_sig, timeout=timeout, sleep=1)
+        wait_until_helper(check_recovered_sig, timeout=timeout, sleep=1)
 
-    def get_recovered_sig(self, rec_sig_id, rec_sig_msg_hash, llmq_type=100):
+    def get_recovered_sig(self, rec_sig_id, rec_sig_msg_hash, llmq_type=100, use_platformsign=False):
         # Note: recsigs aren't relayed to regular nodes by default,
         # make sure to pick a mn as a node to query for recsigs.
         try:
             quorumHash = self.mninfo[0].node.quorum("selectquorum", llmq_type, rec_sig_id)["quorumHash"]
             for mn in self.mninfo:
-                mn.node.quorum("sign", llmq_type, rec_sig_id, rec_sig_msg_hash, quorumHash)
+                if use_platformsign:
+                    mn.node.quorum("platformsign", rec_sig_id, rec_sig_msg_hash, quorumHash)
+                else:
+                    mn.node.quorum("sign", llmq_type, rec_sig_id, rec_sig_msg_hash, quorumHash)
             self.wait_for_recovered_sig(rec_sig_id, rec_sig_msg_hash, llmq_type, 10)
             return self.mninfo[0].node.quorum("getrecsig", llmq_type, rec_sig_id, rec_sig_msg_hash)
         except JSONRPCException as e:
@@ -2026,7 +2093,7 @@ class DashTestFramework(BitcoinTestFramework):
                            (valid, len(mns), quorum_type_in, quorum_hash_in))
             return valid == len(mns)
 
-        wait_until(test_mns, timeout=timeout, sleep=0.5)
+        wait_until_helper(test_mns, timeout=timeout, sleep=0.5)
 
     def wait_for_mnauth(self, node, count, timeout=10):
         def test():
@@ -2036,4 +2103,4 @@ class DashTestFramework(BitcoinTestFramework):
                 if "verified_proregtx_hash" in p and p["verified_proregtx_hash"] != "":
                     c += 1
             return c >= count
-        wait_until(test, timeout=timeout)
+        wait_until_helper(test, timeout=timeout)

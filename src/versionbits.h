@@ -1,4 +1,4 @@
-// Copyright (c) 2016 The Bitcoin Core developers
+// Copyright (c) 2016-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -6,7 +6,9 @@
 #define BITCOIN_VERSIONBITS_H
 
 #include <chain.h>
+#include <gsl/pointers.h>
 #include <sync.h>
+
 #include <map>
 
 /** What block version to use for new blocks (pre versionbits) */
@@ -26,7 +28,7 @@ static const int32_t VERSIONBITS_NUM_BITS = 29;
 enum class ThresholdState {
     DEFINED,   // First state that each softfork starts out as. The genesis block is by definition in this state for each deployment.
     STARTED,   // For blocks past the starttime.
-    LOCKED_IN, // For one retarget period after the first retarget period with STARTED blocks of which at least threshold have the associated bit set in nVersion.
+    LOCKED_IN, // For at least one retarget period after the first retarget period with STARTED blocks of which at least threshold have the associated bit set in nVersion, until min_activation_height is reached.
     ACTIVE,    // For all blocks after the LOCKED_IN retarget period (final state)
     FAILED,    // For all blocks once the first retarget period after the timeout time is hit, if LOCKED_IN wasn't already reached (final state)
 };
@@ -59,6 +61,7 @@ protected:
     virtual int64_t BeginTime(const Consensus::Params& params) const =0;
     virtual int SignalHeight(const CBlockIndex* pindexPrev, const Consensus::Params& params) const = 0;
     virtual int64_t EndTime(const Consensus::Params& params) const =0;
+    virtual int MinActivationHeight(const Consensus::Params& params) const { return 0; }
     virtual int Period(const Consensus::Params& params) const =0;
     virtual int Threshold(const Consensus::Params& params, int nAttempt) const =0;
 
@@ -87,16 +90,16 @@ public:
     static uint32_t Mask(const Consensus::Params& params, Consensus::DeploymentPos pos);
 
     /** Get the BIP9 state for a given deployment for the block after pindexPrev. */
-    ThresholdState State(const CBlockIndex* pindexPrev, const Consensus::Params& params, Consensus::DeploymentPos pos);
+    ThresholdState State(const CBlockIndex* pindexPrev, const Consensus::Params& params, Consensus::DeploymentPos pos) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
 
     /** Get the block height at which the BIP9 deployment switched into the state for the block after pindexPrev. */
-    int StateSinceHeight(const CBlockIndex* pindexPrev, const Consensus::Params& params, Consensus::DeploymentPos pos);
+    int StateSinceHeight(const CBlockIndex* pindexPrev, const Consensus::Params& params, Consensus::DeploymentPos pos) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
 
     /** Determine what nVersion a new block should use
      */
-    int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Params& params);
+    int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Params& params) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
 
-    void Clear();
+    void Clear() EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
 };
 
 class AbstractEHFManager
@@ -111,7 +114,7 @@ public:
      * to get access to EHF data
      */
 public:
-    [[nodiscard]] static AbstractEHFManager* getInstance() {
+    [[nodiscard]] static gsl::not_null<AbstractEHFManager*> getInstance() {
         return globalInstance;
     };
 
@@ -127,7 +130,6 @@ public:
 
 protected:
     static AbstractEHFManager* globalInstance;
-
 };
 
 #endif // BITCOIN_VERSIONBITS_H

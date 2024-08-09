@@ -11,6 +11,8 @@
 #include <util/hash_type.h>
 
 #include <variant>
+#include <string>
+
 
 static const bool DEFAULT_ACCEPT_DATACARRIER = true;
 
@@ -85,6 +87,7 @@ struct ScriptHash : public BaseHash<uint160>
     // These don't do what you'd expect.
     // Use ScriptHash(GetScriptForDestination(...)) instead.
     explicit ScriptHash(const PKHash& hash) = delete;
+
     explicit ScriptHash(const uint160& hash) : BaseHash(hash) {}
     explicit ScriptHash(const CScript& script);
     explicit ScriptHash(const CScriptID& script);
@@ -103,7 +106,7 @@ using CTxDestination = std::variant<CNoDestination, PKHash, ScriptHash>;
 bool IsValidDestination(const CTxDestination& dest);
 
 /** Get the name of a TxoutType as a C string, or nullptr if unknown. */
-const char* GetTxnOutputType(TxoutType t);
+std::string GetTxnOutputType(TxoutType t);
 
 /**
  * Parse a scriptPubKey and identify script type for standard scripts. If
@@ -131,6 +134,8 @@ bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet)
  * and nRequiredRet with the n required to spend. For other destinations,
  * addressRet is populated with a single value and nRequiredRet is set to 1.
  * Returns true if successful.
+ *
+ * TODO: from v21 ("addresses" and "reqSigs" deprecated) "ExtractDestinations" should be removed
  */
 bool ExtractDestinations(const CScript& scriptPubKey, TxoutType& typeRet, std::vector<CTxDestination>& addressRet, int& nRequiredRet);
 

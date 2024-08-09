@@ -38,6 +38,9 @@ class uint256;
 
 namespace interfaces {
 class Node;
+namespace CoinJoin {
+class Client;
+} // namespace CoinJoin
 } // namespace interfaces
 
 QT_BEGIN_NAMESPACE
@@ -62,8 +65,7 @@ public:
         AmountWithFeeExceedsBalance,
         DuplicateAddress,
         TransactionCreationFailed, // Error returned when wallet is still locked
-        AbsurdFee,
-        PaymentRequestExpired
+        AbsurdFee
     };
 
     enum EncryptionStatus
@@ -103,7 +105,7 @@ public:
     SendCoinsReturn sendCoins(WalletModelTransaction &transaction, bool fIsCoinJoin);
 
     // Wallet encryption
-    bool setWalletEncrypted(bool encrypted, const SecureString &passphrase);
+    bool setWalletEncrypted(const SecureString& passphrase);
     // Passphrase only needed when unlocking
     bool setWalletLocked(bool locked, const SecureString &passPhrase=SecureString(), bool fMixing=false);
     bool changePassphrase(const SecureString &oldPass, const SecureString &newPass);
@@ -138,9 +140,6 @@ public:
 
     UnlockContext requestUnlock(bool fForMixingOnly=false);
 
-    void loadReceiveRequests(std::vector<std::string>& vReceiveRequests);
-    bool saveReceiveRequest(const std::string &sAddress, const int64_t nId, const std::string &sRequest);
-
     static bool isWalletEnabled();
 
     int getNumISLocks() const;
@@ -151,7 +150,7 @@ public:
     interfaces::Node& node() const { return m_node; }
     interfaces::Wallet& wallet() const { return *m_wallet; }
     void setClientModel(ClientModel* client_model);
-    interfaces::CoinJoin::Client& coinJoin() const { return m_wallet->coinJoin(); }
+    std::unique_ptr<interfaces::CoinJoin::Client> coinJoin() const;
 
     QString getWalletName() const;
     QString getDisplayName() const;
@@ -230,6 +229,8 @@ Q_SIGNALS:
 
     // Notify that there are now keys in the keypool
     void canGetAddressesChanged();
+
+    void timerTimeout();
 
 public Q_SLOTS:
     /* Starts a timer to periodically update the balance */

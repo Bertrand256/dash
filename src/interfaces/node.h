@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Bitcoin Core developers
+// Copyright (c) 2018-2020 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -6,11 +6,13 @@
 #define BITCOIN_INTERFACES_NODE_H
 
 #include <amount.h>     // For CAmount
-#include <net.h>        // For CConnman::NumConnections
+#include <net.h>        // For NodeId
 #include <net_types.h>  // For banmap_t
 #include <netaddress.h> // For Network
+#include <netbase.h>    // For ConnectionDirection
 #include <support/allocators/secure.h> // For SecureString
 #include <uint256.h>
+#include <util/translation.h>
 
 #include <functional>
 #include <memory>
@@ -30,15 +32,20 @@ class CNodeStats;
 class Coin;
 class RPCTimerInterface;
 class UniValue;
-class proxyType;
+class Proxy;
 struct bilingual_str;
 enum class SynchronizationState;
 struct CNodeStateStats;
 struct NodeContext;
 
+enum vote_signal_enum_t : uint8_t;
+
 namespace interfaces {
 class Handler;
 class WalletLoader;
+namespace CoinJoin {
+class Loader;
+} //namespsace CoinJoin
 struct BlockTip;
 
 //! Interface for the src/evo part of a dash node (dashd process).
@@ -47,6 +54,7 @@ class EVO
 public:
     virtual ~EVO() {}
     virtual std::pair<CDeterministicMNList, const CBlockIndex*> getListAtChainTip() = 0;
+    virtual void setContext(NodeContext* context) {}
 };
 
 //! Interface for the src/governance part of a dash node (dashd process).
@@ -55,6 +63,10 @@ class GOV
 public:
     virtual ~GOV() {}
     virtual void getAllNewerThan(std::vector<CGovernanceObject> &objs, int64_t nMoreThanTime) = 0;
+    virtual int32_t getObjAbsYesCount(const CGovernanceObject& obj, vote_signal_enum_t vote_signal) = 0;
+    virtual bool getObjLocalValidity(const CGovernanceObject& obj, std::string& error, bool check_collateral) = 0;
+    virtual bool isEnabled() = 0;
+    virtual void setContext(NodeContext* context) {}
 };
 
 //! Interface for the src/llmq part of a dash node (dashd process).
@@ -63,6 +75,7 @@ class LLMQ
 public:
     virtual ~LLMQ() {}
     virtual size_t getInstantSentLockCount() = 0;
+    virtual void setContext(NodeContext* context) {}
 };
 
 //! Interface for the src/masternode part of a dash node (dashd process).
@@ -75,6 +88,7 @@ public:
     virtual bool isBlockchainSynced() = 0;
     virtual bool isSynced() = 0;
     virtual std::string getSyncStatus() =  0;
+    virtual void setContext(NodeContext* context) {}
 };
 }
 
@@ -126,41 +140,6 @@ class Node
 public:
     virtual ~Node() {}
 
-    //! Send init error.
-    virtual void initError(const bilingual_str& message) = 0;
-
-    //! Set command line arguments.
-    virtual bool parseParameters(int argc, const char* const argv[], std::string& error) = 0;
-
-    //! Set a command line argument
-    virtual void forceSetArg(const std::string& arg, const std::string& value) = 0;
-
-    //! Set a command line argument if it doesn't already have a value
-    virtual bool softSetArg(const std::string& arg, const std::string& value) = 0;
-
-    //! Set a command line boolean argument if it doesn't already have a value
-    virtual bool softSetBoolArg(const std::string& arg, bool value) = 0;
-
-    //! Load settings from configuration file.
-    virtual bool readConfigFiles(std::string& error) = 0;
-
-    //! Choose network parameters.
-    virtual void selectParams(const std::string& network) = 0;
-
-    //! Read and update <datadir>/settings.json file with saved settings. This
-    //! needs to be called after selectParams() because the settings file
-    //! location is network-specific.
-    virtual bool initSettings(std::string& error) = 0;
-
-    //! Get the (assumed) blockchain size.
-    virtual uint64_t getAssumedBlockchainSize() = 0;
-
-    //! Get the (assumed) chain state size.
-    virtual uint64_t getAssumedChainStateSize() = 0;
-
-    //! Get network name.
-    virtual std::string getNetwork() = 0;
-
     //! Init logging.
     virtual void initLogging() = 0;
 
@@ -168,7 +147,7 @@ public:
     virtual void initParameterInteraction() = 0;
 
     //! Get warnings.
-    virtual std::string getWarnings() = 0;
+    virtual bilingual_str getWarnings() = 0;
 
     // Get log flags.
     virtual uint64_t getLogCategories() = 0;
@@ -191,17 +170,14 @@ public:
     //! Return whether shutdown was requested.
     virtual bool shutdownRequested() = 0;
 
-    //! Setup arguments
-    virtual void setupServerArgs() = 0;
-
     //! Map port.
     virtual void mapPort(bool use_upnp, bool use_natpmp) = 0;
 
     //! Get proxy.
-    virtual bool getProxy(Network net, proxyType& proxy_info) = 0;
+    virtual bool getProxy(Network net, Proxy& proxy_info) = 0;
 
     //! Get number of connections.
-    virtual size_t getNodeCount(CConnman::NumConnections flags) = 0;
+    virtual size_t getNodeCount(ConnectionDirection flags) = 0;
 
     //! Get stats for connected nodes.
     using NodesStats = std::vector<std::tuple<CNodeStats, bool, CNodeStateStats>>;
@@ -255,6 +231,9 @@ public:
     //! Is initial block download.
     virtual bool isInitialBlockDownload() = 0;
 
+    //! Is masternode.
+    virtual bool isMasternode() = 0;
+
     //! Get reindex.
     virtual bool getReindex() = 0;
 
@@ -274,7 +253,7 @@ public:
     virtual UniValue executeRpc(const std::string& command, const UniValue& params, const std::string& uri) = 0;
 
     //! List rpc commands.
-    virtual std::vector<std::string> listRpcCommands() = 0;
+    virtual std::vector<std::pair<std::string, std::string>> listRpcCommands() = 0;
 
     //! Set RPC timer interface if unset.
     virtual void rpcSetTimerInterfaceIfUnset(RPCTimerInterface* iface) = 0;
@@ -300,8 +279,11 @@ public:
     //! Return interface for accessing masternode related handler.
     virtual Masternode::Sync& masternodeSync() = 0;
 
-    //! Return interface for accessing coinjoin related handler.
+    //! Return interface for accessing coinjoin options related handler.
     virtual CoinJoin::Options& coinJoinOptions() = 0;
+
+    //! Return interface for accessing coinjoin loader handler.
+    virtual std::unique_ptr<interfaces::CoinJoin::Loader>& coinJoinLoader() = 0;
 
     //! Register handler for init messages.
     using InitMessageFn = std::function<void(const std::string& message)>;
@@ -341,7 +323,7 @@ public:
 
     //! Register handler for block tip messages.
     using NotifyBlockTipFn =
-        std::function<void(bool initial_download, interfaces::BlockTip tip, double verification_progress)>;
+        std::function<void(SynchronizationState, interfaces::BlockTip tip, double verification_progress)>;
     virtual std::unique_ptr<Handler> handleNotifyBlockTip(NotifyBlockTipFn fn) = 0;
 
     //! Register handler for chainlock messages.
@@ -351,7 +333,7 @@ public:
 
     //! Register handler for header tip messages.
     using NotifyHeaderTipFn =
-        std::function<void(bool initial_download, interfaces::BlockTip tip, double verification_progress)>;
+        std::function<void(SynchronizationState, interfaces::BlockTip tip, double verification_progress)>;
     virtual std::unique_ptr<Handler> handleNotifyHeaderTip(NotifyHeaderTipFn fn) = 0;
 
     //! Register handler for masternode list update messages.

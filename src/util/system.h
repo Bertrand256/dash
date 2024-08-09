@@ -1,6 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2020 The Bitcoin Core developers
-// Copyright (c) 2014-2022 The Dash Core developers
+// Copyright (c) 2014-2023 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -21,7 +21,6 @@
 #include <fs.h>
 #include <logging.h>
 #include <sync.h>
-#include <tinyformat.h>
 #include <util/settings.h>
 #include <util/time.h>
 #include <amount.h>
@@ -35,23 +34,13 @@
 #include <utility>
 #include <vector>
 
-// Debugging macros
-
-// Uncomment the following line to enable debugging messages
-// or enable on a per file basis prior to inclusion of util.h
-//#define ENABLE_DASH_DEBUG
-#ifdef ENABLE_DASH_DEBUG
-#define DBG( x ) x
-#else
-#define DBG( x )
-#endif
-
 //Dash only features
 
 extern bool fMasternodeMode;
-extern bool fDisableGovernance;
 extern int nWalletBackups;
 extern const std::string gCoinJoinName;
+
+class UniValue;
 
 // Application startup time (used for uptime calculation)
 int64_t GetStartupTime();
@@ -107,14 +96,9 @@ void ReleaseDirectoryLocks();
 
 bool TryCreateDirectories(const fs::path& p);
 fs::path GetDefaultDataDir();
-// The blocks directory is always net specific.
-const fs::path &GetBlocksDir();
 const fs::path &GetDataDir(bool fNetSpecific = true);
-fs::path GetBackupsDir();
 // Return true if -datadir option points to a valid directory or is not specified.
 bool CheckDataDirOption();
-/** Tests only */
-void ClearDatadirCache();
 fs::path GetConfigFile(const std::string& confPath);
 #ifdef WIN32
 fs::path GetSpecialFolderPath(int nFolder, bool fCreate = true);
@@ -125,6 +109,16 @@ std::string ShellEscape(const std::string& arg);
 #if HAVE_SYSTEM
 void runCommand(const std::string& strCommand);
 #endif
+#ifdef HAVE_BOOST_PROCESS
+/**
+ * Execute a command which returns JSON, and parse the result.
+ *
+ * @param str_command The command to execute, including any arguments
+ * @param str_std_in string to pass to stdin
+ * @return parsed JSON
+ */
+UniValue RunCommandParseJSON(const std::string& str_command, const std::string& str_std_in="");
+#endif // HAVE_BOOST_PROCESS
 
 /**
  * Most paths passed as configuration arguments are treated as relative to
@@ -194,6 +188,7 @@ public:
         NETWORK_ONLY = 0x200,
         // This argument's value is sensitive (such as a password).
         SENSITIVE = 0x400,
+        COMMAND = 0x800,
     };
 
 protected:
@@ -206,10 +201,15 @@ protected:
 
     mutable RecursiveMutex cs_args;
     util::Settings m_settings GUARDED_BY(cs_args);
+    std::vector<std::string> m_command GUARDED_BY(cs_args);
     std::string m_network GUARDED_BY(cs_args);
     std::set<std::string> m_network_only_args GUARDED_BY(cs_args);
     std::map<OptionsCategory, std::map<std::string, Arg>> m_available_args GUARDED_BY(cs_args);
+    bool m_accept_any_command GUARDED_BY(cs_args){true};
     std::list<SectionInfo> m_config_sections GUARDED_BY(cs_args);
+    fs::path m_cached_blocks_path GUARDED_BY(cs_args);
+    mutable fs::path m_cached_datadir_path GUARDED_BY(cs_args);
+    mutable fs::path m_cached_network_datadir_path GUARDED_BY(cs_args);
 
     [[nodiscard]] bool ReadConfigStream(std::istream& stream, const std::string& filepath, std::string& error, bool ignore_invalid_keys = false);
 
@@ -259,10 +259,47 @@ public:
      */
     const std::list<SectionInfo> GetUnrecognizedSections() const;
 
+    struct Command {
+        /** The command (if one has been registered with AddCommand), or empty */
+        std::string command;
+        /**
+         * If command is non-empty: Any args that followed it
+         * If command is empty: The unregistered command and any args that followed it
+         */
+        std::vector<std::string> args;
+    };
+    /**
+     * Get the command and command args (returns std::nullopt if no command provided)
+     */
+    std::optional<const Command> GetCommand() const;
+
     /**
      * Return the map of all the args passed via the command line
      */
     const std::map<std::string, std::vector<util::SettingsValue>> GetCommandLineArgs() const;
+
+    /**
+     * Get blocks directory path
+     *
+     * @return Blocks path which is network specific
+     */
+    const fs::path& GetBlocksDirPath();
+
+    /**
+     * Get data directory path
+     *
+     * @param net_specific Append network identifier to the returned path
+     * @return Absolute path on success, otherwise an empty path when a non-directory path would be returned
+     * @post Returned directory path is created unless it is empty
+     */
+    const fs::path& GetDataDirPath(bool net_specific = true) const;
+
+    fs::path GetBackupsDirPath();
+
+    /**
+     * Clear cached directory paths
+     */
+    void ClearPathCache();
 
     /**
      * Return a vector of strings of the given argument
@@ -356,6 +393,11 @@ public:
      * Add argument
      */
     void AddArg(const std::string& name, const std::string& help, unsigned int flags, const OptionsCategory& cat);
+
+    /**
+     * Add subcommand
+     */
+    void AddCommand(const std::string& cmd, const std::string& help, const OptionsCategory& cat);
 
     /**
      * Add many hidden arguments

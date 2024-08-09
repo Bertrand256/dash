@@ -9,8 +9,8 @@ Test that the CHECKLOCKTIMEVERIFY soft-fork activates at (regtest) block height
 """
 
 from test_framework.blocktools import create_coinbase, create_block, create_transaction
-from test_framework.messages import CTransaction, msg_block, ToHex
-from test_framework.mininode import P2PInterface
+from test_framework.messages import CTransaction, msg_block
+from test_framework.p2p import P2PInterface
 from test_framework.script import CScript, OP_1NEGATE, OP_CHECKLOCKTIMEVERIFY, OP_DROP, CScriptNum
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import (
@@ -43,7 +43,7 @@ def cltv_validate(node, tx, height):
     tx.nLockTime = height
 
     # Need to re-sign, since nSequence and nLockTime changed
-    signed_result = node.signrawtransactionwithwallet(ToHex(tx))
+    signed_result = node.signrawtransactionwithwallet(tx.serialize().hex())
     new_tx = CTransaction()
     new_tx.deserialize(BytesIO(hex_str_to_bytes(signed_result['hex'])))
 
@@ -60,7 +60,7 @@ class BIP65Test(BitcoinTestFramework):
             '-dip3params=9000:9000',
             '-par=1',  # Use only one script thread to get the exact reject reason for testing
             '-acceptnonstdtxn=1',  # cltv_invalidate is nonstandard
-            '-vbparams=v20:0:999999999999:480:384:288:5:0' # Delay v20 for this test as we don't need it
+            '-vbparams=v20:0:999999999999:0:480:384:288:5:0' # Delay v20 for this test as we don't need it
         ]]
         self.setup_clean_chain = True
         self.rpc_timeout = 480
@@ -78,7 +78,7 @@ class BIP65Test(BitcoinTestFramework):
         self.skip_if_no_wallet()
 
     def run_test(self):
-        self.nodes[0].add_p2p_connection(P2PInterface())
+        peer = self.nodes[0].add_p2p_connection(P2PInterface())
 
         self.test_cltv_info(is_active=False)
 
@@ -102,7 +102,7 @@ class BIP65Test(BitcoinTestFramework):
         block.solve()
 
         self.test_cltv_info(is_active=False)  # Not active as of current tip and next block does not need to obey rules
-        self.nodes[0].p2p.send_and_ping(msg_block(block))
+        peer.send_and_ping(msg_block(block))
         self.test_cltv_info(is_active=True)  # Not active as of current tip, but next block must obey rules
         assert_equal(self.nodes[0].getbestblockhash(), block.hash)
 
@@ -114,9 +114,9 @@ class BIP65Test(BitcoinTestFramework):
         block.solve()
 
         with self.nodes[0].assert_debug_log(expected_msgs=['{}, bad-version(0x00000003)'.format(block.hash)]):
-            self.nodes[0].p2p.send_and_ping(msg_block(block))
+            peer.send_and_ping(msg_block(block))
             assert_equal(int(self.nodes[0].getbestblockhash(), 16), tip)
-            self.nodes[0].p2p.sync_with_ping()
+            peer.sync_with_ping()
 
         self.log.info("Test that invalid-according-to-cltv transactions cannot appear in a block")
         block.nVersion = 4
@@ -136,9 +136,9 @@ class BIP65Test(BitcoinTestFramework):
         block.solve()
 
         with self.nodes[0].assert_debug_log(expected_msgs=['CheckInputScripts on {} failed with non-mandatory-script-verify-flag (Negative locktime)'.format(block.vtx[-1].hash)]):
-            self.nodes[0].p2p.send_and_ping(msg_block(block))
+            peer.send_and_ping(msg_block(block))
             assert_equal(int(self.nodes[0].getbestblockhash(), 16), tip)
-            self.nodes[0].p2p.sync_with_ping()
+            peer.sync_with_ping()
 
         self.log.info("Test that a version 4 block with a valid-according-to-CLTV transaction is accepted")
         spendtx = cltv_validate(self.nodes[0], spendtx, CLTV_HEIGHT - 1)
@@ -150,7 +150,7 @@ class BIP65Test(BitcoinTestFramework):
         block.solve()
 
         self.test_cltv_info(is_active=True)  # Not active as of current tip, but next block must obey rules
-        self.nodes[0].p2p.send_and_ping(msg_block(block))
+        peer.send_and_ping(msg_block(block))
         self.test_cltv_info(is_active=True)  # Active as of current tip
         assert_equal(int(self.nodes[0].getbestblockhash(), 16), block.sha256)
 

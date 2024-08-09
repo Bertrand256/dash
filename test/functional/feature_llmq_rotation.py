@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2015-2022 The Dash Core developers
+# Copyright (c) 2015-2024 The Dash Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -13,12 +13,12 @@ import struct
 from io import BytesIO
 
 from test_framework.test_framework import DashTestFramework
-from test_framework.messages import CBlock, CBlockHeader, CCbTx, CMerkleBlock, FromHex, hash256, msg_getmnlistd, QuorumId, ser_uint256, sha256
-from test_framework.mininode import P2PInterface
+from test_framework.messages import CBlock, CBlockHeader, CCbTx, CMerkleBlock, from_hex, hash256, msg_getmnlistd, QuorumId, ser_uint256, sha256
+from test_framework.p2p import P2PInterface
 from test_framework.util import (
     assert_equal,
     assert_greater_than_or_equal,
-    wait_until, assert_greater_than, get_bip9_details,
+    assert_greater_than, get_bip9_details,
 )
 
 
@@ -41,7 +41,7 @@ class TestP2PConn(P2PInterface):
     def wait_for_mnlistdiff(self, timeout=30):
         def received_mnlistdiff():
             return self.last_mnlistdiff is not None
-        return wait_until(received_mnlistdiff, timeout=timeout)
+        return self.wait_until(received_mnlistdiff, timeout=timeout)
 
     def getmnlistdiff(self, baseBlockHash, blockHash):
         msg = msg_getmnlistd(baseBlockHash, blockHash)
@@ -76,6 +76,13 @@ class LLMQQuorumRotationTest(DashTestFramework):
 
         b_h_0 = self.nodes[0].getbestblockhash()
 
+        tip = self.nodes[0].getblockcount()
+        next_dkg = 24 - (tip % 24)
+        for node in self.nodes:
+            dkg_info = node.quorum("dkginfo")
+            assert_equal(dkg_info['active_dkgs'], 0)
+            assert_equal(dkg_info['next_dkg'], next_dkg)
+
         #Mine 2 quorums so that Chainlocks can be available: Need them to include CL in CbTx as soon as v20 activates
         self.log.info("Mining 2 quorums")
         h_0 = self.mine_quorum()
@@ -92,6 +99,18 @@ class LLMQQuorumRotationTest(DashTestFramework):
         self.wait_for_chainlocked_block_all_nodes(self.nodes[0].getbestblockhash())
 
         b_h_1 = self.nodes[0].getbestblockhash()
+
+        tip = self.nodes[0].getblockcount()
+        next_dkg = 24 - (tip % 24)
+        assert next_dkg < 24
+        nonzero_dkgs = 0
+        for i in range(len(self.nodes)):
+            dkg_info = self.nodes[i].quorum("dkginfo")
+            if i == 0:
+                assert_equal(dkg_info['active_dkgs'], 0)
+            nonzero_dkgs += dkg_info['active_dkgs']
+            assert_equal(dkg_info['next_dkg'], next_dkg)
+        assert_equal(nonzero_dkgs, 11) # 2 quorums 4 nodes each and 1 quorum of 3 nodes
 
         expectedDeleted = []
         expectedNew = [h_100_0, h_106_0, h_104_0, h_100_1, h_106_1, h_104_1]
@@ -141,7 +160,7 @@ class LLMQQuorumRotationTest(DashTestFramework):
 
         # And for the remaining blocks, enforce new CL in CbTx
         skip_count = 23 - (self.nodes[0].getblockcount() % 24)
-        for i in range(skip_count):
+        for _ in range(skip_count):
             self.nodes[0].generate(1)
             self.sync_blocks(nodes)
             self.wait_for_chainlocked_block_all_nodes(self.nodes[0].getbestblockhash())
@@ -158,13 +177,12 @@ class LLMQQuorumRotationTest(DashTestFramework):
 
         q_100_0 = QuorumId(100, int(quorum_info_0_0["quorumHash"], 16))
         q_102_0 = QuorumId(102, int(quorum_info_0_0["quorumHash"], 16))
-        q_104_0 = QuorumId(104, int(quorum_info_0_0["quorumHash"], 16))
         q_103_0_0 = QuorumId(103, int(quorum_info_0_0["quorumHash"], 16))
         q_103_0_1 = QuorumId(103, int(quorum_info_0_1["quorumHash"], 16))
 
         b_1 = self.nodes[0].getbestblockhash()
-        expectedDeleted = [h_100_0, h_104_0]
-        expectedNew = [q_100_0, q_102_0, q_104_0, q_103_0_0, q_103_0_1]
+        expectedDeleted = [h_100_0]
+        expectedNew = [q_100_0, q_102_0, q_103_0_0, q_103_0_1]
         quorumList = self.test_getmnlistdiff_quorums(b_0, b_1, quorumList, expectedDeleted, expectedNew)
 
         self.log.info("Wait for chainlock")
@@ -226,7 +244,7 @@ class LLMQQuorumRotationTest(DashTestFramework):
         self.nodes[0].sporkupdate("SPORK_19_CHAINLOCKS_ENABLED", 0)
         self.wait_for_sporks_same()
         self.nodes[0].reconsiderblock(fallback_blockhash)
-        wait_until(lambda: self.nodes[0].getbestblockhash() == new_quorum_blockhash, sleep=1)
+        self.wait_until(lambda: self.nodes[0].getbestblockhash() == new_quorum_blockhash)
         assert_equal(self.nodes[0].quorum("list", llmq_type), new_quorum_list)
 
     def test_getmnlistdiff_quorums(self, baseBlockHash, blockHash, baseQuorumList, expectedDeleted, expectedNew, testQuorumsCLSigs = True):
@@ -259,7 +277,7 @@ class LLMQQuorumRotationTest(DashTestFramework):
 
     def test_getmnlistdiff_base(self, baseBlockHash, blockHash, testQuorumsCLSigs):
         hexstr = self.nodes[0].getblockheader(blockHash, False)
-        header = FromHex(CBlockHeader(), hexstr)
+        header = from_hex(CBlockHeader(), hexstr)
 
         d = self.test_node.getmnlistdiff(int(baseBlockHash, 16), int(blockHash, 16))
         assert_equal(d.baseBlockHash, int(baseBlockHash, 16))

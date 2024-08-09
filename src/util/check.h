@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Bitcoin Core developers
+// Copyright (c) 2019-2020 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -51,7 +51,7 @@ void assertion_fail(const char* file, int line, const char* func, const char* as
 
 /** Helper for Assert()/Assume() */
 template <bool IS_ASSERT, typename T>
-T&& inline_assertion_check(T&& val, const char* file, int line, const char* func, const char* assertion)
+T&& inline_assertion_check(T&& val, [[maybe_unused]] const char* file, [[maybe_unused]] int line, [[maybe_unused]] const char* func, [[maybe_unused]] const char* assertion)
 {
     if constexpr (IS_ASSERT
 #ifdef ABORT_ON_FAILED_ASSUME

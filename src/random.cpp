@@ -6,6 +6,7 @@
 #include <random.h>
 
 #include <compat/cpuid.h>
+#include <crypto/chacha20.h>
 #include <crypto/sha256.h>
 #include <crypto/sha512.h>
 #include <support/cleanse.h>
@@ -14,15 +15,15 @@
 #include <wincrypt.h>
 #endif
 #include <logging.h>  // for LogPrintf()
+#include <randomenv.h>
+#include <support/allocators/secure.h>
+#include <span.h>
 #include <sync.h>     // for Mutex
 #include <util/time.h> // for GetTimeMicros()
 
+#include <array>
 #include <stdlib.h>
 #include <thread>
-
-#include <randomenv.h>
-
-#include <support/allocators/secure.h>
 
 #ifndef WIN32
 #include <fcntl.h>
@@ -98,7 +99,7 @@ static void ReportHardwareRand()
     // This must be done in a separate function, as InitHardwareRand() may be indirectly called
     // from global constructors, before logging is initialized.
     if (g_rdseed_supported) {
-        LogPrintf("Using RdSeed as additional entropy source\n");
+        LogPrintf("Using RdSeed as an additional entropy source\n");
     }
     if (g_rdrand_supported) {
         LogPrintf("Using RdRand as an additional entropy source\n");
@@ -377,7 +378,7 @@ public:
     {
     }
 
-    void AddEvent(uint32_t event_info) noexcept
+    void AddEvent(uint32_t event_info) noexcept EXCLUSIVE_LOCKS_REQUIRED(!m_events_mutex)
     {
         LOCK(m_events_mutex);
 
@@ -391,7 +392,7 @@ public:
     /**
      * Feed (the hash of) all events added through AddEvent() to hasher.
      */
-    void SeedEvents(CSHA512& hasher) noexcept
+    void SeedEvents(CSHA512& hasher) noexcept EXCLUSIVE_LOCKS_REQUIRED(!m_events_mutex)
     {
         // We use only SHA256 for the events hashing to get the ASM speedups we have for SHA256,
         // since we want it to be fast as network peers may be able to trigger it repeatedly.
@@ -410,7 +411,7 @@ public:
      *
      * If this function has never been called with strong_seed = true, false is returned.
      */
-    bool MixExtract(unsigned char* out, size_t num, CSHA512&& hasher, bool strong_seed) noexcept
+    bool MixExtract(unsigned char* out, size_t num, CSHA512&& hasher, bool strong_seed) noexcept EXCLUSIVE_LOCKS_REQUIRED(!m_mutex)
     {
         assert(num <= 32);
         unsigned char buf[64];
@@ -582,18 +583,8 @@ static void ProcRand(unsigned char* out, int num, RNGLevel level) noexcept
     }
 }
 
-std::chrono::microseconds GetRandMicros(std::chrono::microseconds duration_max) noexcept
-{
-    return std::chrono::microseconds{GetRand(duration_max.count())};
-}
-
-std::chrono::milliseconds GetRandMillis(std::chrono::milliseconds duration_max) noexcept
-{
-    return std::chrono::milliseconds{GetRand(duration_max.count())};
-}
-
-void GetRandBytes(unsigned char* buf, int num) noexcept { ProcRand(buf, num, RNGLevel::FAST); }
-void GetStrongRandBytes(unsigned char* buf, int num) noexcept { ProcRand(buf, num, RNGLevel::SLOW); }
+void GetRandBytes(Span<unsigned char> bytes) noexcept { ProcRand(bytes.data(), bytes.size(), RNGLevel::FAST); }
+void GetStrongRandBytes(Span<unsigned char> bytes) noexcept { ProcRand(bytes.data(), bytes.size(), RNGLevel::SLOW); }
 void RandAddPeriodic() noexcept { ProcRand(nullptr, 0, RNGLevel::PERIODIC); }
 void RandAddEvent(const uint32_t event_info) noexcept { GetRNGState().AddEvent(event_info); }
 
@@ -612,7 +603,7 @@ int GetRandInt(int nMax) noexcept
 uint256 GetRandHash() noexcept
 {
     uint256 hash;
-    GetRandBytes((unsigned char*)&hash, sizeof(hash));
+    GetRandBytes(hash);
     return hash;
 }
 
@@ -630,35 +621,35 @@ bool GetRandBool(double rate)
 void FastRandomContext::RandomSeed()
 {
     uint256 seed = GetRandHash();
-    rng.SetKey(seed.begin(), 32);
+    rng.SetKey(MakeByteSpan(seed));
     requires_seed = false;
 }
 
 uint256 FastRandomContext::rand256() noexcept
 {
-    if (bytebuf_size < 32) {
-        FillByteBuffer();
-    }
+    if (requires_seed) RandomSeed();
     uint256 ret;
-    memcpy(ret.begin(), bytebuf + 64 - bytebuf_size, 32);
-    bytebuf_size -= 32;
+    rng.Keystream(MakeWritableByteSpan(ret));
     return ret;
 }
 
-std::vector<unsigned char> FastRandomContext::randbytes(size_t len)
+template <typename B>
+std::vector<B> FastRandomContext::randbytes(size_t len)
+{
+    std::vector<B> ret(len);
+    fillrand(MakeWritableByteSpan(ret));
+    return ret;
+}
+template std::vector<unsigned char> FastRandomContext::randbytes(size_t);
+template std::vector<std::byte> FastRandomContext::randbytes(size_t);
+
+void FastRandomContext::fillrand(Span<std::byte> output)
 {
     if (requires_seed) RandomSeed();
-    std::vector<unsigned char> ret(len);
-    if (len > 0) {
-        rng.Keystream(&ret[0], len);
-    }
-    return ret;
+    rng.Keystream(output);
 }
 
-FastRandomContext::FastRandomContext(const uint256& seed) noexcept : requires_seed(false), bytebuf_size(0), bitbuf_size(0)
-{
-    rng.SetKey(seed.begin(), 32);
-}
+FastRandomContext::FastRandomContext(const uint256& seed) noexcept : requires_seed(false), rng(MakeByteSpan(seed)), bitbuf_size(0) {}
 
 bool Random_SanityCheck()
 {
@@ -706,25 +697,22 @@ bool Random_SanityCheck()
     return true;
 }
 
-FastRandomContext::FastRandomContext(bool fDeterministic) noexcept : requires_seed(!fDeterministic), bytebuf_size(0), bitbuf_size(0)
+static constexpr std::array<std::byte, ChaCha20::KEYLEN> ZERO_KEY{};
+
+FastRandomContext::FastRandomContext(bool fDeterministic) noexcept : requires_seed(!fDeterministic), rng(ZERO_KEY), bitbuf_size(0)
 {
-    if (!fDeterministic) {
-        return;
-    }
-    uint256 seed;
-    rng.SetKey(seed.begin(), 32);
+    // Note that despite always initializing with ZERO_KEY, requires_seed is set to true if not
+    // fDeterministic. That means the rng will be reinitialized with a secure random key upon first
+    // use.
 }
 
 FastRandomContext& FastRandomContext::operator=(FastRandomContext&& from) noexcept
 {
     requires_seed = from.requires_seed;
     rng = from.rng;
-    std::copy(std::begin(from.bytebuf), std::end(from.bytebuf), std::begin(bytebuf));
-    bytebuf_size = from.bytebuf_size;
     bitbuf = from.bitbuf;
     bitbuf_size = from.bitbuf_size;
     from.requires_seed = true;
-    from.bytebuf_size = 0;
     from.bitbuf_size = 0;
     return *this;
 }

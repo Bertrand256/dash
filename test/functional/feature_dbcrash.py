@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2017-2019 The Bitcoin Core developers
+# Copyright (c) 2017-2020 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test recovery from a crash during chainstate writing.
@@ -36,7 +36,6 @@ from test_framework.messages import (
     CTransaction,
     CTxIn,
     CTxOut,
-    ToHex,
 )
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import (
@@ -194,7 +193,7 @@ class ChainstateWriteCrashTest(BitcoinTestFramework):
         while len(utxo_list) >= 2 and num_transactions < count:
             tx = CTransaction()
             input_amount = 0
-            for i in range(2):
+            for _ in range(2):
                 utxo = utxo_list.pop()
                 tx.vin.append(CTxIn(COutPoint(int(utxo['txid'], 16), utxo['vout'])))
                 input_amount += int(utxo['amount'] * COIN)
@@ -204,11 +203,11 @@ class ChainstateWriteCrashTest(BitcoinTestFramework):
                 # Sanity check -- if we chose inputs that are too small, skip
                 continue
 
-            for i in range(3):
+            for _ in range(3):
                 tx.vout.append(CTxOut(output_amount, hex_str_to_bytes(utxo['scriptPubKey'])))
 
             # Sign and send the transaction to get into the mempool
-            tx_signed_hex = node.signrawtransactionwithwallet(ToHex(tx))['hex']
+            tx_signed_hex = node.signrawtransactionwithwallet(tx.serialize().hex())['hex']
             node.sendrawtransaction(tx_signed_hex)
             num_transactions += 1
 
