@@ -312,6 +312,18 @@ static void SignSpecialTxPayloadByHash(const CMutableTransaction& tx, SpecialTxP
 }
 
 template<typename SpecialTxPayload>
+static void SignSpecialTxPayloadByHash(const CMutableTransaction& tx, SpecialTxPayload& payload, const CKey& key)
+{
+    UpdateSpecialTxInputsHash(tx, payload);
+    payload.vchSig.clear();
+
+    uint256 hash = ::SerializeHash(payload);
+    if (!CHashSigner::SignHash(hash, key, payload.vchSig)) {
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "failed to sign special tx");
+    }
+}
+
+template<typename SpecialTxPayload>
 static void SignSpecialTxPayloadByHash(const CMutableTransaction& tx, SpecialTxPayload& payload, const CBLSSecretKey& key)
 {
     UpdateSpecialTxInputsHash(tx, payload);
@@ -1201,18 +1213,21 @@ static RPCHelpMan protx_update_registrar_wrapper(bool specific_legacy_bls_scheme
         ptx.scriptPayout = GetScriptForDestination(payoutDest);
     }
 
+    CKey keyOwner;
+    bool externalOwnerKey = false;
     {
         const auto pkhash{PKHash(dmn->pdmnState->keyIDOwner)};
         LOCK(wallet->cs_wallet);
         if (wallet->IsMine(GetScriptForDestination(pkhash)) != isminetype::ISMINE_SPENDABLE) {
             if(request.params.size() == 6 && request.params[5].get_str() != "") {
-                CKey keyOwner = DecodeSecret(request.params[5].get_str());
+                keyOwner = DecodeSecret(request.params[5].get_str());
                 if (!keyOwner.IsValid())
                     throw std::runtime_error(strprintf("Invalid owner private key encoding"));
 
                 CPubKey pubkeyOwner = keyOwner.GetPubKey();
                 if(pubkeyOwner.GetID() != dmn->pdmnState->keyIDOwner)
                     throw std::runtime_error(strprintf("The owner private key passed as an argument does not match the owner address associated with the ProRegTx transaction."));
+                externalOwnerKey = true;
             }
             else
                 throw std::runtime_error(strprintf("Private key for owner address %s not found in your wallet", EncodeDestination(pkhash)));
@@ -1234,7 +1249,11 @@ static RPCHelpMan protx_update_registrar_wrapper(bool specific_legacy_bls_scheme
     }
 
     FundSpecialTx(wallet.get(), tx, ptx, feeSourceDest);
-    SignSpecialTxPayloadByHash(tx, ptx, dmn->pdmnState->keyIDOwner, *wallet);
+
+    if(externalOwnerKey)
+        SignSpecialTxPayloadByHash(tx, ptx, keyOwner);
+    else
+        SignSpecialTxPayloadByHash(tx, ptx, dmn->pdmnState->keyIDOwner, *wallet);
     SetTxPayload(tx, ptx);
 
     return SignAndSendSpecialTx(request, chain_helper, chainman, tx);
