@@ -16,6 +16,7 @@
 class CActiveMasternodeManager;
 class AddrMan;
 class CTxMemPool;
+class CCoinJoinQueue;
 class CDeterministicMNManager;
 class CMasternodeMetaMan;
 class CMasternodeSync;
@@ -29,7 +30,6 @@ struct CJContext;
 struct LLMQContext;
 
 extern RecursiveMutex cs_main;
-extern RecursiveMutex g_cs_orphans;
 
 /** Default for -maxorphantxsize, maximum size in megabytes the orphan map can grow before entries are removed */
 static const unsigned int DEFAULT_MAX_ORPHAN_TRANSACTIONS_SIZE = 10; // this allows around 100 TXs of max size (and many more of normal size)
@@ -51,13 +51,14 @@ struct CNodeStateStats {
     uint64_t m_addr_processed = 0;
     uint64_t m_addr_rate_limited = 0;
     bool m_addr_relay_enabled{false};
+    ServiceFlags their_services;
 };
 
 class PeerManager : public CValidationInterface, public NetEventsInterface
 {
 public:
     static std::unique_ptr<PeerManager> make(const CChainParams& chainparams, CConnman& connman, AddrMan& addrman,
-                                             BanMan* banman, CScheduler &scheduler, ChainstateManager& chainman,
+                                             BanMan* banman, ChainstateManager& chainman,
                                              CTxMemPool& pool, CMasternodeMetaMan& mn_metaman, CMasternodeSync& mn_sync,
                                              CGovernanceManager& govman, CSporkManager& sporkman,
                                              const CActiveMasternodeManager* const mn_activeman,
@@ -75,6 +76,9 @@ public:
      */
     virtual std::optional<std::string> FetchBlock(NodeId peer_id, const CBlockIndex& block_index) = 0;
 
+    /** Begin running background tasks, should only be called once */
+    virtual void StartScheduledTasks(CScheduler& scheduler) = 0;
+
     /** Get statistics from node state */
     virtual bool GetNodeStateStats(NodeId nodeid, CNodeStateStats& stats) const = 0;
 
@@ -89,6 +93,9 @@ public:
 
     /** Broadcast inventory message to a specific peer. */
     virtual void PushInventory(NodeId nodeid, const CInv& inv) = 0;
+
+    /** Relay DSQ based on peer preference */
+    virtual void RelayDSQ(const CCoinJoinQueue& queue) = 0;
 
     /** Relay inventories to all peers */
     virtual void RelayInv(CInv &inv, const int minProtoVersion = MIN_PEER_PROTO_VERSION) = 0;
@@ -122,9 +129,20 @@ public:
 
     /** Process a single message from a peer. Public for fuzz testing */
     virtual void ProcessMessage(CNode& pfrom, const std::string& msg_type, CDataStream& vRecv,
-                                const std::chrono::microseconds time_received, const std::atomic<bool>& interruptMsgProc) = 0;
+                                const std::chrono::microseconds time_received, const std::atomic<bool>& interruptMsgProc) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex) = 0;
+
+    /** Finish message processing. Used for some specific messages */
+    virtual void PostProcessMessage(MessageProcessingResult&& ret, NodeId node = -1) = 0;
+
+    /** This function is used for testing the stale tip eviction logic, see denialofservice_tests.cpp */
+    virtual void UpdateLastBlockAnnounceTime(NodeId node, int64_t time_in_seconds) = 0;
 
     virtual bool IsBanned(NodeId pnode) = 0;
+
+    virtual void EraseObjectRequest(NodeId nodeid, const CInv& inv) = 0;
+    virtual void RequestObject(NodeId nodeid, const CInv& inv, std::chrono::microseconds current_time,
+                               bool is_masternode, bool fForce = false) = 0;
+    virtual size_t GetRequestedObjectCount(NodeId nodeid) const = 0;
 };
 
 #endif // BITCOIN_NET_PROCESSING_H

@@ -18,6 +18,11 @@
 #include <util/underlying.h>
 #include <validation.h>
 
+static bool IsQuorumDKGEnabled(const CSporkManager& sporkman)
+{
+    return sporkman.IsSporkActive(SPORK_17_QUORUM_DKG_ENABLED);
+}
+
 namespace llmq
 {
 static const std::string DB_VVEC = "qdkg_V";
@@ -28,7 +33,7 @@ CDKGSessionManager::CDKGSessionManager(CBLSWorker& _blsWorker, CChainState& chai
                                        CDKGDebugManager& _dkgDebugManager, CMasternodeMetaMan& mn_metaman, CQuorumBlockProcessor& _quorumBlockProcessor,
                                        const CActiveMasternodeManager* const mn_activeman, const CSporkManager& sporkman,
                                        const std::unique_ptr<PeerManager>& peerman, bool unitTests, bool fWipe) :
-    db(std::make_unique<CDBWrapper>(unitTests ? "" : (GetDataDir() / "llmq/dkgdb"), 1 << 20, unitTests, fWipe)),
+    db(std::make_unique<CDBWrapper>(unitTests ? "" : (gArgs.GetDataDirNet() / "llmq/dkgdb"), 1 << 20, unitTests, fWipe)),
     blsWorker(_blsWorker),
     m_chainstate(chainstate),
     connman(_connman),
@@ -56,6 +61,8 @@ CDKGSessionManager::CDKGSessionManager(CBLSWorker& _blsWorker, CChainState& chai
     }
 }
 
+CDKGSessionManager::~CDKGSessionManager() = default;
+
 void CDKGSessionManager::MigrateDKG()
 {
     if (!db->IsEmpty()) return;
@@ -63,7 +70,7 @@ void CDKGSessionManager::MigrateDKG()
     LogPrint(BCLog::LLMQ, "CDKGSessionManager::%d -- start\n", __func__);
 
     CDBBatch batch(*db);
-    auto oldDb = std::make_unique<CDBWrapper>(GetDataDir() / "llmq", 8 << 20);
+    auto oldDb = std::make_unique<CDBWrapper>(gArgs.GetDataDirNet() / "llmq", 8 << 20);
     std::unique_ptr<CDBIterator> pcursor(oldDb->NewIterator());
 
     auto start_vvec = std::make_tuple(DB_VVEC, (Consensus::LLMQType)0, uint256(), uint256());
@@ -297,10 +304,7 @@ bool CDKGSessionManager::GetContribution(const uint256& hash, CDKGContribution& 
         if (dkgType.phase < QuorumPhase::Initialized || dkgType.phase > QuorumPhase::Contribute) {
             continue;
         }
-        LOCK(dkgType.curSession->invCs);
-        auto it = dkgType.curSession->contributions.find(hash);
-        if (it != dkgType.curSession->contributions.end()) {
-            ret = it->second;
+        if (dkgType.GetContribution(hash, ret)) {
             return true;
         }
     }
@@ -318,10 +322,7 @@ bool CDKGSessionManager::GetComplaint(const uint256& hash, CDKGComplaint& ret) c
         if (dkgType.phase < QuorumPhase::Contribute || dkgType.phase > QuorumPhase::Complain) {
             continue;
         }
-        LOCK(dkgType.curSession->invCs);
-        auto it = dkgType.curSession->complaints.find(hash);
-        if (it != dkgType.curSession->complaints.end()) {
-            ret = it->second;
+        if (dkgType.GetComplaint(hash, ret)) {
             return true;
         }
     }
@@ -339,10 +340,7 @@ bool CDKGSessionManager::GetJustification(const uint256& hash, CDKGJustification
         if (dkgType.phase < QuorumPhase::Complain || dkgType.phase > QuorumPhase::Justify) {
             continue;
         }
-        LOCK(dkgType.curSession->invCs);
-        auto it = dkgType.curSession->justifications.find(hash);
-        if (it != dkgType.curSession->justifications.end()) {
-            ret = it->second;
+        if (dkgType.GetJustification(hash, ret)) {
             return true;
         }
     }
@@ -360,10 +358,7 @@ bool CDKGSessionManager::GetPrematureCommitment(const uint256& hash, CDKGPrematu
         if (dkgType.phase < QuorumPhase::Justify || dkgType.phase > QuorumPhase::Commit) {
             continue;
         }
-        LOCK(dkgType.curSession->invCs);
-        auto it = dkgType.curSession->prematureCommitments.find(hash);
-        if (it != dkgType.curSession->prematureCommitments.end() && dkgType.curSession->validCommitments.count(hash)) {
-            ret = it->second;
+        if (dkgType.GetPrematureCommitment(hash, ret)) {
             return true;
         }
     }
@@ -523,11 +518,6 @@ void CDKGSessionManager::CleanupOldContributions() const
             LogPrint(BCLog::LLMQ, "CDKGSessionManager::%s -- removed %lld old entries for llmq type %d\n", __func__, cnt_old, uint8_t(params.type));
         }
     }
-}
-
-bool IsQuorumDKGEnabled(const CSporkManager& sporkman)
-{
-    return sporkman.IsSporkActive(SPORK_17_QUORUM_DKG_ENABLED);
 }
 
 } // namespace llmq

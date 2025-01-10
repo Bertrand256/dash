@@ -18,6 +18,7 @@
 #include <util/string.h>
 #include <util/vector.h>
 
+#include <functional>
 #include <stdexcept>
 #include <type_traits>
 #include <vector>
@@ -26,6 +27,9 @@ class CChainParams;
 
 /** This is connected to the logger. Can be used to redirect logs to any other log */
 extern const std::function<void(const std::string&)> G_TEST_LOG_FUN;
+
+/** Retrieve the command line arguments. */
+extern const std::function<std::vector<const char*>()> G_TEST_COMMAND_LINE_ARGUMENTS;
 
 // Enable BOOST_CHECK_EQUAL for enum class types
 namespace std {
@@ -88,7 +92,6 @@ struct BasicTestingSetup {
     explicit BasicTestingSetup(const std::string& chainName = CBaseChainParams::MAIN, const std::vector<const char*>& extra_args = {});
     ~BasicTestingSetup();
 
-    std::unique_ptr<CConnman> connman;
     const fs::path m_path_root;
     ArgsManager m_args;
 };
@@ -127,15 +130,25 @@ struct TestChainSetup : public RegTestingSetup
     /**
      * Create a new block with just given transactions, coinbase paying to
      * scriptPubKey, and try to add it to the current chain.
+     * If no chainstate is specified, default to the active.
      */
     CBlock CreateAndProcessBlock(const std::vector<CMutableTransaction>& txns,
-                                 const CScript& scriptPubKey);
+                                 const CScript& scriptPubKey,
+                                 CChainState* chainstate = nullptr);
     CBlock CreateAndProcessBlock(const std::vector<CMutableTransaction>& txns,
-                                 const CKey& scriptKey);
+                                 const CKey& scriptKey,
+                                 CChainState* chainstate = nullptr);
+
+    /**
+     * Create a new block with just given transactions, coinbase paying to
+     * scriptPubKey.
+     */
     CBlock CreateBlock(const std::vector<CMutableTransaction>& txns,
-                       const CScript& scriptPubKey);
+                       const CScript& scriptPubKey,
+                       CChainState& chainstate);
     CBlock CreateBlock(const std::vector<CMutableTransaction>& txns,
-                       const CKey& scriptKey);
+                       const CKey& scriptKey,
+                       CChainState& chainstate);
 
     //! Mine a series of new blocks on the active chain.
     void mineBlocks(int num_blocks);
@@ -167,27 +180,7 @@ struct TestChainSetup : public RegTestingSetup
  * Testing fixture that pre-creates a 100-block REGTEST-mode block chain
  */
 struct TestChain100Setup : public TestChainSetup {
-    TestChain100Setup() : TestChainSetup(100) {}
-};
-
-struct TestChainDIP3Setup : public TestChainSetup
-{
-    TestChainDIP3Setup() : TestChainSetup(431) {}
-};
-
-struct TestChainV19Setup : public TestChainSetup
-{
-    TestChainV19Setup();
-};
-
-struct TestChainDIP3BeforeActivationSetup : public TestChainSetup
-{
-    TestChainDIP3BeforeActivationSetup() : TestChainSetup(430) {}
-};
-
-struct TestChainV19BeforeActivationSetup : public TestChainSetup
-{
-    TestChainV19BeforeActivationSetup();
+    TestChain100Setup(const std::vector<const char*>& extra_args = {});
 };
 
 /**

@@ -36,10 +36,8 @@ class MaxUploadTest(BitcoinTestFramework):
         self.setup_clean_chain = True
         self.num_nodes = 1
         self.extra_args = [[
-            "-maxuploadtarget=200",
-            "-blockmaxsize=999000",
-            "-maxtipage="+str(2*60*60*24*7),
-            "-acceptnonstdtxn=1"
+            "-maxuploadtarget=400",
+            "-acceptnonstdtxn=1",
         ]]
         self.supports_cli = False
 
@@ -62,7 +60,7 @@ class MaxUploadTest(BitcoinTestFramework):
         self.nodes[0].setmocktime(old_mocktime)
 
         # Generate some old blocks
-        self.nodes[0].generate(130)
+        self.generate(self.nodes[0], 130)
 
         # p2p_conns[0] will only request old blocks
         # p2p_conns[1] will only request new blocks
@@ -70,10 +68,11 @@ class MaxUploadTest(BitcoinTestFramework):
         p2p_conns = []
 
         for _ in range(3):
-            p2p_conns.append(self.nodes[0].add_p2p_connection(TestP2PConn()))
+            # Don't use v2transport in this test (too slow with the unoptimized python ChaCha20 implementation)
+            p2p_conns.append(self.nodes[0].add_p2p_connection(TestP2PConn(), supports_v2_p2p=False))
 
         # Now mine a big block
-        mine_large_block(self.nodes[0], self.utxo_cache)
+        mine_large_block(self, self.nodes[0], self.utxo_cache)
 
         # Store the hash; we'll request this later
         big_old_block = self.nodes[0].getbestblockhash()
@@ -84,7 +83,7 @@ class MaxUploadTest(BitcoinTestFramework):
         self.nodes[0].setmocktime(current_mocktime - 2*60*60*24)
 
         # Mine one more block, so that the prior block looks old
-        mine_large_block(self.nodes[0], self.utxo_cache)
+        mine_large_block(self, self.nodes[0], self.utxo_cache)
 
         # We'll be requesting this new block too
         big_new_block = self.nodes[0].getbestblockhash()
@@ -96,7 +95,7 @@ class MaxUploadTest(BitcoinTestFramework):
         getdata_request = msg_getdata()
         getdata_request.inv.append(CInv(MSG_BLOCK, big_old_block))
 
-        max_bytes_per_day = 200*1024*1024
+        max_bytes_per_day = 400*1024*1024
         daily_buffer = 144 * MAX_BLOCK_SIZE
         max_bytes_available = max_bytes_per_day - daily_buffer
         success_count = max_bytes_available // old_block_size
@@ -149,10 +148,10 @@ class MaxUploadTest(BitcoinTestFramework):
         self.nodes[0].disconnect_p2ps()
 
         self.log.info("Restarting node 0 with download permission and 1MB maxuploadtarget")
-        self.restart_node(0, ["-whitelist=download@127.0.0.1", "-maxuploadtarget=1", "-blockmaxsize=999000", "-maxtipage="+str(2*60*60*24*7), "-mocktime="+str(current_mocktime)])
+        self.restart_node(0, ["-whitelist=download@127.0.0.1", "-maxuploadtarget=1", "-blockmaxsize=999000", "-mocktime="+str(current_mocktime)])
 
         # Reconnect to self.nodes[0]
-        peer = self.nodes[0].add_p2p_connection(TestP2PConn())
+        peer = self.nodes[0].add_p2p_connection(TestP2PConn(), supports_v2_p2p=False)
 
         #retrieve 20 blocks which should be enough to break the 1MB limit
         getdata_request.inv = [CInv(MSG_BLOCK, big_new_block)]

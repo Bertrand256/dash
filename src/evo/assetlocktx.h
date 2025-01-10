@@ -1,4 +1,4 @@
-// Copyright (c) 2023 The Dash Core developers
+// Copyright (c) 2023-2024 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -6,9 +6,9 @@
 #define BITCOIN_EVO_ASSETLOCKTX_H
 
 #include <bls/bls_ies.h>
-#include <primitives/transaction.h>
+#include <consensus/amount.h>
 #include <gsl/pointers.h>
-
+#include <primitives/transaction.h>
 #include <serialize.h>
 #include <univalue.h>
 
@@ -21,6 +21,10 @@ class TxValidationState;
 namespace llmq {
 class CQuorumManager;
 } // namespace llmq
+
+// Forward declaration from core_io to get rid of circular dependency
+UniValue ValueFromAmount(const CAmount amount);
+void ScriptPubKeyToUniv(const CScript& scriptPubKey, UniValue& out, bool fIncludeHex, bool include_addresses);
 
 class CAssetLockPayload
 {
@@ -51,14 +55,18 @@ public:
 
     [[nodiscard]] UniValue ToJson() const
     {
-        UniValue obj;
-        obj.setObject();
-        obj.pushKV("version", int(nVersion));
-        UniValue outputs;
-        outputs.setArray();
-        for (const CTxOut& out : creditOutputs) {
-            outputs.push_back(out.ToString());
+        UniValue outputs(UniValue::VARR);
+        for (const CTxOut& credit_output : creditOutputs) {
+            UniValue out(UniValue::VOBJ);
+            out.pushKV("value", ValueFromAmount(credit_output.nValue));
+            out.pushKV("valueSat", credit_output.nValue);
+            UniValue spk(UniValue::VOBJ);
+            ScriptPubKeyToUniv(credit_output.scriptPubKey, spk, /* fIncludeHex = */ true, /* include_addresses = */ false);
+            out.pushKV("scriptPubKey", spk);
+            outputs.push_back(out);
         }
+        UniValue obj(UniValue::VOBJ);
+        obj.pushKV("version", int(nVersion));
         obj.pushKV("creditOutputs", outputs);
         return obj;
     }

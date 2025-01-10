@@ -9,8 +9,10 @@
 #include <tinyformat.h>
 
 #include <algorithm>
+#include <array>
 #include <cstdlib>
 #include <cstring>
+#include <limits>
 #include <optional>
 
 static const std::string CHARS_ALPHA_NUM = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -259,16 +261,11 @@ std::string DecodeBase32(const std::string& str, bool* pf_invalid)
     return std::string((const char*)vchRet.data(), vchRet.size());
 }
 
-[[nodiscard]] static bool ParsePrechecks(const std::string&);
-
 namespace {
 template <typename T>
 bool ParseIntegral(const std::string& str, T* out)
 {
     static_assert(std::is_integral<T>::value);
-    if (!ParsePrechecks(str)) {
-        return false;
-    }
     // Replicate the exact behavior of strtol/strtoll/strtoul/strtoull when
     // handling leading +/- for backwards compatibility.
     if (str.length() >= 2 && str[0] == '+' && str[1] == '-') {
@@ -284,17 +281,6 @@ bool ParseIntegral(const std::string& str, T* out)
     return true;
 }
 }; // namespace
-
-[[nodiscard]] static bool ParsePrechecks(const std::string& str)
-{
-    if (str.empty()) // No empty string allowed
-        return false;
-    if (str.size() >= 1 && (IsSpace(str[0]) || IsSpace(str[str.size()-1]))) // No padding allowed
-        return false;
-    if (!ValidAsCString(str)) // No embedded NUL characters allowed
-        return false;
-    return true;
-}
 
 bool ParseInt32(const std::string& str, int32_t* out)
 {
@@ -324,20 +310,6 @@ bool ParseUInt32(const std::string& str, uint32_t* out)
 bool ParseUInt64(const std::string& str, uint64_t* out)
 {
     return ParseIntegral<uint64_t>(str, out);
-}
-
-bool ParseDouble(const std::string& str, double *out)
-{
-    if (!ParsePrechecks(str))
-        return false;
-    if (str.size() >= 2 && str[0] == '0' && str[1] == 'x') // No hexadecimal floats allowed
-        return false;
-    std::istringstream text(str);
-    text.imbue(std::locale::classic());
-    double result;
-    text >> result;
-    if(out) *out = result;
-    return text.eof() && !text.fail();
 }
 
 std::string FormatParagraph(const std::string& in, size_t width, size_t indent)
@@ -501,23 +473,10 @@ bool ParseFixedPoint(const std::string &val, int decimals, int64_t *amount_out)
     return true;
 }
 
-std::string HexStr(const Span<const uint8_t> s)
-{
-    std::string rv(s.size() * 2, '\0');
-    static constexpr char hexmap[16] = { '0', '1', '2', '3', '4', '5', '6', '7',
-                                         '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-    auto it = rv.begin();
-    for (uint8_t v : s) {
-        *it++ = hexmap[v >> 4];
-        *it++ = hexmap[v & 15];
-    }
-    assert(it == rv.end());
-    return rv;
-}
-
 std::string ToLower(const std::string& str)
 {
     std::string r;
+    r.reserve(str.size());
     for (auto ch : str) r += ToLower(ch);
     return r;
 }
@@ -525,6 +484,7 @@ std::string ToLower(const std::string& str)
 std::string ToUpper(const std::string& str)
 {
     std::string r;
+    r.reserve(str.size());
     for (auto ch : str) r += ToUpper(ch);
     return r;
 }
@@ -534,4 +494,83 @@ std::string Capitalize(std::string str)
     if (str.empty()) return str;
     str[0] = ToUpper(str.front());
     return str;
+}
+
+namespace {
+
+using ByteAsHex = std::array<char, 2>;
+
+constexpr std::array<ByteAsHex, 256> CreateByteToHexMap()
+{
+    constexpr char hexmap[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
+    std::array<ByteAsHex, 256> byte_to_hex{};
+    for (size_t i = 0; i < byte_to_hex.size(); ++i) {
+        byte_to_hex[i][0] = hexmap[i >> 4];
+        byte_to_hex[i][1] = hexmap[i & 15];
+    }
+    return byte_to_hex;
+}
+
+} // namespace
+
+std::string HexStr(const Span<const uint8_t> s)
+{
+    std::string rv(s.size() * 2, '\0');
+    static constexpr auto byte_to_hex = CreateByteToHexMap();
+    static_assert(sizeof(byte_to_hex) == 512);
+
+    char* it = rv.data();
+    for (uint8_t v : s) {
+        std::memcpy(it, byte_to_hex[v].data(), 2);
+        it += 2;
+    }
+
+    assert(it == rv.data() + rv.size());
+    return rv;
+}
+
+std::optional<uint64_t> ParseByteUnits(const std::string& str, ByteUnit default_multiplier)
+{
+    if (str.empty()) {
+        return std::nullopt;
+    }
+    auto multiplier = default_multiplier;
+    char unit = str.back();
+    switch (unit) {
+    case 'k':
+        multiplier = ByteUnit::k;
+        break;
+    case 'K':
+        multiplier = ByteUnit::K;
+        break;
+    case 'm':
+        multiplier = ByteUnit::m;
+        break;
+    case 'M':
+        multiplier = ByteUnit::M;
+        break;
+    case 'g':
+        multiplier = ByteUnit::g;
+        break;
+    case 'G':
+        multiplier = ByteUnit::G;
+        break;
+    case 't':
+        multiplier = ByteUnit::t;
+        break;
+    case 'T':
+        multiplier = ByteUnit::T;
+        break;
+    default:
+        unit = 0;
+        break;
+    }
+
+    uint64_t unit_amount = static_cast<uint64_t>(multiplier);
+    auto parsed_num = ToIntegral<uint64_t>(unit ? str.substr(0, str.size() - 1) : str);
+    if (!parsed_num || parsed_num > std::numeric_limits<uint64_t>::max() / unit_amount) { // check overflow
+        return std::nullopt;
+    }
+    return *parsed_num * unit_amount;
 }

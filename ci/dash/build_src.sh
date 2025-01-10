@@ -24,11 +24,8 @@ if [ "$CHECK_DOC" = 1 ]; then
     #test/lint/git-subtree-check.sh src/leveldb
     # TODO: Check docs (re-enable after all Bitcoin PRs have been merged and docs fully fixed)
     #test/lint/check-doc.py
-    # Check rpc consistency
-    test/lint/check-rpc-mappings.py .
     # Run all linters
     test/lint/lint-all.sh
-    test/lint/extended-lint-all.sh
 fi
 
 ccache --zero-stats --max-size=$CCACHE_SIZE
@@ -65,8 +62,4 @@ fi
 
 if [ "$RUN_SECURITY_TESTS" = "true" ]; then
   make test-security-check
-fi
-
-if [ "$RUN_SYMBOL_TESTS" = "true" ]; then
-  make $MAKEJOBS -C src check-symbols
 fi

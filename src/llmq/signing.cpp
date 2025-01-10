@@ -44,7 +44,7 @@ UniValue CRecoveredSig::ToJson() const
 
 
 CRecoveredSigsDb::CRecoveredSigsDb(bool fMemory, bool fWipe) :
-        db(std::make_unique<CDBWrapper>(fMemory ? "" : (GetDataDir() / "llmq/recsigdb"), 8 << 20, fMemory, fWipe))
+        db(std::make_unique<CDBWrapper>(fMemory ? "" : (gArgs.GetDataDirNet() / "llmq/recsigdb"), 8 << 20, fMemory, fWipe))
 {
     MigrateRecoveredSigs();
 }
@@ -58,7 +58,7 @@ void CRecoveredSigsDb::MigrateRecoveredSigs()
     LogPrint(BCLog::LLMQ, "CRecoveredSigsDb::%d -- start\n", __func__);
 
     CDBBatch batch(*db);
-    auto oldDb = std::make_unique<CDBWrapper>(GetDataDir() / "llmq", 8 << 20);
+    auto oldDb = std::make_unique<CDBWrapper>(gArgs.GetDataDirNet() / "llmq", 8 << 20);
     std::unique_ptr<CDBIterator> pcursor(oldDb->NewIterator());
 
     auto start_h = std::make_tuple(std::string("rs_h"), uint256());
@@ -588,7 +588,7 @@ static bool PreVerifyRecoveredSig(const CQuorumManager& quorum_manager, const CR
         return false;
     }
 
-    CQuorumCPtr quorum = quorum_manager.GetQuorum(llmqType, recoveredSig.getQuorumHash());
+    auto quorum = quorum_manager.GetQuorum(llmqType, recoveredSig.getQuorumHash());
 
     if (!quorum) {
         LogPrint(BCLog::LLMQ, "CSigningManager::%s -- quorum %s not found\n", __func__,
@@ -604,10 +604,8 @@ static bool PreVerifyRecoveredSig(const CQuorumManager& quorum_manager, const CR
 
 PeerMsgRet CSigningManager::ProcessMessageRecoveredSig(const CNode& pfrom, const std::shared_ptr<const CRecoveredSig>& recoveredSig)
 {
-    {
-        LOCK(cs_main);
-        EraseObjectRequest(pfrom.GetId(), CInv(MSG_QUORUM_RECOVERED_SIG, recoveredSig->GetHash()));
-    }
+    WITH_LOCK(::cs_main, Assert(m_peerman)->EraseObjectRequest(pfrom.GetId(),
+                                                               CInv(MSG_QUORUM_RECOVERED_SIG, recoveredSig->GetHash())));
 
     bool ban = false;
     if (!PreVerifyRecoveredSig(qman, *recoveredSig, ban)) {
@@ -683,7 +681,7 @@ void CSigningManager::CollectPendingRecoveredSigsToVerify(
             auto llmqType = recSig->getLlmqType();
             auto quorumKey = std::make_pair(recSig->getLlmqType(), recSig->getQuorumHash());
             if (!retQuorums.count(quorumKey)) {
-                CQuorumCPtr quorum = qman.GetQuorum(llmqType, recSig->getQuorumHash());
+                auto quorum = qman.GetQuorum(llmqType, recSig->getQuorumHash());
                 if (!quorum) {
                     LogPrint(BCLog::LLMQ, "CSigningManager::%s -- quorum %s not found, node=%d\n", __func__,
                               recSig->getQuorumHash().ToString(), nodeId);
@@ -831,7 +829,7 @@ void CSigningManager::ProcessRecoveredSig(const std::shared_ptr<const CRecovered
 
     auto listeners = WITH_LOCK(cs_listeners, return recoveredSigsListeners);
     for (auto& l : listeners) {
-        l->HandleNewRecoveredSig(*recoveredSig);
+        Assert(m_peerman)->PostProcessMessage(l->HandleNewRecoveredSig(*recoveredSig));
     }
 
     GetMainSignals().NotifyRecoveredSig(recoveredSig);
@@ -883,7 +881,7 @@ bool CSigningManager::AsyncSignIfMember(Consensus::LLMQType llmqType, CSigShares
     if (m_mn_activeman == nullptr) return false;
     if (m_mn_activeman->GetProTxHash().IsNull()) return false;
 
-    const CQuorumCPtr quorum = [&]() {
+    const auto quorum = [&]() {
         if (quorumHash.IsNull()) {
             // This might end up giving different results on different members
             // This might happen when we are on the brink of confirming a new quorum

@@ -1,11 +1,11 @@
-// Copyright (c) 2018-2023 The Dash Core developers
+// Copyright (c) 2018-2024 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef BITCOIN_EVO_SPECIALTXMAN_H
 #define BITCOIN_EVO_SPECIALTXMAN_H
 
-#include <primitives/transaction.h>
+#include <consensus/amount.h>
 #include <sync.h>
 #include <threadsafety.h>
 
@@ -17,6 +17,7 @@ class CBlockIndex;
 class CCoinsViewCache;
 class CCreditPoolManager;
 class CDeterministicMNManager;
+class CTransaction;
 class ChainstateManager;
 class CMNHFManager;
 class TxValidationState;

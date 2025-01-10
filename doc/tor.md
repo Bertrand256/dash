@@ -8,6 +8,14 @@ may not. In particular, the Tor Browser Bundle defaults to listening on port 915
 See [Tor Project FAQ:TBBSocksPort](https://www.torproject.org/docs/faq.html.en#TBBSocksPort)
 for how to properly configure Tor.
 
+## Compatibility
+
+- Starting with version 20.0, Dash Core only supports Tor version 3 hidden
+  services (Tor v3). Tor v2 addresses are ignored by Dash Core and neither
+  relayed nor stored.
+
+- Tor removed v2 support beginning with version 0.4.6.
+
 ## How to see information about your Tor configuration via Dash Core
 
 There are several ways to see your local onion address in Dash Core:
@@ -92,18 +100,12 @@ out by default (if not, add them):
 ControlPort 9051
 CookieAuthentication 1
 CookieAuthFileGroupReadable 1
+DataDirectoryGroupReadable 1
 ```
 
 Add or uncomment those, save, and restart Tor (usually `systemctl restart tor`
 or `sudo systemctl restart tor` on most systemd-based systems, including recent
 Debian and Ubuntu, or just restart the computer).
-
-On some systems (such as Arch Linux), you may also need to add the following
-line:
-
-```
-DataDirectoryGroupReadable 1
-```
 
 ### Authentication
 

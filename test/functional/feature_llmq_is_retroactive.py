@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2015-2023 The Dash Core developers
+# Copyright (c) 2015-2024 The Dash Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -22,11 +22,9 @@ from test_framework.util import set_node_times
 class LLMQ_IS_RetroactiveSigning(DashTestFramework):
     def set_test_params(self):
         # -whitelist is needed to avoid the trickling logic on node0
-        self.set_dash_test_params(5, 4, [["-whitelist=127.0.0.1"], [], [], [], ["-minrelaytxfee=0.001"]], fast_dip3_enforcement=True)
+        self.set_dash_test_params(5, 4, [["-whitelist=127.0.0.1"], [], [], [], ["-minrelaytxfee=0.001"]])
 
     def run_test(self):
-        self.activate_dip8()
-
         self.nodes[0].sporkupdate("SPORK_17_QUORUM_DKG_ENABLED", 0)
         # Turn mempool IS signing off
         self.nodes[0].sporkupdate("SPORK_2_INSTANTSEND_ENABLED", 1)
@@ -56,7 +54,7 @@ class LLMQ_IS_RetroactiveSigning(DashTestFramework):
         self.wait_for_sporks_same()
         # We have to wait in order to include tx in block
         self.bump_mocktime(10 * 60 + 1)
-        block = self.nodes[0].generate(1)[0]
+        block = self.generate(self.nodes[0], 1, sync_fun=self.no_op)[0]
         self.wait_for_instantlock(txid, self.nodes[0])
         self.nodes[0].sporkupdate("SPORK_19_CHAINLOCKS_ENABLED", 0)
         self.wait_for_sporks_same()
@@ -72,7 +70,7 @@ class LLMQ_IS_RetroactiveSigning(DashTestFramework):
         # are the only "neighbours" in intra-quorum connections for one of them.
         self.wait_for_instantlock(txid, self.nodes[0])
         self.bump_mocktime(1)
-        block = self.nodes[0].generate(1)[0]
+        block = self.generate(self.nodes[0], 1, sync_fun=self.no_op)[0]
         self.wait_for_chainlocked_block_all_nodes(block)
 
         self.log.info("testing normal signing with partially known TX")
@@ -102,7 +100,7 @@ class LLMQ_IS_RetroactiveSigning(DashTestFramework):
         txid = self.nodes[3].sendrawtransaction(rawtx)
         # Make node 3 consider the TX as safe
         self.bump_mocktime(10 * 60 + 1)
-        block = self.nodes[3].generatetoaddress(1, self.nodes[0].getnewaddress())[0]
+        block = self.generatetoaddress(self.nodes[3], 1, self.nodes[0].getnewaddress(), sync_fun=self.no_op)[0]
         self.reconnect_isolated_node(3, 0)
         self.wait_for_chainlocked_block_all_nodes(block)
         self.nodes[0].setmocktime(self.mocktime)
@@ -122,7 +120,7 @@ class LLMQ_IS_RetroactiveSigning(DashTestFramework):
         self.wait_for_instantlock(txid, self.nodes[0], False, 5)
         # Make node0 consider the TX as safe
         self.bump_mocktime(10 * 60 + 1)
-        block = self.nodes[0].generate(1)[0]
+        block = self.generate(self.nodes[0], 1, sync_fun=self.no_op)[0]
         assert txid in self.nodes[0].getblock(block, 1)['tx']
         self.wait_for_chainlocked_block_all_nodes(block)
 
@@ -168,7 +166,7 @@ class LLMQ_IS_RetroactiveSigning(DashTestFramework):
             self.wait_for_instantlock(txid, self.nodes[0], False, 5)
         # Make node 0 consider the TX as safe
         self.bump_mocktime(10 * 60 + 1)
-        block = self.nodes[0].generate(1)[0]
+        block = self.generate(self.nodes[0], 1, sync_fun=self.no_op)[0]
         assert txid in self.nodes[0].getblock(block, 1)['tx']
         self.wait_for_chainlocked_block_all_nodes(block)
 
@@ -200,7 +198,7 @@ class LLMQ_IS_RetroactiveSigning(DashTestFramework):
             self.wait_for_instantlock(txid, self.nodes[0], False, 5)
         # Make node 0 consider the TX as safe
         self.bump_mocktime(10 * 60 + 1)
-        block = self.nodes[0].generate(1)[0]
+        block = self.generate(self.nodes[0], 1, sync_fun=self.no_op)[0]
         assert txid in self.nodes[0].getblock(block, 1)['tx']
         self.wait_for_chainlocked_block_all_nodes(block)
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2023 The Dash Core developers
+// Copyright (c) 2018-2024 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -8,15 +8,15 @@
 #include <evo/dmnstate.h>
 
 #include <arith_uint256.h>
+#include <clientversion.h>
 #include <consensus/params.h>
 #include <crypto/common.h>
 #include <evo/dmn_types.h>
-#include <evo/evodb.h>
 #include <evo/providertx.h>
+#include <gsl/pointers.h>
 #include <saltedhasher.h>
 #include <scheduler.h>
 #include <sync.h>
-#include <gsl/pointers.h>
 
 #include <immer/map.hpp>
 
@@ -29,7 +29,9 @@
 class CBlock;
 class CBlockIndex;
 class CChainState;
+class CCoinsViewCache;
 class CConnman;
+class CEvoDB;
 class TxValidationState;
 
 extern RecursiveMutex cs_main;
@@ -239,25 +241,26 @@ public:
 
     [[nodiscard]] size_t GetValidMNsCount() const
     {
-        return ranges::count_if(mnMap, [this](const auto& p){ return IsMNValid(*p.second); });
+        return ranges::count_if(mnMap, [](const auto& p) { return IsMNValid(*p.second); });
     }
 
     [[nodiscard]] size_t GetAllEvoCount() const
     {
-        return ranges::count_if(mnMap, [this](const auto& p) { return p.second->nType == MnType::Evo; });
+        return ranges::count_if(mnMap, [](const auto& p) { return p.second->nType == MnType::Evo; });
     }
 
     [[nodiscard]] size_t GetValidEvoCount() const
     {
-        return ranges::count_if(mnMap, [this](const auto& p) { return p.second->nType == MnType::Evo && IsMNValid(*p.second); });
+        return ranges::count_if(mnMap,
+                                [](const auto& p) { return p.second->nType == MnType::Evo && IsMNValid(*p.second); });
     }
 
     [[nodiscard]] size_t GetValidWeightedMNsCount() const
     {
-        return std::accumulate(mnMap.begin(), mnMap.end(), 0, [this](auto res, const auto& p) {
-                                                                if (!IsMNValid(*p.second)) return res;
-                                                                return res + GetMnType(p.second->nType).voting_weight;
-                                                            });
+        return std::accumulate(mnMap.begin(), mnMap.end(), 0, [](auto res, const auto& p) {
+            if (!IsMNValid(*p.second)) return res;
+            return res + GetMnType(p.second->nType).voting_weight;
+        });
     }
 
     /**
@@ -346,15 +349,11 @@ public:
      * Calculates the projected MN payees for the next *count* blocks. The result is not guaranteed to be correct
      * as PoSe banning might occur later
      * @param nCount the number of payees to return. "nCount = max()"" means "all", use it to avoid calling GetValidWeightedMNsCount twice.
-     * @return
      */
     [[nodiscard]] std::vector<CDeterministicMNCPtr> GetProjectedMNPayees(gsl::not_null<const CBlockIndex* const> pindexPrev, int nCount = std::numeric_limits<int>::max()) const;
 
     /**
      * Calculate a quorum based on the modifier. The resulting list is deterministically sorted by score
-     * @param maxSize
-     * @param modifier
-     * @return
      */
     [[nodiscard]] std::vector<CDeterministicMNCPtr> CalculateQuorum(size_t maxSize, const uint256& modifier, const bool onlyEvoNodes = false) const;
     [[nodiscard]] std::vector<std::pair<arith_uint256, CDeterministicMNCPtr>> CalculateScores(const uint256& modifier, const bool onlyEvoNodes) const;
@@ -362,7 +361,6 @@ public:
     /**
      * Calculates the maximum penalty which is allowed at the height of this MN list. It is dynamic and might change
      * for every block.
-     * @return
      */
     [[nodiscard]] int CalcMaxPoSePenalty() const;
 
@@ -371,8 +369,6 @@ public:
      * value later passed to PoSePunish. The percentage should be high enough to take per-block penalty decreasing for MNs
      * into account. This means, if you want to accept 2 failures per payment cycle, you should choose a percentage that
      * is higher then 50%, e.g. 66%.
-     * @param percent
-     * @return
      */
     [[nodiscard]] int CalcPenalty(int percent) const;
 
@@ -380,8 +376,6 @@ public:
      * Punishes a MN for misbehavior. If the resulting penalty score of the MN reaches the max penalty, it is banned.
      * Penalty scores are only increased when the MN is not already banned, which means that after banning the penalty
      * might appear lower then the current max penalty, while the MN is still banned.
-     * @param proTxHash
-     * @param penalty
      */
     void PoSePunish(const uint256& proTxHash, int penalty, bool debugLogs);
 

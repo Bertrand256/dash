@@ -9,6 +9,7 @@
 
 #include <interfaces/node.h>
 #include <qt/bitcoin.h>
+#include <qt/initexecutor.h>
 #include <qt/test/apptests.h>
 #include <qt/test/rpcnestedtests.h>
 #include <qt/test/uritests.h>
@@ -23,8 +24,9 @@
 #include <QApplication>
 #include <QObject>
 #include <QTest>
+#include <functional>
 
-#if defined(QT_STATICPLUGIN)
+#if defined(QT_STATIC)
 #include <QtPlugin>
 #if defined(QT_QPA_PLATFORM_MINIMAL)
 Q_IMPORT_PLUGIN(QMinimalIntegrationPlugin);
@@ -39,6 +41,8 @@ Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin);
 #endif
 
 const std::function<void(const std::string&)> G_TEST_LOG_FUN{};
+
+const std::function<std::vector<const char*>()> G_TEST_COMMAND_LINE_ARGUMENTS{};
 
 // This is all you need to run all the tests
 int main(int argc, char* argv[])
@@ -71,7 +75,7 @@ int main(int argc, char* argv[])
     #if defined(WIN32)
         if (getenv("QT_QPA_PLATFORM") == nullptr) _putenv_s("QT_QPA_PLATFORM", "minimal");
     #else
-        setenv("QT_QPA_PLATFORM", "minimal", /* overwrite */ 0);
+        setenv("QT_QPA_PLATFORM", "minimal", 0 /* overwrite */);
     #endif
 
     BitcoinApplication app;

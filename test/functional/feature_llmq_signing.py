@@ -13,12 +13,12 @@ Checks LLMQs signing sessions
 from test_framework.messages import CSigShare, msg_qsigshare, uint256_to_string
 from test_framework.p2p import P2PInterface
 from test_framework.test_framework import DashTestFramework
-from test_framework.util import assert_equal, assert_raises_rpc_error, force_finish_mnsync, hex_str_to_bytes, wait_until_helper
+from test_framework.util import assert_equal, assert_raises_rpc_error, force_finish_mnsync, wait_until_helper
 
 
 class LLMQSigningTest(DashTestFramework):
     def set_test_params(self):
-        self.set_dash_test_params(6, 5, fast_dip3_enforcement=True)
+        self.set_dash_test_params(6, 5)
         self.set_dash_llmq_test_params(5, 3)
 
     def add_options(self, parser):
@@ -89,7 +89,7 @@ class LLMQSigningTest(DashTestFramework):
             sig_share.quorumMember = int(sig_share_rpc_1["quorumMember"])
             sig_share.id = int(sig_share_rpc_1["id"], 16)
             sig_share.msgHash = int(sig_share_rpc_1["msgHash"], 16)
-            sig_share.sigShare = hex_str_to_bytes(sig_share_rpc_1["signature"])
+            sig_share.sigShare = bytes.fromhex(sig_share_rpc_1["signature"])
             for mn in self.mninfo:
                 assert mn.node.getconnectioncount() == self.llmq_size
             # Get the current recovery member of the quorum
@@ -157,11 +157,11 @@ class LLMQSigningTest(DashTestFramework):
         assert_sigs_nochange(True, False, True, 3)
 
         # fast forward until 0.5 days before cleanup is expected, recovered sig should still be valid
-        self.bump_mocktime(recsig_time + int(60 * 60 * 24 * 6.5) - self.mocktime)
+        self.bump_mocktime(recsig_time + int(60 * 60 * 24 * 6.5) - self.mocktime, update_schedulers=False)
         # Cleanup starts every 5 seconds
         wait_for_sigs(True, False, True, 15)
         # fast forward 1 day, recovered sig should not be valid anymore
-        self.bump_mocktime(int(60 * 60 * 24 * 1))
+        self.bump_mocktime(int(60 * 60 * 24 * 1), update_schedulers=False)
         # Cleanup starts every 5 seconds
         wait_for_sigs(False, False, False, 15)
 

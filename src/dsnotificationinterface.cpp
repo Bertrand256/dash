@@ -79,19 +79,15 @@ void CDSNotificationInterface::UpdatedBlockTip(const CBlockIndex *pindexNew, con
     if (pindexNew == pindexFork) // blocks were disconnected without any new ones
         return;
 
-    m_mn_sync.UpdatedBlockTip(pindexNew, fInitialDownload);
-
-    // Update global DIP0001 activation status
-    fDIP0001ActiveAtTip = pindexNew->nHeight >= Params().GetConsensus().DIP0001Height;
+    m_mn_sync.UpdatedBlockTip(WITH_LOCK(::cs_main, return m_chainman.m_best_header), pindexNew, fInitialDownload);
 
     if (fInitialDownload)
         return;
 
     m_cj_ctx->dstxman->UpdatedBlockTip(pindexNew, *m_llmq_ctx->clhandler, m_mn_sync);
 #ifdef ENABLE_WALLET
-    for (auto& pair : m_cj_ctx->walletman->raw()) {
-        pair.second->UpdatedBlockTip(pindexNew);
-    }
+    m_cj_ctx->walletman->ForEachCJClientMan(
+        [&pindexNew](std::unique_ptr<CCoinJoinClientManager>& clientman) { clientman->UpdatedBlockTip(pindexNew); });
 #endif // ENABLE_WALLET
 
     m_llmq_ctx->isman->UpdatedBlockTip(pindexNew);
@@ -106,7 +102,8 @@ void CDSNotificationInterface::UpdatedBlockTip(const CBlockIndex *pindexNew, con
     }
 }
 
-void CDSNotificationInterface::TransactionAddedToMempool(const CTransactionRef& ptx, int64_t nAcceptTime)
+void CDSNotificationInterface::TransactionAddedToMempool(const CTransactionRef& ptx, int64_t nAcceptTime,
+                                                         uint64_t mempool_sequence)
 {
     assert(m_cj_ctx && m_llmq_ctx);
 
@@ -115,7 +112,8 @@ void CDSNotificationInterface::TransactionAddedToMempool(const CTransactionRef& 
     m_cj_ctx->dstxman->TransactionAddedToMempool(ptx);
 }
 
-void CDSNotificationInterface::TransactionRemovedFromMempool(const CTransactionRef& ptx, MemPoolRemovalReason reason)
+void CDSNotificationInterface::TransactionRemovedFromMempool(const CTransactionRef& ptx, MemPoolRemovalReason reason,
+                                                             uint64_t mempool_sequence)
 {
     assert(m_llmq_ctx);
 
@@ -155,3 +153,5 @@ void CDSNotificationInterface::NotifyChainLock(const CBlockIndex* pindex, const 
     m_llmq_ctx->isman->NotifyChainLock(pindex);
     m_cj_ctx->dstxman->NotifyChainLock(pindex, *m_llmq_ctx->clhandler, m_mn_sync);
 }
+
+std::unique_ptr<CDSNotificationInterface> g_ds_notification_interface;

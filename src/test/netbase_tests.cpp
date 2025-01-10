@@ -1,11 +1,12 @@
 // Copyright (c) 2012-2020 The Bitcoin Core developers
-// Copyright (c) 2014-2023 The Dash Core developers
+// Copyright (c) 2014-2024 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <net_permissions.h>
 #include <netaddress.h>
 #include <netbase.h>
+#include <netgroup.h>
 #include <protocol.h>
 #include <serialize.h>
 #include <streams.h>
@@ -24,9 +25,7 @@ BOOST_FIXTURE_TEST_SUITE(netbase_tests, BasicTestingSetup)
 
 static CNetAddr ResolveIP(const std::string& ip)
 {
-    CNetAddr addr;
-    LookupHost(ip, addr, false);
-    return addr;
+    return LookupHost(ip, false).value_or(CNetAddr{});
 }
 
 static CSubNet ResolveSubNet(const std::string& subnet)
@@ -114,7 +113,7 @@ BOOST_AUTO_TEST_CASE(netbase_splithost)
 bool static TestParse(std::string src, std::string canon)
 {
     CService addr(LookupNumeric(src, 65535));
-    return canon == addr.ToString();
+    return canon == addr.ToStringAddrPort();
 }
 
 BOOST_AUTO_TEST_CASE(netbase_lookupnumeric)
@@ -138,7 +137,7 @@ BOOST_AUTO_TEST_CASE(embedded_test)
     CNetAddr addr1(ResolveIP("1.2.3.4"));
     CNetAddr addr2(ResolveIP("::FFFF:0102:0304"));
     BOOST_CHECK(addr2.IsIPv4());
-    BOOST_CHECK_EQUAL(addr1.ToString(), addr2.ToString());
+    BOOST_CHECK_EQUAL(addr1.ToStringAddr(), addr2.ToStringAddr());
 }
 
 BOOST_AUTO_TEST_CASE(subnet_test)
@@ -223,7 +222,7 @@ BOOST_AUTO_TEST_CASE(subnet_test)
 
     subnet = CSubNet(tor_addr);
     BOOST_CHECK(subnet.IsValid());
-    BOOST_CHECK_EQUAL(subnet.ToString(), tor_addr.ToString());
+    BOOST_CHECK_EQUAL(subnet.ToString(), tor_addr.ToStringAddr());
     BOOST_CHECK(subnet.Match(tor_addr));
     BOOST_CHECK(
         !subnet.Match(ResolveIP("kpgvmscirrdqpekbqjsvw5teanhatztpp2gl6eee4zkowvwfxwenqaid.onion")));
@@ -316,22 +315,22 @@ BOOST_AUTO_TEST_CASE(subnet_test)
 
 BOOST_AUTO_TEST_CASE(netbase_getgroup)
 {
-    std::vector<bool> asmap; // use /16
-    BOOST_CHECK(ResolveIP("127.0.0.1").GetGroup(asmap) == std::vector<unsigned char>({0})); // Local -> !Routable()
-    BOOST_CHECK(ResolveIP("257.0.0.1").GetGroup(asmap) == std::vector<unsigned char>({0})); // !Valid -> !Routable()
-    BOOST_CHECK(ResolveIP("10.0.0.1").GetGroup(asmap) == std::vector<unsigned char>({0})); // RFC1918 -> !Routable()
-    BOOST_CHECK(ResolveIP("169.254.1.1").GetGroup(asmap) == std::vector<unsigned char>({0})); // RFC3927 -> !Routable()
-    BOOST_CHECK(ResolveIP("1.2.3.4").GetGroup(asmap) == std::vector<unsigned char>({(unsigned char)NET_IPV4, 1, 2})); // IPv4
-    BOOST_CHECK(ResolveIP("::FFFF:0:102:304").GetGroup(asmap) == std::vector<unsigned char>({(unsigned char)NET_IPV4, 1, 2})); // RFC6145
-    BOOST_CHECK(ResolveIP("64:FF9B::102:304").GetGroup(asmap) == std::vector<unsigned char>({(unsigned char)NET_IPV4, 1, 2})); // RFC6052
-    BOOST_CHECK(ResolveIP("2002:102:304:9999:9999:9999:9999:9999").GetGroup(asmap) == std::vector<unsigned char>({(unsigned char)NET_IPV4, 1, 2})); // RFC3964
-    BOOST_CHECK(ResolveIP("2001:0:9999:9999:9999:9999:FEFD:FCFB").GetGroup(asmap) == std::vector<unsigned char>({(unsigned char)NET_IPV4, 1, 2})); // RFC4380
-    BOOST_CHECK(ResolveIP("2001:470:abcd:9999:9999:9999:9999:9999").GetGroup(asmap) == std::vector<unsigned char>({(unsigned char)NET_IPV6, 32, 1, 4, 112, 175})); //he.net
-    BOOST_CHECK(ResolveIP("2001:2001:9999:9999:9999:9999:9999:9999").GetGroup(asmap) == std::vector<unsigned char>({(unsigned char)NET_IPV6, 32, 1, 32, 1})); //IPv6
+    NetGroupManager netgroupman{std::vector<bool>()}; // use /16
+    BOOST_CHECK(netgroupman.GetGroup(ResolveIP("127.0.0.1")) == std::vector<unsigned char>({0})); // Local -> !Routable()
+    BOOST_CHECK(netgroupman.GetGroup(ResolveIP("257.0.0.1")) == std::vector<unsigned char>({0})); // !Valid -> !Routable()
+    BOOST_CHECK(netgroupman.GetGroup(ResolveIP("10.0.0.1")) == std::vector<unsigned char>({0})); // RFC1918 -> !Routable()
+    BOOST_CHECK(netgroupman.GetGroup(ResolveIP("169.254.1.1")) == std::vector<unsigned char>({0})); // RFC3927 -> !Routable()
+    BOOST_CHECK(netgroupman.GetGroup(ResolveIP("1.2.3.4")) == std::vector<unsigned char>({(unsigned char)NET_IPV4, 1, 2})); // IPv4
+    BOOST_CHECK(netgroupman.GetGroup(ResolveIP("::FFFF:0:102:304")) == std::vector<unsigned char>({(unsigned char)NET_IPV4, 1, 2})); // RFC6145
+    BOOST_CHECK(netgroupman.GetGroup(ResolveIP("64:FF9B::102:304")) == std::vector<unsigned char>({(unsigned char)NET_IPV4, 1, 2})); // RFC6052
+    BOOST_CHECK(netgroupman.GetGroup(ResolveIP("2002:102:304:9999:9999:9999:9999:9999")) == std::vector<unsigned char>({(unsigned char)NET_IPV4, 1, 2})); // RFC3964
+    BOOST_CHECK(netgroupman.GetGroup(ResolveIP("2001:0:9999:9999:9999:9999:FEFD:FCFB")) == std::vector<unsigned char>({(unsigned char)NET_IPV4, 1, 2})); // RFC4380
+    BOOST_CHECK(netgroupman.GetGroup(ResolveIP("2001:470:abcd:9999:9999:9999:9999:9999")) == std::vector<unsigned char>({(unsigned char)NET_IPV6, 32, 1, 4, 112, 175})); //he.net
+    BOOST_CHECK(netgroupman.GetGroup(ResolveIP("2001:2001:9999:9999:9999:9999:9999:9999")) == std::vector<unsigned char>({(unsigned char)NET_IPV6, 32, 1, 32, 1})); //IPv6
 
     // baz.net sha256 hash: 12929400eb4607c4ac075f087167e75286b179c693eb059a01774b864e8fe505
     std::vector<unsigned char> internal_group = {NET_INTERNAL, 0x12, 0x92, 0x94, 0x00, 0xeb, 0x46, 0x07, 0xc4, 0xac, 0x07};
-    BOOST_CHECK(CreateInternal("baz.net").GetGroup(asmap) == internal_group);
+    BOOST_CHECK(netgroupman.GetGroup(CreateInternal("baz.net")) == internal_group);
 }
 
 // Since CNetAddr (un)ser is tested separately in net_tests.cpp here we only
@@ -561,11 +560,10 @@ BOOST_AUTO_TEST_CASE(netpermissions_test)
 
 BOOST_AUTO_TEST_CASE(netbase_dont_resolve_strings_with_embedded_nul_characters)
 {
-    CNetAddr addr;
-    BOOST_CHECK(LookupHost("127.0.0.1"s, addr, false));
-    BOOST_CHECK(!LookupHost("127.0.0.1\0"s, addr, false));
-    BOOST_CHECK(!LookupHost("127.0.0.1\0example.com"s, addr, false));
-    BOOST_CHECK(!LookupHost("127.0.0.1\0example.com\0"s, addr, false));
+    BOOST_CHECK(LookupHost("127.0.0.1"s, false).has_value());
+    BOOST_CHECK(!LookupHost("127.0.0.1\0"s, false).has_value());
+    BOOST_CHECK(!LookupHost("127.0.0.1\0example.com"s, false).has_value());
+    BOOST_CHECK(!LookupHost("127.0.0.1\0example.com\0"s, false).has_value());
     CSubNet ret;
     BOOST_CHECK(LookupSubNet("1.2.3.0/24"s, ret));
     BOOST_CHECK(!LookupSubNet("1.2.3.0/24\0"s, ret));

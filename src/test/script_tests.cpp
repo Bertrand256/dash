@@ -20,7 +20,8 @@
 #include <script/bitcoinconsensus.h>
 #endif
 
-#include <stdint.h>
+#include <cstdint>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -121,7 +122,6 @@ BOOST_FIXTURE_TEST_SUITE(script_tests, BasicTestingSetup)
 void DoTest(const CScript& scriptPubKey, const CScript& scriptSig, uint32_t flags, const std::string& message, int scriptError)
 {
     bool expect = (scriptError == SCRIPT_ERR_OK);
-    bool fEnableDIP0020Opcodes = (SCRIPT_ENABLE_DIP0020_OPCODES & flags) != 0;
     ScriptError err;
     const CTransaction txCredit{BuildCreditingTransaction(scriptPubKey)};
     CMutableTransaction tx = BuildSpendingTransaction(scriptSig, txCredit);
@@ -135,8 +135,6 @@ void DoTest(const CScript& scriptPubKey, const CScript& scriptSig, uint32_t flag
         uint32_t combined_flags{expect ? (flags & ~extra_flags) : (flags | extra_flags)};
         // Weed out some invalid flag combinations.
         if (combined_flags & SCRIPT_VERIFY_CLEANSTACK && ~combined_flags & SCRIPT_VERIFY_P2SH) continue;
-        // Make sure DIP0020 opcodes flag stays unchanged.
-        combined_flags = fEnableDIP0020Opcodes ? (combined_flags | SCRIPT_ENABLE_DIP0020_OPCODES) : (combined_flags & ~SCRIPT_ENABLE_DIP0020_OPCODES);
         BOOST_CHECK_MESSAGE(VerifyScript(scriptSig, scriptPubKey, combined_flags, MutableTransactionSignatureChecker(&tx, 0, txCredit.vout[0].nValue), &err) == expect, message + strprintf(" (with flags %x)", combined_flags));
     }
 
@@ -679,8 +677,7 @@ BOOST_AUTO_TEST_CASE(script_build)
 
     // Test OP_CHECKDATASIG
     const uint32_t checkdatasigflags = SCRIPT_VERIFY_STRICTENC |
-                                       SCRIPT_VERIFY_NULLFAIL |
-                                       SCRIPT_ENABLE_DIP0020_OPCODES;
+                                       SCRIPT_VERIFY_NULLFAIL;
 
     tests.push_back(
         TestBuilder(CScript() << ToByteVector(keys.pubkey1C) << OP_CHECKDATASIG,
@@ -748,7 +745,7 @@ BOOST_AUTO_TEST_CASE(script_build)
         TestBuilder(CScript() << ToByteVector(keys.pubkey0H) << OP_CHECKDATASIG
                               << OP_NOT,
                     "CHECKDATASIG with invalid hybrid pubkey but no STRICTENC",
-                    SCRIPT_ENABLE_DIP0020_OPCODES)
+                    0)
             .PushDataSig(keys.key0, {})
             .DamagePush(10)
             .Num(0));
@@ -838,7 +835,7 @@ BOOST_AUTO_TEST_CASE(script_build)
             CScript() << ToByteVector(keys.pubkey0H) << OP_CHECKDATASIGVERIFY
                       << OP_TRUE,
             "CHECKDATASIGVERIFY with invalid hybrid pubkey but no STRICTENC",
-            SCRIPT_ENABLE_DIP0020_OPCODES)
+            0)
             .PushDataSig(keys.key0, {})
             .DamagePush(10)
             .Num(0)
@@ -879,7 +876,7 @@ BOOST_AUTO_TEST_CASE(script_build)
     }
 
 #ifdef UPDATE_JSON_TESTS
-    FILE* file = fopen("script_tests.json.gen", "w");
+    FILE* file = fsbridge::fopen("script_tests.json.gen", "w");
     fputs(strGen.c_str(), file);
     fclose(file);
 #endif

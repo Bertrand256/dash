@@ -76,7 +76,6 @@ libconftest.dylib*
 *.log
 *.trs
 *.dmg
-*.iso
 
 *.json.h
 *.raw.h
@@ -161,7 +160,6 @@ cmake-build-debug
 # clang-check
 *.plist
 
-osx_volname
 dist/
 
 /guix-build-*

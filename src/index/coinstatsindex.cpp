@@ -98,7 +98,7 @@ std::unique_ptr<CoinStatsIndex> g_coin_stats_index;
 
 CoinStatsIndex::CoinStatsIndex(size_t n_cache_size, bool f_memory, bool f_wipe)
 {
-    fs::path path{GetDataDir() / "indexes" / "coinstats"};
+    fs::path path{gArgs.GetDataDirNet() / "indexes" / "coinstats"};
     fs::create_directories(path);
 
     m_db = std::make_unique<CoinStatsIndex::DB>(path / "db", n_cache_size, f_memory, f_wipe);
@@ -228,7 +228,7 @@ bool CoinStatsIndex::WriteBlock(const CBlock& block, const CBlockIndex* pindex)
     return m_db->Write(DBHeightKey(pindex->nHeight), value);
 }
 
-static bool CopyHeightIndexToHashIndex(CDBIterator& db_it, CDBBatch& batch,
+[[nodiscard]] static bool CopyHeightIndexToHashIndex(CDBIterator& db_it, CDBBatch& batch,
                                        const std::string& index_name,
                                        int start_height, int stop_height)
 {
@@ -272,7 +272,7 @@ bool CoinStatsIndex::Rewind(const CBlockIndex* current_tip, const CBlockIndex* n
 
     {
         LOCK(cs_main);
-        CBlockIndex* iter_tip{m_chainstate->m_blockman.LookupBlockIndex(current_tip->GetBlockHash())};
+        const CBlockIndex* iter_tip{m_chainstate->m_blockman.LookupBlockIndex(current_tip->GetBlockHash())};
         const auto& consensus_params{Params().GetConsensus()};
 
         do {
@@ -283,7 +283,9 @@ bool CoinStatsIndex::Rewind(const CBlockIndex* current_tip, const CBlockIndex* n
                              __func__, iter_tip->GetBlockHash().ToString());
             }
 
-            ReverseBlock(block, iter_tip);
+            if (!ReverseBlock(block, iter_tip)) {
+                return false; // failure cause logged internally
+            }
 
             iter_tip = iter_tip->GetAncestor(iter_tip->nHeight - 1);
         } while (new_tip != iter_tip);

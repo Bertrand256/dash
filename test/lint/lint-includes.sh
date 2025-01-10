@@ -9,7 +9,7 @@
 # Check includes: Check for duplicate includes. Enforce bracket syntax includes.
 
 export LC_ALL=C
-IGNORE_REGEXP="/(dashbls|immer|leveldb|secp256k1|univalue|crc32c)/"
+IGNORE_REGEXP="/(dashbls|immer|leveldb|secp256k1|minisketch|univalue|crc32c|crypto/x11)/"
 
 # cd to root folder of git repo for git ls-files to work properly
 cd "$(dirname $0)/../.." || exit 1
@@ -50,17 +50,19 @@ fi
 
 EXPECTED_BOOST_INCLUDES=(
     boost/date_time/posix_time/posix_time.hpp
-    boost/filesystem.hpp
-    boost/filesystem/fstream.hpp
     boost/multi_index/hashed_index.hpp
+    boost/multi_index/identity.hpp
+    boost/multi_index/indexed_by.hpp
     boost/multi_index/ordered_index.hpp
     boost/multi_index/sequenced_index.hpp
+    boost/multi_index/tag.hpp
     boost/multi_index_container.hpp
     boost/pool/pool_alloc.hpp
     boost/process.hpp
     boost/signals2/connection.hpp
     boost/signals2/optional_last_value.hpp
     boost/signals2/signal.hpp
+    boost/test/included/unit_test.hpp
     boost/test/unit_test.hpp
 )
 

@@ -50,9 +50,9 @@ static QString ipcServerName()
     QString name("DashQt");
 
     // Append a simple hash of the datadir
-    // Note that GetDataDir(true) returns a different path
+    // Note that gArgs.GetDataDirNet() returns a different path
     // for -testnet versus main net
-    QString ddir(GUIUtil::PathToQString(GetDataDir(true)));
+    QString ddir(GUIUtil::PathToQString(gArgs.GetDataDirNet()));
     name.append(QString::number(qHash(ddir)));
 
     return name;
@@ -79,32 +79,11 @@ void PaymentServer::ipcParseCommandLine(int argc, char* argv[])
     for (int i = 1; i < argc; i++)
     {
         QString arg(argv[i]);
-        if (arg.startsWith("-"))
-            continue;
+        if (arg.startsWith("-")) continue;
 
-        // If the dash: URI contains a payment request, we are not able to detect the
-        // network as that would require fetching and parsing the payment request.
-        // That means clicking such an URI which contains a testnet payment request
-        // will start a mainnet instance and throw a "wrong network" error.
         if (arg.startsWith(BITCOIN_IPC_PREFIX, Qt::CaseInsensitive)) // dash: URI
         {
-            if (savedPaymentRequests.contains(arg)) continue;
             savedPaymentRequests.insert(arg);
-
-            SendCoinsRecipient r;
-            if (GUIUtil::parseBitcoinURI(arg, &r) && !r.address.isEmpty())
-            {
-                auto tempChainParams = CreateChainParams(gArgs, CBaseChainParams::MAIN);
-
-                if (IsValidDestinationString(r.address.toStdString(), *tempChainParams)) {
-                    SelectParams(CBaseChainParams::MAIN);
-                } else {
-                    tempChainParams = CreateChainParams(gArgs, CBaseChainParams::TESTNET);
-                    if (IsValidDestinationString(r.address.toStdString(), *tempChainParams)) {
-                        SelectParams(CBaseChainParams::TESTNET);
-                    }
-                }
-            }
         }
     }
 }
@@ -239,8 +218,8 @@ void PaymentServer::handleURIOrFile(const QString& s)
                 if (!IsValidDestination(dest)) {
                     if (uri.hasQueryItem("r")) {  // payment request
                         Q_EMIT message(tr("URI handling"),
-                            tr("Cannot process payment request as BIP70 is no longer supported.")+
-                            tr("Due to discontinued support, you should request the merchant to provide you with a BIP21 compatible URI or use a wallet that does continue to support BIP70."),
+                            tr("Cannot process payment request as BIP70 is no longer supported.\n"
+                               "Due to discontinued support, you should request the merchant to provide you with a BIP21 compatible URI or use a wallet that does continue to support BIP70."),
                             CClientUIInterface::ICON_WARNING);
                     } else {
                         Q_EMIT message(tr("URI handling"), QString::fromStdString(error_msg),
@@ -262,8 +241,8 @@ void PaymentServer::handleURIOrFile(const QString& s)
     if (QFile::exists(s)) // payment request file
     {
         Q_EMIT message(tr("Payment request file handling"),
-            tr("Cannot process payment request as BIP70 is no longer supported.")+
-            tr("Due to discontinued support, you should request the merchant to provide you with a BIP21 compatible URI or use a wallet that does continue to support BIP70."),
+            tr("Cannot process payment request as BIP70 is no longer supported.\n"
+               "Due to discontinued support, you should request the merchant to provide you with a BIP21 compatible URI or use a wallet that does continue to support BIP70."),
             CClientUIInterface::ICON_WARNING);
     }
 }

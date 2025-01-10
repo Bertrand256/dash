@@ -6,6 +6,7 @@
 
 #include <evo/assetlocktx.h>
 #include <evo/cbtx.h>
+#include <evo/evodb.h>
 #include <evo/specialtx.h>
 
 #include <chain.h>
@@ -14,6 +15,7 @@
 #include <deploymentstatus.h>
 #include <logging.h>
 #include <node/blockstorage.h>
+#include <util/irange.h>
 #include <validation.h>
 
 #include <algorithm>
@@ -133,9 +135,13 @@ CCreditPool CCreditPoolManager::ConstructCreditPool(const CBlockIndex* const blo
     if (!block) {
         // If reading of previous block is not successfully, but
         // prev contains credit pool related data, something strange happened
-        assert(prev.locked == 0);
-        assert(prev.indexes.IsEmpty());
-
+        if (prev.locked != 0) {
+            throw std::runtime_error(strprintf("Failed to create CreditPool but previous block has value"));
+        }
+        if (!prev.indexes.IsEmpty()) {
+            throw std::runtime_error(
+                strprintf("Failed to create CreditPool but asset unlock transactions already mined"));
+        }
         CCreditPool emptyPool;
         AddToCache(block_index->GetBlockHash(), block_index->nHeight, emptyPool);
         return emptyPool;
@@ -148,7 +154,7 @@ CCreditPool CCreditPoolManager::ConstructCreditPool(const CBlockIndex* const blo
         return opt_cbTx->creditPoolBalance;
     }();
 
-    // We use here sliding window with LimitBlocksToTrace to determine
+    // We use here sliding window with Params().CreditPoolPeriodBlocks to determine
     // current limits for asset unlock transactions.
     // Indexes should not be duplicated since genesis block, but the Unlock Amount
     // of withdrawal transaction is limited only by this window
@@ -159,7 +165,7 @@ CCreditPool CCreditPoolManager::ConstructCreditPool(const CBlockIndex* const blo
     }
 
     const CBlockIndex* distant_block_index = block_index;
-    for (size_t i = 0; i < CCreditPoolManager::LimitBlocksToTrace; ++i) {
+    for ([[maybe_unused]] auto _ : irange::range(Params().CreditPoolPeriodBlocks())) {
         distant_block_index = distant_block_index->pprev;
         if (distant_block_index == nullptr) break;
     }
@@ -170,22 +176,30 @@ CCreditPool CCreditPoolManager::ConstructCreditPool(const CBlockIndex* const blo
         }
     }
 
-    // Unlock limits are # max(100, min(.10 * assetlockpool, 1000)) inside window
     CAmount currentLimit = locked;
     const CAmount latelyUnlocked = prev.latelyUnlocked + blockData.unlocked - distantUnlocked;
-    if (currentLimit + latelyUnlocked > LimitAmountLow) {
-        currentLimit = std::max(LimitAmountLow, locked / 10) - latelyUnlocked;
-        if (currentLimit < 0) currentLimit = 0;
+    if (DeploymentActiveAt(*block_index, Params().GetConsensus(), Consensus::DEPLOYMENT_WITHDRAWALS)) {
+        currentLimit = std::min(currentLimit, LimitAmountV22);
+    } else {
+        // Unlock limits in pre-v22 are max(100, min(.10 * assetlockpool, 1000)) inside window
+        if (currentLimit + latelyUnlocked > LimitAmountLow) {
+            currentLimit = std::max(LimitAmountLow, locked / 10) - latelyUnlocked;
+            if (currentLimit < 0) currentLimit = 0;
+        }
+        currentLimit = std::min(currentLimit, LimitAmountHigh - latelyUnlocked);
     }
-    currentLimit = std::min(currentLimit, LimitAmountHigh - latelyUnlocked);
 
-    assert(currentLimit >= 0);
+    if (currentLimit != 0 || latelyUnlocked > 0 || locked > 0) {
+        LogPrint(BCLog::CREDITPOOL, /* Continued */
+                 "CCreditPoolManager: asset unlock limits on height: %d locked: %d.%08d limit: %d.%08d "
+                 "unlocked-in-window: %d.%08d\n",
+                 block_index->nHeight, locked / COIN, locked % COIN, currentLimit / COIN, currentLimit % COIN,
+                 latelyUnlocked / COIN, latelyUnlocked % COIN);
+    }
 
-    if (currentLimit > 0 || latelyUnlocked > 0 || locked > 0) {
-        LogPrint(BCLog::CREDITPOOL, "CCreditPoolManager: asset unlock limits on height: %d locked: %d.%08d limit: %d.%08d previous: %d.%08d\n",
-               block_index->nHeight, locked / COIN, locked % COIN,
-               currentLimit / COIN, currentLimit % COIN,
-               latelyUnlocked / COIN, latelyUnlocked % COIN);
+    if (currentLimit < 0) {
+        throw std::runtime_error(
+            strprintf("Negative limit for CreditPool: %d.%08d\n", currentLimit / COIN, currentLimit % COIN));
     }
 
     CCreditPool pool{locked, currentLimit, latelyUnlocked, indexes};

@@ -15,6 +15,12 @@
 #include <boost/test/unit_test.hpp>
 
 
+struct TestChain100NoDIP0001Setup : public TestChain100Setup {
+    TestChain100NoDIP0001Setup()
+        : TestChain100Setup{{"-testactivationheight=dip0001@2000"}} {}
+};
+
+
 BOOST_AUTO_TEST_SUITE(txvalidation_tests)
 
 /**
@@ -37,7 +43,7 @@ BOOST_FIXTURE_TEST_CASE(tx_mempool_reject_coinbase, TestChain100Setup)
     LOCK(cs_main);
 
     unsigned int initialPoolSize = m_node.mempool->size();
-    const MempoolAcceptResult result = AcceptToMemoryPool(m_node.chainman->ActiveChainstate(), *m_node.mempool, MakeTransactionRef(coinbaseTx), true /* bypass_limits */);
+    const MempoolAcceptResult result = m_node.chainman->ProcessTransaction(MakeTransactionRef(coinbaseTx));
 
     BOOST_CHECK(result.m_result_type == MempoolAcceptResult::ResultType::INVALID);
 
@@ -69,7 +75,7 @@ inline CTransactionRef create_placeholder_tx(size_t num_inputs, size_t num_outpu
     return MakeTransactionRef(mtx);
 }
 
-BOOST_FIXTURE_TEST_CASE(package_tests, TestChain100Setup)
+BOOST_FIXTURE_TEST_CASE(package_tests, TestChain100NoDIP0001Setup)
 {
     LOCK(cs_main);
     unsigned int initialPoolSize = m_node.mempool->size();

@@ -18,7 +18,6 @@ from test_framework.p2p import P2PInterface
 from test_framework.util import (
     assert_equal,
     assert_greater_than_or_equal,
-    assert_greater_than, get_bip9_details,
 )
 
 
@@ -52,7 +51,7 @@ class TestP2PConn(P2PInterface):
 
 class LLMQQuorumRotationTest(DashTestFramework):
     def set_test_params(self):
-        self.set_dash_test_params(9, 8, fast_dip3_enforcement=True)
+        self.set_dash_test_params(9, 8)
         self.set_dash_llmq_test_params(4, 4)
 
     def run_test(self):
@@ -64,12 +63,6 @@ class LLMQQuorumRotationTest(DashTestFramework):
         # Connect all nodes to node1 so that we always have the whole network connected
         # Otherwise only masternode connections will be established between nodes, which won't propagate TXs/blocks
         # Usually node0 is the one that does this, but in this test we isolate it multiple times
-
-        for i in range(len(self.nodes)):
-            if i != 1:
-                self.connect_nodes(i, 0)
-
-        self.activate_dip8()
 
         self.nodes[0].sporkupdate("SPORK_17_QUORUM_DKG_ENABLED", 0)
         self.wait_for_sporks_same()
@@ -95,7 +88,7 @@ class LLMQQuorumRotationTest(DashTestFramework):
         h_104_1 = QuorumId(104, int(h_1, 16))
 
         self.log.info("Mine single block, wait for chainlock")
-        self.nodes[0].generate(1)
+        self.generate(self.nodes[0], 1, sync_fun=self.no_op)
         self.wait_for_chainlocked_block_all_nodes(self.nodes[0].getbestblockhash())
 
         b_h_1 = self.nodes[0].getbestblockhash()
@@ -116,20 +109,17 @@ class LLMQQuorumRotationTest(DashTestFramework):
         expectedNew = [h_100_0, h_106_0, h_104_0, h_100_1, h_106_1, h_104_1]
         quorumList = self.test_getmnlistdiff_quorums(b_h_0, b_h_1, {}, expectedDeleted, expectedNew, testQuorumsCLSigs=False)
 
-        self.log.info(f"Wait for v20 locked_in phase")
-        # Expected locked_in phase starts at 1200 - 400 (window size in regtest)
-        projected_activation_height = self.advance_to_locked_in_for_v20(expected_locked_in_height=800)
+        projected_activation_height = 900
 
-        self.activate_v20(expected_activation_height=1200)
+        self.activate_v20(expected_activation_height=900)
         self.log.info("Activated v20 at height:" + str(self.nodes[0].getblockcount()))
 
-        softfork_info = get_bip9_details(self.nodes[0], 'v20')
-        assert_equal(softfork_info['status'], 'active')
-        assert 'since' in softfork_info
-        assert_equal(projected_activation_height, softfork_info['since'])
+        softfork_info = self.nodes[0].getblockchaininfo()['softforks']['v20']
+        assert_equal(softfork_info['active'], True)
+        assert_equal(projected_activation_height, softfork_info['height'])
 
         # v20 is active for the next block, not for the tip
-        self.nodes[0].generate(1)
+        self.generate(self.nodes[0], 1, sync_fun=self.no_op)
 
         self.log.info("Wait for chainlock")
         self.wait_for_chainlocked_block_all_nodes(self.nodes[0].getbestblockhash())
@@ -154,15 +144,13 @@ class LLMQQuorumRotationTest(DashTestFramework):
         # At this point, we want to wait for CLs just before the self.mine_cycle_quorum to diversify the CLs in CbTx.
         # Although because here a new quorum cycle is starting, and we don't want to mine them now, mine 8 blocks (to skip all DKG phases)
         nodes = [self.nodes[0]] + [mn.node for mn in self.mninfo.copy()]
-        self.nodes[0].generate(8)
-        self.sync_blocks(nodes)
+        self.generate(self.nodes[0], 8, sync_fun=lambda: self.sync_blocks(nodes))
         self.wait_for_chainlocked_block_all_nodes(self.nodes[0].getbestblockhash())
 
         # And for the remaining blocks, enforce new CL in CbTx
         skip_count = 23 - (self.nodes[0].getblockcount() % 24)
         for _ in range(skip_count):
-            self.nodes[0].generate(1)
-            self.sync_blocks(nodes)
+            self.generate(self.nodes[0], 1, sync_fun=lambda: self.sync_blocks(nodes))
             self.wait_for_chainlocked_block_all_nodes(self.nodes[0].getbestblockhash())
 
 
@@ -212,7 +200,7 @@ class LLMQQuorumRotationTest(DashTestFramework):
         self.sync_blocks(nodes)
         quorum_list = self.nodes[0].quorum("list", llmq_type)
         quorum_blockhash = self.nodes[0].getbestblockhash()
-        fallback_blockhash = self.nodes[0].generate(1)[0]
+        fallback_blockhash = self.generate(self.nodes[0], 1, sync_fun=self.no_op)[0]
         self.log.info("h("+str(self.nodes[0].getblockcount())+") quorum_list:"+str(quorum_list))
 
         assert_greater_than_or_equal(len(intersection(quorum_members_0_0, quorum_members_1_0)), 3)
@@ -264,7 +252,7 @@ class LLMQQuorumRotationTest(DashTestFramework):
         cbtx = CCbTx()
         cbtx.deserialize(BytesIO(d.cbTx.vExtraPayload))
 
-        if cbtx.version >= 2:
+        if cbtx.nVersion >= 2:
             hashes = []
             for qc in newQuorumList.values():
                 hashes.append(hash256(qc.serialize()))
@@ -395,51 +383,6 @@ class LLMQQuorumRotationTest(DashTestFramework):
             return True
         return False
 
-    def advance_to_locked_in_for_v20(self, expected_locked_in_height):
-        # disable spork17 while mining blocks to activate "name" to prevent accidental quorum formation
-        spork17_value = self.nodes[0].spork('show')['SPORK_17_QUORUM_DKG_ENABLED']
-        self.bump_mocktime(1)
-        self.nodes[0].sporkupdate("SPORK_17_QUORUM_DKG_ENABLED", 4070908800)
-        self.wait_for_sporks_same()
-
-        # mine blocks in batches
-        batch_size = 10
-        height = self.nodes[0].getblockcount()
-        assert_greater_than(expected_locked_in_height, height)
-        # NOTE: getblockchaininfo shows softforks locked_in at block (window * 2 - 1)
-        # since it's returning whether a softwork is locked_in for the _next_ block.
-        # Hence the last block prior to the locked_in state is (expected_locked_in_height - 2).
-        while expected_locked_in_height - height - 2 >= batch_size:
-            self.bump_mocktime(batch_size)
-            self.nodes[0].generate(batch_size)
-            height += batch_size
-            self.sync_blocks()
-        blocks_left = expected_locked_in_height - height - 2
-        assert_greater_than(batch_size, blocks_left)
-        self.bump_mocktime(blocks_left)
-        self.nodes[0].generate(blocks_left)
-        self.sync_blocks()
-
-        softfork_info = get_bip9_details(self.nodes[0], 'v20')
-        assert_equal(softfork_info['status'], 'started')
-        assert 'activation_height' not in softfork_info
-
-        self.bump_mocktime(1)
-        self.nodes[0].generate(1)
-        self.sync_blocks()
-
-        softfork_info = get_bip9_details(self.nodes[0], 'v20')
-        assert_equal(softfork_info['status'], 'locked_in')
-        assert_equal(softfork_info['since'], expected_locked_in_height)
-        assert 'activation_height' in softfork_info
-        projected_activation_height = softfork_info['activation_height']
-
-        # revert spork17 changes
-        self.bump_mocktime(1)
-        self.nodes[0].sporkupdate("SPORK_17_QUORUM_DKG_ENABLED", spork17_value)
-        self.wait_for_sporks_same()
-
-        return projected_activation_height
 
 if __name__ == '__main__':
     LLMQQuorumRotationTest().main()

@@ -4,9 +4,9 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <amount.h>
 #include <chain.h>
 #include <chainparams.h>
+#include <consensus/amount.h>
 #include <consensus/consensus.h>
 #include <consensus/params.h>
 #include <consensus/validation.h>
@@ -19,9 +19,9 @@
 #include <llmq/chainlocks.h>
 #include <llmq/instantsend.h>
 #include <evo/evodb.h>
-#include <miner.h>
 #include <net.h>
 #include <node/context.h>
+#include <node/miner.h>
 #include <policy/fees.h>
 #include <pow.h>
 #include <rpc/blockchain.h>
@@ -36,6 +36,7 @@
 #include <spork.h>
 #include <txmempool.h>
 #include <univalue.h>
+#include <util/check.h>
 #include <util/fees.h>
 #include <util/strencodings.h>
 #include <util/string.h>
@@ -102,8 +103,8 @@ static RPCHelpMan getnetworkhashps()
         "Pass in [blocks] to override # of blocks, -1 specifies since last difficulty change.\n"
         "Pass in [height] to estimate the network speed at the time when a certain block was found.\n",
         {
-            {"nblocks", RPCArg::Type::NUM, /* default */ "120", "The number of blocks, or -1 for blocks since last difficulty change."},
-            {"height", RPCArg::Type::NUM, /* default */ "-1", "To estimate at the time of the given height."},
+            {"nblocks", RPCArg::Type::NUM, RPCArg::Default{120}, "The number of blocks, or -1 for blocks since last difficulty change."},
+            {"height", RPCArg::Type::NUM, RPCArg::Default{-1}, "To estimate at the time of the given height."},
         },
         RPCResult{
             RPCResult::Type::NUM, "", "Hashes per second estimated"},
@@ -200,7 +201,7 @@ static bool getScriptFromDescriptor(const std::string& descriptor, CScript& scri
         FlatSigningProvider provider;
         std::vector<CScript> scripts;
         if (!desc->Expand(0, key_provider, scripts, provider)) {
-            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, strprintf("Cannot derive script without private keys"));
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Cannot derive script without private keys");
         }
 
         // Combo descriptors can have 2 or 4 scripts, so we can't just check scripts.size() == 1
@@ -230,7 +231,7 @@ static RPCHelpMan generatetodescriptor()
         {
             {"num_blocks", RPCArg::Type::NUM, RPCArg::Optional::NO, "How many blocks are generated immediately."},
             {"descriptor", RPCArg::Type::STR, RPCArg::Optional::NO, "The descriptor to send the newly generated coins to."},
-            {"maxtries", RPCArg::Type::NUM, /* default */ ToString(DEFAULT_MAX_TRIES), "How many iterations to try."},
+            {"maxtries", RPCArg::Type::NUM, RPCArg::Default{DEFAULT_MAX_TRIES}, "How many iterations to try."},
         },
         RPCResult{
             RPCResult::Type::ARR, "", "",
@@ -267,7 +268,7 @@ static RPCHelpMan generatetoaddress()
         {
             {"nblocks", RPCArg::Type::NUM, RPCArg::Optional::NO, "How many blocks are generated immediately."},
             {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The address to send the newly generated coins to."},
-            {"maxtries", RPCArg::Type::NUM, /* default */ ToString(DEFAULT_MAX_TRIES), "How many iterations to try."},
+            {"maxtries", RPCArg::Type::NUM, RPCArg::Default{DEFAULT_MAX_TRIES}, "How many iterations to try."},
         },
         RPCResult{
             RPCResult::Type::ARR, "", "hashes of blocks generated",
@@ -391,12 +392,11 @@ static RPCHelpMan generateblock()
     block.vtx.insert(block.vtx.end(), txs.begin(), txs.end());
 
     {
-        CHECK_NONFATAL(node.evodb);
-
         LOCK(cs_main);
 
         BlockValidationState state;
-        if (!TestBlockValidity(state, *llmq_ctx.clhandler, *node.evodb, chainparams, active_chainstate, block, chainman.m_blockman.LookupBlockIndex(block.hashPrevBlock), false, false)) {
+        if (!TestBlockValidity(state, *llmq_ctx.clhandler, *CHECK_NONFATAL(node.evodb), chainparams, active_chainstate,
+                               block, chainman.m_blockman.LookupBlockIndex(block.hashPrevBlock), false, false)) {
             throw JSONRPCError(RPC_VERIFY_ERROR, strprintf("TestBlockValidity failed: %s", state.GetRejectReason()));
         }
     }
@@ -416,17 +416,24 @@ static RPCHelpMan generateblock()
     };
 }
 #else
-static UniValue generatetoaddress(const JSONRPCRequest& request)
+static RPCHelpMan generatetoaddress()
 {
-    throw JSONRPCError(RPC_METHOD_NOT_FOUND, "This call is not available because RPC miner isn't compiled");
+    return RPCHelpMan{"generatetoaddress", "This call is not available because RPC miner isn't compiled", {}, {}, RPCExamples{""}, [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue {
+        throw JSONRPCError(RPC_METHOD_NOT_FOUND, "This call is not available because RPC miner isn't compiled");
+    }};
 }
-static UniValue generatetodescriptor(const JSONRPCRequest& request)
+
+static RPCHelpMan generatetodescriptor()
 {
-    throw JSONRPCError(RPC_METHOD_NOT_FOUND, "This call is not available because RPC miner isn't compiled");
+    return RPCHelpMan{"generatetodescriptor", "This call is not available because RPC miner isn't compiled", {}, {}, RPCExamples{""}, [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue {
+        throw JSONRPCError(RPC_METHOD_NOT_FOUND, "This call is not available because RPC miner isn't compiled");
+    }};
 }
-static UniValue generateblock(const JSONRPCRequest& request)
+static RPCHelpMan generateblock()
 {
-    throw JSONRPCError(RPC_METHOD_NOT_FOUND, "This call is not available because RPC miner isn't compiled");
+    return RPCHelpMan{"generateblock", "This call is not available because RPC miner isn't compiled", {}, {}, RPCExamples{""}, [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue {
+        throw JSONRPCError(RPC_METHOD_NOT_FOUND, "This call is not available because RPC miner isn't compiled");
+    }};
 }
 #endif // ENABLE_MINER
 
@@ -434,11 +441,7 @@ static RPCHelpMan generate()
 {
     return RPCHelpMan{"generate", "has been replaced by the -generate cli option. Refer to -help for more information.", {}, {}, RPCExamples{""}, [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue {
 
-    if (request.fHelp) {
-        throw std::runtime_error(self.ToString());
-    } else {
         throw JSONRPCError(RPC_METHOD_NOT_FOUND, self.ToString());
-    }
     }};
 }
 
@@ -560,7 +563,7 @@ static RPCHelpMan getblocktemplate()
         "    https://github.com/bitcoin/bips/blob/master/bip-0023.mediawiki\n"
         "    https://github.com/bitcoin/bips/blob/master/bip-0009.mediawiki#getblocktemplate_changes\n",
         {
-            {"template_request", RPCArg::Type::OBJ, /* default_val */ "", "Format of the template",
+            {"template_request", RPCArg::Type::OBJ, RPCArg::Default{UniValue::VOBJ}, "Format of the template",
                 {
                     {"mode", RPCArg::Type::STR, /* treat as named arg */ RPCArg::Optional::OMITTED_NAMED_ARG, "This must be set to \"template\", \"proposal\" (see BIP 23), or omitted"},
                     {"capabilities", RPCArg::Type::ARR, /* treat as named arg */ RPCArg::Optional::OMITTED_NAMED_ARG, "A list of strings",
@@ -568,7 +571,7 @@ static RPCHelpMan getblocktemplate()
                             {"str", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "client side supported feature, 'longpoll', 'coinbasevalue', 'proposal', 'serverlist', 'workid'"},
                         },
                         },
-                    {"rules", RPCArg::Type::ARR, /* default_val */ "", "A list of strings",
+                    {"rules", RPCArg::Type::ARR, RPCArg::Optional::NO, "A list of strings",
                         {
                             {"str", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "client side supported softfork deployment"},
                         },
@@ -576,8 +579,10 @@ static RPCHelpMan getblocktemplate()
                 },
                 "\"template_request\""},
         },
-        RPCResult{
-            RPCResult::Type::OBJ, "", "",
+        {
+            RPCResult{"If the proposal was accepted with mode=='proposal'", RPCResult::Type::NONE, "", ""},
+            RPCResult{"If the proposal was not accepted with mode=='proposal'", RPCResult::Type::STR, "", "According to BIP22"},
+            RPCResult{"Otherwise", RPCResult::Type::OBJ, "", "",
             {
                 {RPCResult::Type::ARR, "capabilities", "specific client side supported features",
                     {
@@ -652,6 +657,7 @@ static RPCHelpMan getblocktemplate()
                 {RPCResult::Type::BOOL, "superblocks_enabled", "true, if superblock payments are enabled"},
                 {RPCResult::Type::STR_HEX, "coinbase_payload", "coinbase transaction payload data encoded in hexadecimal"},
             }},
+        },
         RPCExamples{
             HelpExampleCli("getblocktemplate", "")
     + HelpExampleRpc("getblocktemplate", "")
@@ -704,14 +710,14 @@ static RPCHelpMan getblocktemplate()
             }
 
             LLMQContext& llmq_ctx = EnsureLLMQContext(node);
-            CHECK_NONFATAL(node.evodb);
 
             CBlockIndex* const pindexPrev = active_chain.Tip();
             // TestBlockValidity only supports blocks built on the current Tip
             if (block.hashPrevBlock != pindexPrev->GetBlockHash())
                 return "inconclusive-not-best-prevblk";
             BlockValidationState state;
-            TestBlockValidity(state, *llmq_ctx.clhandler, *node.evodb, Params(), active_chainstate, block, pindexPrev, false, true);
+            TestBlockValidity(state, *llmq_ctx.clhandler, *CHECK_NONFATAL(node.evodb), Params(), active_chainstate,
+                              block, pindexPrev, false, true);
             return BIP22ValidationResult(state);
         }
 
@@ -1014,9 +1020,12 @@ static RPCHelpMan submitblock()
         "See https://en.bitcoin.it/wiki/BIP_0022 for full specification.\n",
         {
             {"hexdata", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "the hex-encoded block data to submit"},
-            {"dummy", RPCArg::Type::STR, /* default */ "ignored", "dummy value, for compatibility with BIP22. This value is ignored."},
+            {"dummy", RPCArg::Type::STR, RPCArg::DefaultHint{"ignored"}, "dummy value, for compatibility with BIP22. This value is ignored."},
         },
-        RPCResult{RPCResult::Type::NONE, "", "Returns JSON Null when valid, a string according to BIP22 otherwise"},
+        {
+            RPCResult{"If the block was accepted", RPCResult::Type::NONE, "", ""},
+            RPCResult{"Otherwise", RPCResult::Type::STR, "", "According to BIP22"},
+        },
         RPCExamples{
             HelpExampleCli("submitblock", "\"mydata\"")
     + HelpExampleRpc("submitblock", "\"mydata\"")
@@ -1051,7 +1060,7 @@ static RPCHelpMan submitblock()
     bool new_block;
     auto sc = std::make_shared<submitblock_StateCatcher>(block.GetHash());
     RegisterSharedValidationInterface(sc);
-    bool accepted = chainman.ProcessNewBlock(Params(), blockptr, /* fForceProcessing */ true, /* fNewBlock */ &new_block);
+    bool accepted = chainman.ProcessNewBlock(Params(), blockptr, /*force_processing=*/true, /*new_block=*/&new_block);
     UnregisterSharedValidationInterface(sc);
     if (!new_block && accepted) {
         return "duplicate";
@@ -1111,7 +1120,7 @@ static RPCHelpMan estimatesmartfee()
         "for which the estimate is valid.\n",
         {
             {"conf_target", RPCArg::Type::NUM, RPCArg::Optional::NO, "Confirmation target in blocks (1 - 1008)"},
-            {"estimate_mode", RPCArg::Type::STR, /* default */ "conservative", "The fee estimate mode.\n"
+            {"estimate_mode", RPCArg::Type::STR, RPCArg::Default{"conservative"}, "The fee estimate mode.\n"
     "                   Whether to return a more conservative estimate which also satisfies\n"
     "                   a longer history. A conservative estimate potentially returns a\n"
     "                   higher feerate and is more likely to be sufficient for the desired\n"
@@ -1134,7 +1143,8 @@ static RPCHelpMan estimatesmartfee()
     "have been observed to make an estimate for any number of blocks."},
             }},
         RPCExamples{
-            HelpExampleCli("estimatesmartfee", "6")
+            HelpExampleCli("estimatesmartfee", "6") +
+            HelpExampleRpc("estimatesmartfee", "6")
         },
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
@@ -1151,7 +1161,7 @@ static RPCHelpMan estimatesmartfee()
     if (!request.params[1].isNull()) {
         FeeEstimateMode fee_mode;
         if (!FeeModeFromString(request.params[1].get_str(), fee_mode)) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid estimate_mode parameter");
+            throw JSONRPCError(RPC_INVALID_PARAMETER, InvalidEstimateModeErrorMessage());
         }
         if (fee_mode == FeeEstimateMode::ECONOMICAL) conservative = false;
     }
@@ -1160,10 +1170,10 @@ static RPCHelpMan estimatesmartfee()
     UniValue errors(UniValue::VARR);
     FeeCalculation feeCalc;
     CFeeRate feeRate{fee_estimator.estimateSmartFee(conf_target, &feeCalc, conservative)};
-    CFeeRate min_mempool_feerate{mempool.GetMinFee(gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000)};
-    CFeeRate min_relay_feerate{::minRelayTxFee};
-    feeRate = std::max({feeRate, min_mempool_feerate, min_relay_feerate});
     if (feeRate != CFeeRate(0)) {
+        CFeeRate min_mempool_feerate{mempool.GetMinFee(gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000)};
+        CFeeRate min_relay_feerate{::minRelayTxFee};
+        feeRate = std::max({feeRate, min_mempool_feerate, min_relay_feerate});
         result.pushKV("feerate", ValueFromAmount(feeRate.GetFeePerK()));
     } else {
         errors.push_back("Insufficient data or no feerate found");
@@ -1186,7 +1196,7 @@ static RPCHelpMan estimaterawfee()
         "confirmation within conf_target blocks if possible.\n",
         {
             {"conf_target", RPCArg::Type::NUM, RPCArg::Optional::NO, "Confirmation target in blocks (1 - 1008)"},
-            {"threshold", RPCArg::Type::NUM, /* default */ "0.95", "The proportion of transactions in a given feerate range that must have been\n"
+            {"threshold", RPCArg::Type::NUM, RPCArg::Default{0.95}, "The proportion of transactions in a given feerate range that must have been\n"
     "               confirmed within conf_target in order to consider those feerates as high enough and proceed to check\n"
     "               lower buckets."},
         },
@@ -1299,29 +1309,30 @@ void RegisterMiningRPCCommands(CRPCTable &t)
 {
 // clang-format off
 static const CRPCCommand commands[] =
-{ //  category              name                      actor (function)         argNames
-  //  --------------------- ------------------------  -----------------------  ----------
-    { "mining",             "getnetworkhashps",       &getnetworkhashps,       {"nblocks","height"} },
-    { "mining",             "getmininginfo",          &getmininginfo,          {} },
-    { "mining",             "prioritisetransaction",  &prioritisetransaction,  {"txid","fee_delta"} },
-    { "mining",             "getblocktemplate",       &getblocktemplate,       {"template_request"} },
-    { "mining",             "submitblock",            &submitblock,            {"hexdata","dummy"} },
-    { "mining",             "submitheader",           &submitheader,           {"hexdata"} },
+{ //  category               actor (function)
+  //  ---------------------  -----------------------
+    { "mining",              &getnetworkhashps,        },
+    { "mining",              &getmininginfo,           },
+    { "mining",              &prioritisetransaction,   },
+    { "mining",              &getblocktemplate,        },
+    { "mining",              &submitblock,             },
+    { "mining",              &submitheader,            },
 
 #if ENABLE_MINER
-    { "generating",         "generatetoaddress",      &generatetoaddress,      {"nblocks","address","maxtries"} },
-    { "generating",         "generatetodescriptor",   &generatetodescriptor,   {"num_blocks","descriptor","maxtries"} },
-    { "generating",         "generateblock",          &generateblock,          {"output","transactions"} },
+    { "generating",          &generatetoaddress,       },
+    { "generating",          &generatetodescriptor,    },
+    { "generating",          &generateblock,           },
 #else
-    { "hidden",             "generatetoaddress",      &generatetoaddress,      {"nblocks","address","maxtries"} }, // Hidden as it isn't functional, just an error to let people know if miner isn't compiled
-    { "hidden",             "generatetodescriptor",   &generatetodescriptor,   {"num_blocks","descriptor","maxtries"} },
-    { "hidden",             "generateblock",          &generateblock,          {"address","transactions"} },
+// Hidden as it isn't functional, just an error to let people know if miner isn't compiled
+    { "hidden",              &generatetoaddress,       },
+    { "hidden",              &generatetodescriptor,    },
+    { "hidden",              &generateblock,           },
 #endif // ENABLE_MINER
 
-    { "util",               "estimatesmartfee",       &estimatesmartfee,       {"conf_target", "estimate_mode"} },
+    { "util",                &estimatesmartfee,        },
 
-    { "hidden",             "estimaterawfee",         &estimaterawfee,         {"conf_target", "threshold"} },
-    { "hidden",             "generate",               &generate,               {} },
+    { "hidden",              &estimaterawfee,          },
+    { "hidden",              &generate,                },
 };
 // clang-format on
     for (const auto& c : commands) {

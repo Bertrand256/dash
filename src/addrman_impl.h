@@ -6,6 +6,7 @@
 #define BITCOIN_ADDRMAN_IMPL_H
 
 #include <logging.h>
+#include <logging/timer.h>
 #include <netaddress.h>
 #include <protocol.h>
 #include <serialize.h>
@@ -75,19 +76,19 @@ public:
     }
 
     //! Calculate in which "tried" bucket this entry belongs
-    int GetTriedBucket(const uint256 &nKey, const std::vector<bool> &asmap) const;
+    int GetTriedBucket(const uint256& nKey, const NetGroupManager& netgroupman) const;
 
     //! Calculate in which "new" bucket this entry belongs, given a certain source
-    int GetNewBucket(const uint256 &nKey, const CNetAddr& src, const std::vector<bool> &asmap) const;
+    int GetNewBucket(const uint256& nKey, const CNetAddr& src, const NetGroupManager& netgroupman) const;
 
     //! Calculate in which "new" bucket this entry belongs, using its default source
-    int GetNewBucket(const uint256 &nKey, const std::vector<bool> &asmap) const
+    int GetNewBucket(const uint256& nKey, const NetGroupManager& netgroupman) const
     {
-        return GetNewBucket(nKey, source, asmap);
+        return GetNewBucket(nKey, source, netgroupman);
     }
 
     //! Calculate in which position of a bucket to store this entry.
-    int GetBucketPosition(const uint256 &nKey, bool fNew, int nBucket) const;
+    int GetBucketPosition(const uint256 &nKey, bool fNew, int bucket) const;
 
     //! Determine whether the statistics about this entry are bad enough so that it can just be deleted
     bool IsTerrible(int64_t nNow = GetAdjustedTime()) const;
@@ -99,7 +100,7 @@ public:
 class AddrManImpl
 {
 public:
-    AddrManImpl(std::vector<bool>&& asmap, bool deterministic, int32_t consistency_check_ratio);
+    AddrManImpl(const NetGroupManager& netgroupman, bool deterministic, int32_t consistency_check_ratio);
 
     ~AddrManImpl();
 
@@ -109,12 +110,12 @@ public:
     template <typename Stream>
     void Unserialize(Stream& s_) EXCLUSIVE_LOCKS_REQUIRED(!cs);
 
-    size_t size() const EXCLUSIVE_LOCKS_REQUIRED(!cs);
+    size_t Size(std::optional<Network> net, std::optional<bool> in_new) const EXCLUSIVE_LOCKS_REQUIRED(!cs);
 
     bool Add(const std::vector<CAddress>& vAddr, const CNetAddr& source, int64_t nTimePenalty)
         EXCLUSIVE_LOCKS_REQUIRED(!cs);
 
-    void Good(const CService& addr, int64_t nTime)
+    bool Good(const CService& addr, int64_t nTime)
         EXCLUSIVE_LOCKS_REQUIRED(!cs);
 
     void Attempt(const CService& addr, bool fCountFailure, int64_t nTime)
@@ -124,7 +125,7 @@ public:
 
     std::pair<CAddress, int64_t> SelectTriedCollision() EXCLUSIVE_LOCKS_REQUIRED(!cs);
 
-    std::pair<CAddress, int64_t> Select(bool newOnly) const
+    std::pair<CAddress, int64_t> Select(bool new_only, std::optional<Network> network) const
         EXCLUSIVE_LOCKS_REQUIRED(!cs);
 
     std::vector<CAddress> GetAddr(size_t max_addresses, size_t max_pct, std::optional<Network> network) const
@@ -136,11 +137,12 @@ public:
     void SetServices(const CService& addr, ServiceFlags nServices)
         EXCLUSIVE_LOCKS_REQUIRED(!cs);
 
-    AddrInfo GetAddressInfo(const CService& addr);
+    std::optional<AddressPosition> FindAddressEntry(const CAddress& addr)
+        EXCLUSIVE_LOCKS_REQUIRED(!cs);
 
-    const std::vector<bool>& GetAsmap() const;
+    AddrInfo GetAddressInfo(const CService& addr)
+        EXCLUSIVE_LOCKS_REQUIRED(!cs);
 
-    friend class AddrManTest;
     friend class AddrManDeterministic;
 
 private:
@@ -211,21 +213,16 @@ private:
     /** Perform consistency checks every m_consistency_check_ratio operations (if non-zero). */
     const int32_t m_consistency_check_ratio;
 
-    // Compressed IP->ASN mapping, loaded from a file when a node starts.
-    // Should be always empty if no file was provided.
-    // This mapping is then used for bucketing nodes in Addrman.
-    //
-    // If asmap is provided, nodes will be bucketed by
-    // AS they belong to, in order to make impossible for a node
-    // to connect to several nodes hosted in a single AS.
-    // This is done in response to Erebus attack, but also to generally
-    // diversify the connections every node creates,
-    // especially useful when a large fraction of nodes
-    // operate under a couple of cloud providers.
-    //
-    // If a new asmap was provided, the existing records
-    // would be re-bucketed accordingly.
-    const std::vector<bool> m_asmap;
+    /** Reference to the netgroup manager. netgroupman must be constructed before addrman and destructed after. */
+    const NetGroupManager& m_netgroupman;
+
+    struct NewTriedCount {
+        size_t n_new;
+        size_t n_tried;
+    };
+
+    /** Number of entries in addrman per network and new/tried table. */
+    std::unordered_map<Network, NewTriedCount> m_network_counts GUARDED_BY(cs);
 
     //! Find an entry.
     AddrInfo* Find(const CService& addr, int* pnId = nullptr) EXCLUSIVE_LOCKS_REQUIRED(cs);
@@ -249,13 +246,19 @@ private:
      *  @see AddrMan::Add() for parameters. */
     bool AddSingle(const CAddress& addr, const CNetAddr& source, int64_t nTimePenalty) EXCLUSIVE_LOCKS_REQUIRED(cs);
 
-    void Good_(const CService& addr, bool test_before_evict, int64_t time) EXCLUSIVE_LOCKS_REQUIRED(cs);
+    bool Good_(const CService& addr, bool test_before_evict, int64_t time) EXCLUSIVE_LOCKS_REQUIRED(cs);
 
     bool Add_(const std::vector<CAddress> &vAddr, const CNetAddr& source, int64_t nTimePenalty) EXCLUSIVE_LOCKS_REQUIRED(cs);
 
     void Attempt_(const CService& addr, bool fCountFailure, int64_t nTime) EXCLUSIVE_LOCKS_REQUIRED(cs);
 
-    std::pair<CAddress, int64_t> Select_(bool newOnly) const EXCLUSIVE_LOCKS_REQUIRED(cs);
+    std::pair<CAddress, int64_t> Select_(bool new_only, std::optional<Network> network) const EXCLUSIVE_LOCKS_REQUIRED(cs);
+
+    /** Helper to generalize looking up an addrman entry from either table.
+     *
+     *  @return  int The nid of the entry. If the addrman position is empty or not found, returns -1.
+     * */
+    int GetEntry(bool use_tried, size_t bucket, size_t position) const EXCLUSIVE_LOCKS_REQUIRED(cs);
 
     std::vector<CAddress> GetAddr_(size_t max_addresses, size_t max_pct, std::optional<Network> network) const EXCLUSIVE_LOCKS_REQUIRED(cs);
 
@@ -269,12 +272,17 @@ private:
 
     std::pair<CAddress, int64_t> SelectTriedCollision_() EXCLUSIVE_LOCKS_REQUIRED(cs);
 
-    //! Consistency check, taking into account m_consistency_check_ratio. Will std::abort if an inconsistency is detected.
+    std::optional<AddressPosition> FindAddressEntry_(const CAddress& addr) EXCLUSIVE_LOCKS_REQUIRED(cs);
+
+    size_t Size_(std::optional<Network> net, std::optional<bool> in_new) const EXCLUSIVE_LOCKS_REQUIRED(cs);
+
+    //! Consistency check, taking into account m_consistency_check_ratio.
+    //! Will std::abort if an inconsistency is detected.
     void Check() const EXCLUSIVE_LOCKS_REQUIRED(cs);
 
     //! Perform consistency check, regardless of m_consistency_check_ratio.
     //! @returns an error code or zero.
-    int ForceCheckAddrman() const EXCLUSIVE_LOCKS_REQUIRED(cs);
+    int CheckAddrman() const EXCLUSIVE_LOCKS_REQUIRED(cs);
 };
 
 #endif // BITCOIN_ADDRMAN_IMPL_H

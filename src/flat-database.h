@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2023 The Dash Core developers
+// Copyright (c) 2014-2024 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -21,8 +21,7 @@ template<typename T>
 class CFlatDB
 {
 private:
-
-    enum ReadResult {
+    enum class ReadResult {
         Ok,
         FileError,
         HashReadError,
@@ -36,7 +35,7 @@ private:
     std::string strFilename;
     std::string strMagicMessage;
 
-    bool CoreWrite(const T& objToSave)
+    [[nodiscard]] bool CoreWrite(const T& objToSave)
     {
         // LOCK(objToSave.cs);
 
@@ -51,10 +50,11 @@ private:
         ssObj << hash;
 
         // open output file, and associate with CAutoFile
-        FILE *file = fopen(pathDB.string().c_str(), "wb");
+        FILE *file = fsbridge::fopen(pathDB, "wb");
         CAutoFile fileout(file, SER_DISK, CLIENT_VERSION);
-        if (fileout.IsNull())
-            return error("%s: Failed to open file %s", __func__, pathDB.string());
+        if (fileout.IsNull()) {
+            return error("%s: Failed to open file %s", __func__, fs::PathToString(pathDB));
+        }
 
         // Write and commit header, data
         try {
@@ -71,18 +71,17 @@ private:
         return true;
     }
 
-    ReadResult CoreRead(T& objToLoad)
+    [[nodiscard]] ReadResult CoreRead(T& objToLoad)
     {
         //LOCK(objToLoad.cs);
 
         int64_t nStart = GetTimeMillis();
         // open input file, and associate with CAutoFile
-        FILE *file = fopen(pathDB.string().c_str(), "rb");
+        FILE *file = fsbridge::fopen(pathDB, "rb");
         CAutoFile filein(file, SER_DISK, CLIENT_VERSION);
-        if (filein.IsNull())
-        {
-            error("%s: Failed to open file %s", __func__, pathDB.string());
-            return FileError;
+        if (filein.IsNull()) {
+            // It is not actually error, maybe it's a first initialization of core.
+            return ReadResult::FileError;
         }
 
         // use file size to size memory buffer
@@ -102,7 +101,7 @@ private:
         }
         catch (std::exception &e) {
             error("%s: Deserialize or I/O error - %s", __func__, e.what());
-            return HashReadError;
+            return ReadResult::HashReadError;
         }
         filein.fclose();
 
@@ -113,13 +112,13 @@ private:
         if (hashIn != hashTmp)
         {
             error("%s: Checksum mismatch, data corrupted", __func__);
-            return IncorrectHash;
+            return ReadResult::IncorrectHash;
         }
 
 
-        unsigned char pchMsgTmp[4];
-        std::string strMagicMessageTmp;
         try {
+            unsigned char pchMsgTmp[4];
+            std::string strMagicMessageTmp;
             // de-serialize file header (file specific magic message) and ..
             ssObj >> strMagicMessageTmp;
 
@@ -127,7 +126,7 @@ private:
             if (strMagicMessage != strMagicMessageTmp)
             {
                 error("%s: Invalid magic message", __func__);
-                return IncorrectMagicMessage;
+                return ReadResult::IncorrectMagicMessage;
             }
 
 
@@ -138,7 +137,7 @@ private:
             if (memcmp(pchMsgTmp, Params().MessageStart(), sizeof(pchMsgTmp)))
             {
                 error("%s: Invalid network magic number", __func__);
-                return IncorrectMagicNumber;
+                return ReadResult::IncorrectMagicNumber;
             }
 
             // de-serialize data into T object
@@ -147,28 +146,25 @@ private:
         catch (std::exception &e) {
             objToLoad.Clear();
             error("%s: Deserialize or I/O error - %s", __func__, e.what());
-            return IncorrectFormat;
+            return ReadResult::IncorrectFormat;
         }
 
         LogPrintf("Loaded info from %s  %dms\n", strFilename, GetTimeMillis() - nStart);
         LogPrintf("     %s\n", objToLoad.ToString());
 
-        return Ok;
+        return ReadResult::Ok;
     }
 
-    bool Read(T& objToLoad)
+    [[nodiscard]] bool Read(T& objToLoad)
     {
         ReadResult readResult = CoreRead(objToLoad);
-        if (readResult == FileError)
+        if (readResult == ReadResult::FileError)
             LogPrintf("Missing file %s, will try to recreate\n", strFilename);
-        else if (readResult != Ok)
-        {
-            LogPrintf("Error reading %s: ", strFilename);
-            if(readResult == IncorrectFormat)
-            {
+        else if (readResult != ReadResult::Ok) {
+            LogPrintf("ERROR: CFlatDB::Read Error reading %s: ", strFilename);
+            if (readResult == ReadResult::IncorrectFormat) {
                 LogPrintf("%s: Magic is ok but data has invalid format, will try to recreate\n", __func__);
-            }
-            else {
+            } else {
                 LogPrintf("%s: File format is unknown or invalid, please fix it manually\n", __func__);
                 // program should exit with an error
                 return false;
@@ -178,20 +174,20 @@ private:
     }
 
 public:
-    CFlatDB(std::string strFilenameIn, std::string strMagicMessageIn)
+    CFlatDB(std::string&& strFilenameIn, std::string&& strMagicMessageIn) :
+        pathDB{gArgs.GetDataDirNet() / strFilenameIn},
+        strFilename{strFilenameIn},
+        strMagicMessage{strMagicMessageIn}
     {
-        pathDB = GetDataDir() / strFilenameIn;
-        strFilename = strFilenameIn;
-        strMagicMessage = strMagicMessageIn;
     }
 
-    bool Load(T& objToLoad)
+    [[nodiscard]] bool Load(T& objToLoad)
     {
         LogPrintf("Reading info from %s...\n", strFilename);
         return Read(objToLoad);
     }
 
-    bool Store(T& objToSave)
+    bool Store(const T& objToSave)
     {
         LogPrintf("Verifying %s format...\n", strFilename);
         T tmpObjToLoad;
@@ -200,10 +196,10 @@ public:
         int64_t nStart = GetTimeMillis();
 
         LogPrintf("Writing info to %s...\n", strFilename);
-        CoreWrite(objToSave);
+        const bool ret = CoreWrite(objToSave);
         LogPrintf("%s dump finished  %dms\n", strFilename, GetTimeMillis() - nStart);
 
-        return true;
+        return ret;
     }
 };
 

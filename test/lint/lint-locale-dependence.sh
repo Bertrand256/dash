@@ -44,17 +44,14 @@ export LC_ALL=C
 KNOWN_VIOLATIONS=(
     "src/bitcoin-tx.cpp.*stoul"
     "src/dbwrapper.cpp:.*vsnprintf"
-    "src/rest.cpp:.*strtol"
-    "src/statsd_client.cpp:.*snprintf"
     "src/test/dbwrapper_tests.cpp:.*snprintf"
     "src/test/fuzz/locale.cpp"
     "src/test/fuzz/string.cpp"
-    "src/torcontrol.cpp:.*strtol"
     "src/util/strencodings.cpp:.*strtoll"
     "src/util/system.cpp:.*fprintf"
 )
 
-REGEXP_IGNORE_EXTERNAL_DEPENDENCIES="^src/(dashbls/|immer/|crypto/ctaes/|leveldb/|secp256k1/|tinyformat.h|univalue/)"
+REGEXP_IGNORE_EXTERNAL_DEPENDENCIES="^src/(dashbls/|immer/|crypto/ctaes/|leveldb/|secp256k1/|minisketch/|tinyformat.h|univalue/)"
 
 LOCALE_DEPENDENT_FUNCTIONS=(
     alphasort    # LC_COLLATE (via strcoll)

@@ -5,18 +5,16 @@
 #ifndef BITCOIN_LLMQ_QUORUMS_H
 #define BITCOIN_LLMQ_QUORUMS_H
 
-#include <chain.h>
-#include <consensus/params.h>
-#include <saltedhasher.h>
-#include <threadinterrupt.h>
-#include <unordered_lru_cache.h>
+#include <llmq/params.h>
 
 #include <bls/bls.h>
 #include <bls/bls_worker.h>
-
-#include <evo/evodb.h>
-#include <net_types.h>
+#include <ctpl_stl.h>
 #include <gsl/pointers.h>
+#include <protocol.h>
+#include <saltedhasher.h>
+#include <threadinterrupt.h>
+#include <unordered_lru_cache.h>
 
 #include <atomic>
 #include <map>
@@ -24,10 +22,14 @@
 
 class CActiveMasternodeManager;
 class CBlockIndex;
+class CChain;
 class CChainState;
 class CConnman;
+class CDataStream;
 class CDeterministicMN;
 class CDeterministicMNManager;
+class CDBWrapper;
+class CEvoDB;
 class CMasternodeSync;
 class CNode;
 class CSporkManager;
@@ -217,8 +219,8 @@ public:
 
 private:
     bool HasVerificationVectorInternal() const EXCLUSIVE_LOCKS_REQUIRED(cs_vvec_shShare);
-    void WriteContributions(CEvoDB& evoDb) const;
-    bool ReadContributions(CEvoDB& evoDb);
+    void WriteContributions(CDBWrapper& db) const;
+    bool ReadContributions(const CDBWrapper& db);
 };
 
 /**
@@ -230,12 +232,14 @@ private:
 class CQuorumManager
 {
 private:
+    mutable Mutex cs_db;
+    std::unique_ptr<CDBWrapper> db GUARDED_BY(cs_db){nullptr};
+
     CBLSWorker& blsWorker;
     CChainState& m_chainstate;
     CConnman& connman;
     CDeterministicMNManager& m_dmnman;
     CDKGSessionManager& dkgManager;
-    CEvoDB& m_evoDb;
     CQuorumBlockProcessor& quorumBlockProcessor;
     const CActiveMasternodeManager* const m_mn_activeman;
     const CMasternodeSync& m_mn_sync;
@@ -254,8 +258,9 @@ private:
 public:
     CQuorumManager(CBLSWorker& _blsWorker, CChainState& chainstate, CConnman& _connman, CDeterministicMNManager& dmnman,
                    CDKGSessionManager& _dkgManager, CEvoDB& _evoDb, CQuorumBlockProcessor& _quorumBlockProcessor,
-                   const CActiveMasternodeManager* const mn_activeman, const CMasternodeSync& mn_sync, const CSporkManager& sporkman);
-    ~CQuorumManager() { Stop(); };
+                   const CActiveMasternodeManager* const mn_activeman, const CMasternodeSync& mn_sync,
+                   const CSporkManager& sporkman, bool unit_tests, bool wipe);
+    ~CQuorumManager();
 
     void Start();
     void Stop();
@@ -294,6 +299,7 @@ private:
     void StartQuorumDataRecoveryThread(const CQuorumCPtr pQuorum, const CBlockIndex* pIndex, uint16_t nDataMask) const;
 
     void StartCleanupOldQuorumDataThread(const CBlockIndex* pIndex) const;
+    void MigrateOldQuorumDB(CEvoDB& evoDb) const;
 };
 
 // when selecting a quorum for signing and verification, we use CQuorumManager::SelectQuorum with this offset as

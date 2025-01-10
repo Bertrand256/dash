@@ -6,14 +6,13 @@
 #define BITCOIN_LLMQ_INSTANTSEND_H
 
 #include <llmq/signing.h>
-#include <unordered_lru_cache.h>
 
-#include <chain.h>
-#include <coins.h>
+#include <consensus/params.h>
 #include <net_types.h>
 #include <primitives/transaction.h>
 #include <threadinterrupt.h>
 #include <txmempool.h>
+#include <unordered_lru_cache.h>
 
 #include <gsl/pointers.h>
 
@@ -21,6 +20,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
+class CBlockIndex;
 class CChainState;
 class CDBWrapper;
 class CMasternodeSync;
@@ -315,8 +315,7 @@ private:
         EXCLUSIVE_LOCKS_REQUIRED(!cs_inputReqests, !cs_nonLocked, !cs_pendingRetry);
     void ResolveBlockConflicts(const uint256& islockHash, const CInstantSendLock& islock)
         EXCLUSIVE_LOCKS_REQUIRED(!cs_inputReqests, !cs_nonLocked, !cs_pendingLocks, !cs_pendingRetry);
-    static void AskNodesForLockedTx(const uint256& txid, const CConnman& connman, const PeerManager& peerman,
-                                    bool is_masternode);
+    static void AskNodesForLockedTx(const uint256& txid, const CConnman& connman, PeerManager& peerman, bool is_masternode);
     void ProcessPendingRetryLockTxs()
         EXCLUSIVE_LOCKS_REQUIRED(!cs_creating, !cs_inputReqests, !cs_nonLocked, !cs_pendingRetry);
 
@@ -331,7 +330,7 @@ public:
     bool IsWaitingForTx(const uint256& txHash) const EXCLUSIVE_LOCKS_REQUIRED(!cs_pendingLocks);
     CInstantSendLockPtr GetConflictingLock(const CTransaction& tx) const;
 
-    void HandleNewRecoveredSig(const CRecoveredSig& recoveredSig) override
+    [[nodiscard]] MessageProcessingResult HandleNewRecoveredSig(const CRecoveredSig& recoveredSig) override
         EXCLUSIVE_LOCKS_REQUIRED(!cs_creating, !cs_inputReqests, !cs_pendingLocks);
 
     PeerMsgRet ProcessMessage(const CNode& pfrom, std::string_view msg_type, CDataStream& vRecv);
@@ -366,7 +365,7 @@ public:
     bool IsInstantSendMempoolSigningEnabled() const;
     bool RejectConflictingBlocks() const;
 };
-
+// TODO: split CInstantSendManager and  CInstantSendLock to 2 files
 extern std::unique_ptr<CInstantSendManager> quorumInstantSendManager;
 
 } // namespace llmq

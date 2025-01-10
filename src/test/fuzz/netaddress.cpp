@@ -5,7 +5,7 @@
 #include <netaddress.h>
 #include <test/fuzz/FuzzedDataProvider.h>
 #include <test/fuzz/fuzz.h>
-#include <test/fuzz/util.h>
+#include <test/fuzz/util/net.h>
 
 #include <cassert>
 #include <cstdint>
@@ -71,8 +71,7 @@ FUZZ_TARGET(netaddress)
         assert(net_addr.GetNetwork() == Network::NET_ONION);
     }
     (void)net_addr.IsValid();
-    (void)net_addr.ToString();
-    (void)net_addr.ToStringIP();
+    (void)net_addr.ToStringAddr();
 
     const CSubNet sub_net{net_addr, fuzzed_data_provider.ConsumeIntegral<uint8_t>()};
     (void)sub_net.IsValid();
@@ -81,12 +80,10 @@ FUZZ_TARGET(netaddress)
     const CService service{net_addr, fuzzed_data_provider.ConsumeIntegral<uint16_t>()};
     (void)service.GetKey();
     (void)service.GetPort();
-    (void)service.ToString();
-    (void)service.ToStringIPPort();
-    (void)service.ToStringPort();
+    (void)service.ToStringAddrPort();
 
     const CNetAddr other_net_addr = ConsumeNetAddr(fuzzed_data_provider);
-    (void)net_addr.GetReachabilityFrom(&other_net_addr);
+    (void)net_addr.GetReachabilityFrom(other_net_addr);
     (void)sub_net.Match(other_net_addr);
 
     const CService other_service{net_addr, fuzzed_data_provider.ConsumeIntegral<uint16_t>()};

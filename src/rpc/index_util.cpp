@@ -1,13 +1,14 @@
-// Copyright (c) 2016 BitPay, Inc.
+// Copyright (c) 2016 BitPay Inc.
 // Copyright (c) 2024 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <rpc/index_util.h>
 
+#include <node/blockstorage.h>
+#include <txdb.h>
 #include <txmempool.h>
 #include <uint256.h>
-#include <validation.h>
 
 bool GetAddressIndex(CBlockTreeDB& block_tree_db, const uint160& addressHash, const AddressType type,
                      std::vector<CAddressIndexEntry>& addressIndex,

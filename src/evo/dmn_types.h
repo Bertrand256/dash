@@ -1,11 +1,11 @@
-// Copyright (c) 2023 The Dash Core developers
+// Copyright (c) 2023-2024 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef BITCOIN_EVO_DMN_TYPES_H
 #define BITCOIN_EVO_DMN_TYPES_H
 
-#include <amount.h>
+#include <consensus/amount.h>
 
 #include <limits>
 #include <string_view>
@@ -62,9 +62,6 @@ constexpr auto Invalid = mntype_struct{
     }
 }
 
-[[nodiscard]] constexpr const bool IsValidMnType(MnType type)
-{
-    return type < MnType::COUNT;
-}
+[[nodiscard]] constexpr bool IsValidMnType(MnType type) { return type < MnType::COUNT; }
 
 #endif // BITCOIN_EVO_DMN_TYPES_H

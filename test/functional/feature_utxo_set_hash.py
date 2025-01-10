@@ -4,8 +4,6 @@
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test UTXO set hash value calculation in gettxoutsetinfo."""
 
-import struct
-
 from test_framework.messages import (
     CBlock,
     COutPoint,
@@ -31,13 +29,13 @@ class UTXOSetHashTest(BitcoinTestFramework):
 
         # Generate 100 blocks and remove the first since we plan to spend its
         # coinbase
-        block_hashes = wallet.generate(1) + node.generate(99)
+        block_hashes = self.generate(wallet, 1) + self.generate(node, 99)
         blocks = list(map(lambda block: from_hex(CBlock(), node.getblock(block, False)), block_hashes))
         blocks.pop(0)
 
         # Create a spending transaction and mine a block which includes it
         txid = wallet.send_self_transfer(from_node=node)['txid']
-        tx_block = node.generateblock(output=wallet.get_address(), transactions=[txid])['hash']
+        tx_block = self.generateblock(node, output=wallet.get_address(), transactions=[txid])['hash']
         blocks.append(from_hex(CBlock(), node.getblock(tx_block, False)))
 
         # Serialize the outputs that should be in the UTXO set and add them to
@@ -58,7 +56,7 @@ class UTXOSetHashTest(BitcoinTestFramework):
                         continue
 
                     data = COutPoint(int(tx.rehash(), 16), n).serialize()
-                    data += struct.pack("<i", height * 2 + coinbase)
+                    data += (height * 2 + coinbase).to_bytes(4, "little")
                     data += tx_out.serialize()
 
                     muhash.insert(data)

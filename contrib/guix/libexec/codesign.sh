@@ -5,7 +5,7 @@ export TZ=UTC
 
 # Although Guix _does_ set umask when building its own packages (in our case,
 # this is all packages in manifest.scm), it does not set it for `guix
-# environment`. It does make sense for at least `guix environment --container`
+# shell`. It does make sense for at least `guix shell --container`
 # to set umask, so if that change gets merged upstream and we bump the
 # time-machine to a commit which includes the aforementioned change, we can
 # remove this line.
@@ -70,6 +70,7 @@ mkdir -p "$DISTSRC"
                 osslsigncode attach-signature \
                                  -in "$infile" \
                                  -out "${OUTDIR}/${infile_base/-unsigned}" \
+                                 -CAfile "$GUIX_ENVIRONMENT/etc/ssl/certs/ca-certificates.crt" \
                                  -sigin codesignatures/win/"$infile_base".pem
             done
             ;;
@@ -77,14 +78,11 @@ mkdir -p "$DISTSRC"
             # Apply detached codesignatures to dist/ (in-place)
             signapple apply dist/Dash-Qt.app codesignatures/osx/dist
 
-            # Make an uncompressed DMG from dist/
+            # Make a DMG from dist/
             xorrisofs -D -l -V "$(< osx_volname)" -no-pad -r -dir-mode 0755 \
-                      -o uncompressed.dmg \
+                      -o "${OUTDIR}/${DISTNAME}-${HOST}.dmg" \
                       dist \
                       -- -volume_date all_file_dates ="$SOURCE_DATE_EPOCH"
-
-            # Compress uncompressed.dmg and output to OUTDIR
-            ./dmg dmg uncompressed.dmg "${OUTDIR}/${DISTNAME}-${HOST}.dmg"
             ;;
         *)
             exit 1

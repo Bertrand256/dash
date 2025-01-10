@@ -6,7 +6,7 @@
 from test_framework.messages import hash256
 from test_framework.p2p import P2PInterface
 from test_framework.test_framework import DashTestFramework
-from test_framework.util import assert_equal, assert_raises_rpc_error, hex_str_to_bytes
+from test_framework.util import assert_equal, assert_raises_rpc_error
 
 '''
 rpc_mnauth.py
@@ -17,7 +17,7 @@ Tests mnauth RPC command
 
 class FakeMNAUTHTest(DashTestFramework):
     def set_test_params(self):
-        self.set_dash_test_params(2, 1, fast_dip3_enforcement=True)
+        self.set_dash_test_params(2, 1)
 
     def run_test(self):
 
@@ -39,7 +39,7 @@ class FakeMNAUTHTest(DashTestFramework):
         assert "verified_proregtx_hash" in peerinfo
         assert "verified_pubkey_hash" in peerinfo
         assert_equal(peerinfo["verified_proregtx_hash"], protx_hash)
-        assert_equal(peerinfo["verified_pubkey_hash"], hash256(hex_str_to_bytes(public_key))[::-1].hex())
+        assert_equal(peerinfo["verified_pubkey_hash"], hash256(bytes.fromhex(public_key))[::-1].hex())
         # Test some error cases
         null_hash = "0000000000000000000000000000000000000000000000000000000000000000"
         assert_raises_rpc_error(-8, "proTxHash invalid", masternode.node.mnauth,

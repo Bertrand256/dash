@@ -23,7 +23,7 @@ class ScantxoutsetTest(BitcoinTestFramework):
 
     def run_test(self):
         self.log.info("Mining blocks...")
-        self.nodes[0].generate(110)
+        self.generate(self.nodes[0], 110)
 
         addr1 = self.nodes[0].getnewaddress("")
         pubk1 = self.nodes[0].getaddressinfo(addr1)['pubkey']
@@ -50,14 +50,14 @@ class ScantxoutsetTest(BitcoinTestFramework):
         self.nodes[0].sendtoaddress("yVCdQxPXJ3SrtTLv8FuLXDNaynz6kmjPNq", 16.384) # (m/1/1/1500)
 
 
-        self.nodes[0].generate(1)
+        self.generate(self.nodes[0], 1)
 
         self.log.info("Stop node, remove wallet, mine again some blocks...")
         self.stop_node(0)
         shutil.rmtree(os.path.join(self.nodes[0].datadir, self.chain, 'wallets'))
         self.start_node(0, ['-nowallet'])
         self.import_deterministic_coinbase_privkeys()
-        self.nodes[0].generate(110)
+        self.generate(self.nodes[0], 110)
 
         scan = self.nodes[0].scantxoutset("start", [])
         info = self.nodes[0].gettxoutsetinfo()
@@ -119,6 +119,9 @@ class ScantxoutsetTest(BitcoinTestFramework):
         # Check that status and abort don't need second arg
         assert_equal(self.nodes[0].scantxoutset("status"), None)
         assert_equal(self.nodes[0].scantxoutset("abort"), False)
+
+        # check that first arg is needed
+        assert_raises_rpc_error(-1, "scantxoutset \"action\" ( [scanobjects,...] )", self.nodes[0].scantxoutset)
 
         # Check that second arg is needed for start
         assert_raises_rpc_error(-1, "scanobjects argument is required for the start action", self.nodes[0].scantxoutset, "start")

@@ -13,6 +13,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <functional>
 #include <list>
 #include <mutex>
 #include <string>
@@ -59,7 +60,9 @@ namespace BCLog {
         LEVELDB     = (1 << 20),
         VALIDATION  = (1 << 21),
         I2P         = (1 << 22),
+        IPC         = (1 << 23),
         LOCK        = (1 << 24),
+        TXRECONCILIATION = (1 << 27),
 
         //Start Dash
         CHAINLOCKS  = ((uint64_t)1 << 32),

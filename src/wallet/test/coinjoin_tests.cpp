@@ -4,12 +4,12 @@
 
 #include <test/util/setup_common.h>
 
-#include <amount.h>
 #include <coinjoin/client.h>
 #include <coinjoin/coinjoin.h>
 #include <coinjoin/context.h>
 #include <coinjoin/options.h>
 #include <coinjoin/util.h>
+#include <consensus/amount.h>
 #include <node/context.h>
 #include <util/translation.h>
 #include <validation.h>
@@ -132,8 +132,7 @@ public:
         CreateAndProcessBlock({}, GetScriptForRawPubKey(coinbaseKey.GetPubKey()));
         wallet = std::make_unique<CWallet>(m_node.chain.get(), m_node.coinjoin_loader.get(), "", CreateMockWalletDatabase());
         wallet->SetupLegacyScriptPubKeyMan();
-        bool firstRun;
-        wallet->LoadWallet(firstRun);
+        wallet->LoadWallet();
         AddWallet(wallet);
         {
             LOCK2(wallet->cs_wallet, cs_main);
@@ -209,8 +208,8 @@ public:
 
 BOOST_FIXTURE_TEST_CASE(coinjoin_manager_start_stop_tests, CTransactionBuilderTestSetup)
 {
-    BOOST_CHECK_EQUAL(m_node.cj_ctx->walletman->raw().size(), 1);
-    auto& cj_man = m_node.cj_ctx->walletman->raw().begin()->second;
+    CCoinJoinClientManager* cj_man = m_node.cj_ctx->walletman->Get("");
+    BOOST_REQUIRE(cj_man != nullptr);
     BOOST_CHECK_EQUAL(cj_man->IsMixing(), false);
     BOOST_CHECK_EQUAL(cj_man->StartMixing(), true);
     BOOST_CHECK_EQUAL(cj_man->IsMixing(), true);

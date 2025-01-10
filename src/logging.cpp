@@ -3,6 +3,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <fs.h>
 #include <logging.h>
 #include <util/system.h>
 #include <util/threadnames.h>
@@ -158,7 +159,9 @@ const CLogCategoryDesc LogCategories[] =
     {BCLog::LEVELDB, "leveldb"},
     {BCLog::VALIDATION, "validation"},
     {BCLog::I2P, "i2p"},
+    {BCLog::IPC, "ipc"},
     {BCLog::LOCK, "lock"},
+    {BCLog::TXRECONCILIATION, "txreconciliation"},
     {BCLog::ALL, "1"},
     {BCLog::ALL, "all"},
 

@@ -39,7 +39,7 @@ static constexpr uint8_t PSBT_SEPARATOR = 0x00;
 
 // BIP 174 does not specify a maximum file size, but we set a limit anyway
 // to prevent reading a stream indefinitely and running out of memory.
-const std::streamsize MAX_FILE_SIZE_PSBT = 100000000; // 100 MiB
+const std::streamsize MAX_FILE_SIZE_PSBT = 100000000; // 100 MB
 
 /** A structure for PSBTs which contain per-input information */
 struct PSBTInput
@@ -442,7 +442,7 @@ struct PartiallySignedTransaction
 
         // Make sure that we got an unsigned tx
         if (!tx) {
-            throw std::ios_base::failure("No unsigned transcation was provided");
+            throw std::ios_base::failure("No unsigned transaction was provided");
         }
 
         // Read input data
