@@ -1189,7 +1189,6 @@ static RPCHelpMan protx_update_registrar_wrapper(bool specific_legacy_bls_scheme
     }
 
     FundSpecialTx(*wallet, tx, ptx, feeSourceDest);
-    SignSpecialTxPayloadByHash(tx, ptx, dmn->pdmnState->keyIDOwner, *wallet);
 
     if(externalOwnerKey)
         SignSpecialTxPayloadByHash(tx, ptx, keyOwner);
