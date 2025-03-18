@@ -136,19 +136,19 @@ public:
     virtual bool setAddressReceiveRequest(const CTxDestination& dest, const std::string& id, const std::string& value) = 0;
 
     //! Lock coin.
-    virtual void lockCoin(const COutPoint& output) = 0;
+    virtual bool lockCoin(const COutPoint& output, const bool write_to_db) = 0;
 
     //! Unlock coin.
-    virtual void unlockCoin(const COutPoint& output) = 0;
+    virtual bool unlockCoin(const COutPoint& output) = 0;
 
     //! Return whether coin is locked.
     virtual bool isLockedCoin(const COutPoint& output) = 0;
 
     //! List locked coins.
-    virtual void listLockedCoins(std::vector<COutPoint>& outputs) = 0;
+    virtual std::vector<COutPoint> listLockedCoins() = 0;
 
     //! List protx coins.
-    virtual void listProTxCoins(std::vector<COutPoint>& vOutpts) = 0;
+    virtual std::vector<COutPoint> listProTxCoins() = 0;
 
     //! Create transaction.
     virtual CTransactionRef createTransaction(const std::vector<CRecipient>& recipients,

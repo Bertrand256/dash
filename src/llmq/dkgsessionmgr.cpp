@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024 The Dash Core developers
+// Copyright (c) 2018-2025 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -8,6 +8,7 @@
 #include <llmq/params.h>
 #include <llmq/utils.h>
 
+#include <bls/bls_ies.h>
 #include <chainparams.h>
 #include <dbwrapper.h>
 #include <deploymentstatus.h>
@@ -29,17 +30,18 @@ static const std::string DB_VVEC = "qdkg_V";
 static const std::string DB_SKCONTRIB = "qdkg_S";
 static const std::string DB_ENC_CONTRIB = "qdkg_E";
 
-CDKGSessionManager::CDKGSessionManager(CBLSWorker& _blsWorker, CChainState& chainstate, CConnman& _connman, CDeterministicMNManager& dmnman,
-                                       CDKGDebugManager& _dkgDebugManager, CMasternodeMetaMan& mn_metaman, CQuorumBlockProcessor& _quorumBlockProcessor,
-                                       const CActiveMasternodeManager* const mn_activeman, const CSporkManager& sporkman,
-                                       const std::unique_ptr<PeerManager>& peerman, bool unitTests, bool fWipe) :
+CDKGSessionManager::CDKGSessionManager(CBLSWorker& _blsWorker, CChainState& chainstate, CDeterministicMNManager& dmnman,
+                                       CDKGDebugManager& _dkgDebugManager, CMasternodeMetaMan& mn_metaman,
+                                       CQuorumBlockProcessor& _quorumBlockProcessor, CQuorumSnapshotManager& qsnapman,
+                                       const CActiveMasternodeManager* const mn_activeman,
+                                       const CSporkManager& sporkman, bool unitTests, bool fWipe) :
     db(std::make_unique<CDBWrapper>(unitTests ? "" : (gArgs.GetDataDirNet() / "llmq/dkgdb"), 1 << 20, unitTests, fWipe)),
     blsWorker(_blsWorker),
     m_chainstate(chainstate),
-    connman(_connman),
     m_dmnman(dmnman),
     dkgDebugManager(_dkgDebugManager),
     quorumBlockProcessor(_quorumBlockProcessor),
+    m_qsnapman(qsnapman),
     spork_manager(sporkman)
 {
     if (mn_activeman == nullptr && !IsWatchQuorumsEnabled()) {
@@ -47,115 +49,24 @@ CDKGSessionManager::CDKGSessionManager(CBLSWorker& _blsWorker, CChainState& chai
         return;
     }
 
-    MigrateDKG();
-
     const Consensus::Params& consensus_params = Params().GetConsensus();
     for (const auto& params : consensus_params.llmqs) {
         auto session_count = (params.useRotation) ? params.signingActiveQuorumCount : 1;
         for (const auto i : irange::range(session_count)) {
-            dkgSessionHandlers.emplace(std::piecewise_construct,
-                                       std::forward_as_tuple(params.type, i),
-                                       std::forward_as_tuple(blsWorker, m_chainstate, connman, dmnman, dkgDebugManager, *this, mn_metaman,
-                                                             quorumBlockProcessor, mn_activeman, spork_manager, peerman, params, i));
+            dkgSessionHandlers.emplace(std::piecewise_construct, std::forward_as_tuple(params.type, i),
+                                       std::forward_as_tuple(blsWorker, m_chainstate, dmnman, dkgDebugManager, *this,
+                                                             mn_metaman, quorumBlockProcessor, m_qsnapman, mn_activeman,
+                                                             spork_manager, params, i));
         }
     }
 }
 
 CDKGSessionManager::~CDKGSessionManager() = default;
 
-void CDKGSessionManager::MigrateDKG()
-{
-    if (!db->IsEmpty()) return;
-
-    LogPrint(BCLog::LLMQ, "CDKGSessionManager::%d -- start\n", __func__);
-
-    CDBBatch batch(*db);
-    auto oldDb = std::make_unique<CDBWrapper>(gArgs.GetDataDirNet() / "llmq", 8 << 20);
-    std::unique_ptr<CDBIterator> pcursor(oldDb->NewIterator());
-
-    auto start_vvec = std::make_tuple(DB_VVEC, (Consensus::LLMQType)0, uint256(), uint256());
-    pcursor->Seek(start_vvec);
-
-    while (pcursor->Valid()) {
-        decltype(start_vvec) k;
-        std::vector<CBLSPublicKey> v;
-
-        if (!pcursor->GetKey(k) || std::get<0>(k) != DB_VVEC) {
-            break;
-        }
-        if (!pcursor->GetValue(v)) {
-            break;
-        }
-
-        batch.Write(k, v);
-
-        if (batch.SizeEstimate() >= (1 << 24)) {
-            db->WriteBatch(batch);
-            batch.Clear();
-        }
-
-        pcursor->Next();
-    }
-
-    auto start_contrib = std::make_tuple(DB_SKCONTRIB, (Consensus::LLMQType)0, uint256(), uint256());
-    pcursor->Seek(start_contrib);
-
-    while (pcursor->Valid()) {
-        decltype(start_contrib) k;
-        CBLSSecretKey v;
-
-        if (!pcursor->GetKey(k) || std::get<0>(k) != DB_SKCONTRIB) {
-            break;
-        }
-        if (!pcursor->GetValue(v)) {
-            break;
-        }
-
-        batch.Write(k, v);
-
-        if (batch.SizeEstimate() >= (1 << 24)) {
-            db->WriteBatch(batch);
-            batch.Clear();
-        }
-
-        pcursor->Next();
-    }
-
-    auto start_enc_contrib = std::make_tuple(DB_ENC_CONTRIB, (Consensus::LLMQType)0, uint256(), uint256());
-    pcursor->Seek(start_enc_contrib);
-
-    while (pcursor->Valid()) {
-        decltype(start_enc_contrib) k;
-        CBLSIESMultiRecipientObjects<CBLSSecretKey> v;
-
-        if (!pcursor->GetKey(k) || std::get<0>(k) != DB_ENC_CONTRIB) {
-            break;
-        }
-        if (!pcursor->GetValue(v)) {
-            break;
-        }
-
-        batch.Write(k, v);
-
-        if (batch.SizeEstimate() >= (1 << 24)) {
-            db->WriteBatch(batch);
-            batch.Clear();
-        }
-
-        pcursor->Next();
-    }
-
-    db->WriteBatch(batch);
-    pcursor.reset();
-    oldDb.reset();
-
-    LogPrint(BCLog::LLMQ, "CDKGSessionManager::%d -- done\n", __func__);
-}
-
-void CDKGSessionManager::StartThreads()
+void CDKGSessionManager::StartThreads(CConnman& connman, PeerManager& peerman)
 {
     for (auto& it : dkgSessionHandlers) {
-        it.second.StartThread();
+        it.second.StartThread(connman, peerman);
     }
 }
 
@@ -182,7 +93,8 @@ void CDKGSessionManager::UpdatedBlockTip(const CBlockIndex* pindexNew, bool fIni
     }
 }
 
-PeerMsgRet CDKGSessionManager::ProcessMessage(CNode& pfrom, PeerManager* peerman, bool is_masternode, const std::string& msg_type, CDataStream& vRecv)
+PeerMsgRet CDKGSessionManager::ProcessMessage(CNode& pfrom, PeerManager& peerman, bool is_masternode,
+                                              const std::string& msg_type, CDataStream& vRecv)
 {
     static Mutex cs_indexedQuorumsCache;
     static std::map<Consensus::LLMQType, unordered_lru_cache<uint256, int, StaticSaltedHasher>> indexedQuorumsCache GUARDED_BY(cs_indexedQuorumsCache);
@@ -387,7 +299,7 @@ void CDKGSessionManager::WriteEncryptedContributions(Consensus::LLMQType llmqTyp
 
 bool CDKGSessionManager::GetVerifiedContributions(Consensus::LLMQType llmqType, const CBlockIndex* pQuorumBaseBlockIndex, const std::vector<bool>& validMembers, std::vector<uint16_t>& memberIndexesRet, std::vector<BLSVerificationVectorPtr>& vvecsRet, std::vector<CBLSSecretKey>& skContributionsRet) const
 {
-    auto members = utils::GetAllQuorumMembers(llmqType, m_dmnman, pQuorumBaseBlockIndex);
+    auto members = utils::GetAllQuorumMembers(llmqType, m_dmnman, m_qsnapman, pQuorumBaseBlockIndex);
 
     memberIndexesRet.clear();
     vvecsRet.clear();
@@ -433,7 +345,7 @@ bool CDKGSessionManager::GetVerifiedContributions(Consensus::LLMQType llmqType, 
 
 bool CDKGSessionManager::GetEncryptedContributions(Consensus::LLMQType llmqType, const CBlockIndex* pQuorumBaseBlockIndex, const std::vector<bool>& validMembers, const uint256& nProTxHash, std::vector<CBLSIESEncryptedObject<CBLSSecretKey>>& vecRet) const
 {
-    auto members = utils::GetAllQuorumMembers(llmqType, m_dmnman, pQuorumBaseBlockIndex);
+    auto members = utils::GetAllQuorumMembers(llmqType, m_dmnman, m_qsnapman, pQuorumBaseBlockIndex);
 
     vecRet.clear();
     vecRet.reserve(members.size());

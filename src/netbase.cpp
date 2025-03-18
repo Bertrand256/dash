@@ -5,7 +5,7 @@
 
 #include <netbase.h>
 
-#include <compat.h>
+#include <compat/compat.h>
 #include <sync.h>
 #include <tinyformat.h>
 #include <util/sock.h>
@@ -144,7 +144,7 @@ std::vector<std::string> GetNetworkNames(bool append_unroutable)
 
 static std::vector<CNetAddr> LookupIntern(const std::string& name, unsigned int nMaxSolutions, bool fAllowLookup, DNSLookupFn dns_lookup_function)
 {
-    if (!ValidAsCString(name)) return {};
+    if (!ContainsNoNUL(name)) return {};
     {
         CNetAddr addr;
         // From our perspective, onion addresses are not hostnames but rather
@@ -173,7 +173,7 @@ static std::vector<CNetAddr> LookupIntern(const std::string& name, unsigned int 
 
 std::vector<CNetAddr> LookupHost(const std::string& name, unsigned int nMaxSolutions, bool fAllowLookup, DNSLookupFn dns_lookup_function)
 {
-    if (!ValidAsCString(name)) return {};
+    if (!ContainsNoNUL(name)) return {};
     std::string strHost = name;
     if (strHost.empty()) return {};
     if (strHost.front() == '[' && strHost.back() == ']') {
@@ -191,7 +191,7 @@ std::optional<CNetAddr> LookupHost(const std::string& name, bool fAllowLookup, D
 
 std::vector<CService> Lookup(const std::string& name, uint16_t portDefault, bool fAllowLookup, unsigned int nMaxSolutions, DNSLookupFn dns_lookup_function)
 {
-    if (name.empty() || !ValidAsCString(name)) {
+    if (name.empty() || !ContainsNoNUL(name)) {
         return {};
     }
     uint16_t port{portDefault};
@@ -216,7 +216,7 @@ std::optional<CService> Lookup(const std::string& name, uint16_t portDefault, bo
 
 CService LookupNumeric(const std::string& name, uint16_t portDefault, DNSLookupFn dns_lookup_function)
 {
-    if (!ValidAsCString(name)) {
+    if (!ContainsNoNUL(name)) {
         return {};
     }
     // "1.2:345" will fail to resolve the ip, but will still set the port.
@@ -288,8 +288,7 @@ enum class IntrRecvError {
  *          read.
  *
  * @see This function can be interrupted by calling InterruptSocks5(bool).
- *      Sockets can be made non-blocking with SetSocketNonBlocking(const
- *      SOCKET&).
+ *      Sockets can be made non-blocking with Sock::SetNonBlocking().
  */
 static IntrRecvError InterruptibleRecv(uint8_t* data, size_t len, int timeout, const Sock& sock)
 {
@@ -487,7 +486,7 @@ std::unique_ptr<Sock> CreateSockTCP(const CService& address_family)
 
     // Ensure that waiting for I/O on this socket won't result in undefined
     // behavior.
-    if (!IsSelectableSocket(sock->Get())) {
+    if (!sock->IsSelectable()) {
         LogPrintf("Cannot create connection: non-selectable socket created (fd >= FD_SETSIZE ?)\n");
         return nullptr;
     }
@@ -509,7 +508,7 @@ std::unique_ptr<Sock> CreateSockTCP(const CService& address_family)
     }
 
     // Set the non-blocking option on the socket.
-    if (!SetSocketNonBlocking(sock->Get())) {
+    if (!sock->SetNonBlocking()) {
         LogPrintf("Error setting socket to non-blocking: %s\n", NetworkErrorString(WSAGetLastError()));
         return nullptr;
     }
@@ -668,7 +667,7 @@ bool ConnectThroughProxy(const Proxy& proxy, const std::string& strDest, uint16_
 
 bool LookupSubNet(const std::string& subnet_str, CSubNet& subnet_out)
 {
-    if (!ValidAsCString(subnet_str)) {
+    if (!ContainsNoNUL(subnet_str)) {
         return false;
     }
 
@@ -701,22 +700,39 @@ bool LookupSubNet(const std::string& subnet_str, CSubNet& subnet_out)
     return false;
 }
 
-bool SetSocketNonBlocking(const SOCKET& hSocket)
-{
-#ifdef WIN32
-    u_long nOne = 1;
-    if (ioctlsocket(hSocket, FIONBIO, &nOne) == SOCKET_ERROR) {
-#else
-    int fFlags = fcntl(hSocket, F_GETFL, 0);
-    if (fcntl(hSocket, F_SETFL, fFlags | O_NONBLOCK) == SOCKET_ERROR) {
-#endif
-        return false;
-    }
-
-    return true;
-}
-
 void InterruptSocks5(bool interrupt)
 {
     interruptSocks5Recv = interrupt;
+}
+
+bool IsBadPort(uint16_t port)
+{
+    /* Don't forget to update doc/p2p-bad-ports.md if you change this list. */
+
+    if (port > 0 && port <= PRIVILEGED_PORTS_THRESHOLD) return true;
+    switch (port) {
+    case 1719:  // h323gatestat
+    case 1720:  // h323hostcall
+    case 1723:  // pptp
+    case 2049:  // nfs
+    case 3659:  // apple-sasl / PasswordServer
+    case 4045:  // lockd
+    case 5060:  // sip
+    case 5061:  // sips
+    case 6000:  // X11
+    case 6566:  // sane-port
+    case 6665:  // Alternate IRC
+    case 6666:  // Alternate IRC
+    case 6667:  // Standard IRC
+    case 6668:  // Alternate IRC
+    case 6669:  // Alternate IRC
+    case 6697:  // IRC + TLS
+    case 8332:  // Bitcoin RPC
+    case 8333:  // Bitcoin P2P
+    case 10080: // Amanda
+    case 18332: // Bitcoin testnet RPC
+    case 18333: // Bitcoin testnet RPC
+        return true;
+    }
+    return false;
 }

@@ -1,6 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2020 The Bitcoin Core developers
-// Copyright (c) 2014-2024 The Dash Core developers
+// Copyright (c) 2014-2025 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -36,6 +36,7 @@
 #include <llmq/context.h>
 #include <llmq/instantsend.h>
 #include <llmq/options.h>
+#include <llmq/snapshot.h>
 #include <masternode/payments.h>
 #include <spork.h>
 
@@ -75,6 +76,7 @@ BlockAssembler::BlockAssembler(CChainState& chainstate, const NodeContext& node,
       m_mnhfman(*Assert(node.mnhf_manager)),
       m_clhandler(*Assert(Assert(node.llmq_ctx)->clhandler)),
       m_isman(*Assert(Assert(node.llmq_ctx)->isman)),
+      m_qsnapman(*Assert(Assert(node.llmq_ctx)->qsnapman)),
       chainparams(params),
       m_mempool(mempool),
       m_quorum_block_processor(*Assert(Assert(node.llmq_ctx)->quorum_block_processor)),
@@ -222,7 +224,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
         cbTx.nHeight = nHeight;
 
         BlockValidationState state;
-        if (!CalcCbTxMerkleRootMNList(*pblock, pindexPrev, cbTx.merkleRootMNList, m_dmnman, state, m_chainstate.CoinsTip())) {
+        if (!CalcCbTxMerkleRootMNList(*pblock, pindexPrev, cbTx.merkleRootMNList, state, m_dmnman, m_qsnapman, m_chainstate.CoinsTip())) {
             throw std::runtime_error(strprintf("%s: CalcCbTxMerkleRootMNList failed: %s", __func__, state.ToString()));
         }
         if (fDIP0008Active_context) {
@@ -334,7 +336,7 @@ void BlockAssembler::AddToBlock(CTxMemPool::txiter iter)
 
     bool fPrintPriority = gArgs.GetBoolArg("-printpriority", DEFAULT_PRINTPRIORITY);
     if (fPrintPriority) {
-        LogPrintf("fee %s txid %s\n",
+        LogPrintf("fee rate %s txid %s\n",
                   CFeeRate(iter->GetModifiedFee(), iter->GetTxSize()).ToString(),
                   iter->GetTx().GetHash().ToString());
     }

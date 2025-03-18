@@ -289,8 +289,13 @@ bool BlockManager::LoadBlockIndex(const Consensus::Params& consensus_params)
     std::sort(vSortedByHeight.begin(), vSortedByHeight.end(),
               CBlockIndexHeightOnlyComparator());
 
+    CBlockIndex* previous_index{nullptr};
     for (CBlockIndex* pindex : vSortedByHeight) {
         if (ShutdownRequested()) return false;
+        if (previous_index && pindex->nHeight > previous_index->nHeight + 1) {
+            return error("%s: block index is non-contiguous, index of height %d missing", __func__, previous_index->nHeight + 1);
+        }
+        previous_index = pindex;
         pindex->nChainWork = (pindex->pprev ? pindex->pprev->nChainWork : 0) + GetBlockProof(*pindex);
         pindex->nTimeMax = (pindex->pprev ? std::max(pindex->pprev->nTimeMax, pindex->nTime) : pindex->nTime);
 
@@ -585,7 +590,7 @@ void UnlinkPrunedFiles(const std::set<int>& setFilesToPrune)
         FlatFilePos pos(*it, 0);
         fs::remove(BlockFileSeq().FileName(pos));
         fs::remove(UndoFileSeq().FileName(pos));
-        LogPrintf("Prune: %s deleted blk/rev (%05u)\n", __func__, *it);
+        LogPrint(BCLog::BLOCKSTORE, "Prune: %s deleted blk/rev (%05u)\n", __func__, *it);
     }
 }
 
@@ -642,7 +647,7 @@ bool BlockManager::FindBlockPos(FlatFilePos& pos, unsigned int nAddSize, unsigne
 
     if ((int)nFile != m_last_blockfile) {
         if (!fKnown) {
-            LogPrint(BCLog::VALIDATION, "Leaving block file %i: %s\n", m_last_blockfile, m_blockfile_info[m_last_blockfile].ToString());
+            LogPrint(BCLog::BLOCKSTORE, "Leaving block file %i: %s\n", m_last_blockfile, m_blockfile_info[m_last_blockfile].ToString());
         }
         FlushBlockFile(!fKnown, finalize_undo);
         m_last_blockfile = nFile;
@@ -908,13 +913,13 @@ void ThreadImport(ChainstateManager& chainman, CDeterministicMNManager& dmnman, 
         // and reduce further locking overhead for cs_main in other parts of code including GUI
         LogPrintf("Filling coin cache with masternode UTXOs...\n");
         LOCK(cs_main);
-        int64_t nStart = GetTimeMillis();
+        const auto start{SteadyClock::now()};
         auto mnList = dmnman.GetListAtChainTip();
         mnList.ForEachMN(false, [&](auto& dmn) {
             Coin coin;
             GetUTXOCoin(chainman.ActiveChainstate(), dmn.collateralOutpoint, coin);
         });
-        LogPrintf("Filling coin cache with masternode UTXOs: done in %dms\n", GetTimeMillis() - nStart);
+        LogPrintf("Filling coin cache with masternode UTXOs: done in %dms\n", Ticks<std::chrono::milliseconds>(SteadyClock::now() - start));
     }
 
     if (mn_activeman != nullptr) {

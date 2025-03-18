@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024 The Dash Core developers
+// Copyright (c) 2018-2025 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -180,6 +180,7 @@ CDeterministicMNCPtr CDeterministicMNList::GetMNPayee(gsl::not_null<const CBlock
         return nullptr;
     }
 
+    // The flag is-v19-activate is used for optimization; we don't need to go over all masternodes every pre-v19 block
     const bool isv19Active{DeploymentActiveAfter(pindexPrev, Params().GetConsensus(), Consensus::DEPLOYMENT_V19)};
     const bool isMNRewardReallocation{DeploymentActiveAfter(pindexPrev, Params().GetConsensus(), Consensus::DEPLOYMENT_MN_RR)};
     // EvoNodes are rewarded 4 blocks in a row until MNRewardReallocation (Platform release)
@@ -595,7 +596,10 @@ void CDeterministicMNList::RemoveMN(const uint256& proTxHash)
     mnInternalIdMap = mnInternalIdMap.erase(dmn->GetInternalId());
 }
 
-bool CDeterministicMNManager::ProcessBlock(const CBlock& block, gsl::not_null<const CBlockIndex*> pindex, BlockValidationState& state, const CCoinsViewCache& view, bool fJustCheck, std::optional<MNListUpdates>& updatesRet)
+bool CDeterministicMNManager::ProcessBlock(const CBlock& block, gsl::not_null<const CBlockIndex*> pindex,
+                                           BlockValidationState& state, const CCoinsViewCache& view,
+                                           llmq::CQuorumSnapshotManager& qsnapman, bool fJustCheck,
+                                           std::optional<MNListUpdates>& updatesRet)
 {
     AssertLockHeld(cs_main);
 
@@ -610,7 +614,7 @@ bool CDeterministicMNManager::ProcessBlock(const CBlock& block, gsl::not_null<co
     int nHeight = pindex->nHeight;
 
     try {
-        if (!BuildNewListFromBlock(block, pindex->pprev, state, view, newList, true)) {
+        if (!BuildNewListFromBlock(block, pindex->pprev, state, view, newList, qsnapman, true)) {
             // pass the state returned by the function above
             return false;
         }
@@ -700,7 +704,10 @@ void CDeterministicMNManager::UpdatedBlockTip(gsl::not_null<const CBlockIndex*> 
     tipIndex = pindex;
 }
 
-bool CDeterministicMNManager::BuildNewListFromBlock(const CBlock& block, gsl::not_null<const CBlockIndex*> pindexPrev, BlockValidationState& state, const CCoinsViewCache& view, CDeterministicMNList& mnListRet, bool debugLogs)
+bool CDeterministicMNManager::BuildNewListFromBlock(const CBlock& block, gsl::not_null<const CBlockIndex*> pindexPrev,
+                                                    BlockValidationState& state, const CCoinsViewCache& view,
+                                                    CDeterministicMNList& mnListRet,
+                                                    llmq::CQuorumSnapshotManager& qsnapman, bool debugLogs)
 {
     int nHeight = pindexPrev->nHeight + 1;
 
@@ -731,7 +738,6 @@ bool CDeterministicMNManager::BuildNewListFromBlock(const CBlock& block, gsl::no
 
     newList.DecreaseScores();
 
-    const bool isV19Active{DeploymentActiveAfter(pindexPrev, Params().GetConsensus(), Consensus::DEPLOYMENT_V19)};
     const bool isMNRewardReallocation{DeploymentActiveAfter(pindexPrev, Params().GetConsensus(), Consensus::DEPLOYMENT_MN_RR)};
 
     // we skip the coinbase
@@ -749,10 +755,6 @@ bool CDeterministicMNManager::BuildNewListFromBlock(const CBlock& block, gsl::no
                 return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-protx-payload");
             }
             auto& proTx = *opt_proTx;
-
-            if (proTx.nType == MnType::Evo && !isV19Active) {
-                return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-protx-payload");
-            }
 
             auto dmn = std::make_shared<CDeterministicMN>(newList.GetTotalRegisteredCount(), proTx.nType);
             dmn->proTxHash = tx.GetHash();
@@ -810,10 +812,6 @@ bool CDeterministicMNManager::BuildNewListFromBlock(const CBlock& block, gsl::no
         } else if (tx.nType == TRANSACTION_PROVIDER_UPDATE_SERVICE) {
             const auto opt_proTx = GetTxPayload<CProUpServTx>(tx);
             if (!opt_proTx) {
-                return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-protx-payload");
-            }
-
-            if (opt_proTx->nType == MnType::Evo && !DeploymentActiveAfter(pindexPrev, Params().GetConsensus(), Consensus::DEPLOYMENT_V19)) {
                 return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-protx-payload");
             }
 
@@ -923,7 +921,7 @@ bool CDeterministicMNManager::BuildNewListFromBlock(const CBlock& block, gsl::no
                     return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-qc-quorum-hash");
                 }
 
-                HandleQuorumCommitment(opt_qc->commitment, pQuorumBaseBlockIndex, newList, debugLogs);
+                HandleQuorumCommitment(opt_qc->commitment, pQuorumBaseBlockIndex, newList, qsnapman, debugLogs);
             }
         }
     }
@@ -995,11 +993,14 @@ bool CDeterministicMNManager::BuildNewListFromBlock(const CBlock& block, gsl::no
     return true;
 }
 
-void CDeterministicMNManager::HandleQuorumCommitment(const llmq::CFinalCommitment& qc, gsl::not_null<const CBlockIndex*> pQuorumBaseBlockIndex, CDeterministicMNList& mnList, bool debugLogs)
+void CDeterministicMNManager::HandleQuorumCommitment(const llmq::CFinalCommitment& qc,
+                                                     gsl::not_null<const CBlockIndex*> pQuorumBaseBlockIndex,
+                                                     CDeterministicMNList& mnList,
+                                                     llmq::CQuorumSnapshotManager& qsnapman, bool debugLogs)
 {
     // The commitment has already been validated at this point, so it's safe to use members of it
 
-    auto members = llmq::utils::GetAllQuorumMembers(qc.llmqType, *this, pQuorumBaseBlockIndex);
+    auto members = llmq::utils::GetAllQuorumMembers(qc.llmqType, *this, qsnapman, pQuorumBaseBlockIndex);
 
     for (size_t i = 0; i < members.size(); i++) {
         if (!mnList.HasMN(members[i]->proTxHash)) {
@@ -1017,8 +1018,14 @@ void CDeterministicMNManager::HandleQuorumCommitment(const llmq::CFinalCommitmen
 
 CDeterministicMNList CDeterministicMNManager::GetListForBlockInternal(gsl::not_null<const CBlockIndex*> pindex)
 {
-    AssertLockHeld(cs);
     CDeterministicMNList snapshot;
+
+    if (!DeploymentActiveAt(*pindex, Params().GetConsensus(), Consensus::DEPLOYMENT_DIP0003)) {
+        return snapshot;
+    }
+
+    AssertLockHeld(cs);
+
     std::list<const CBlockIndex*> listDiffIndexes;
 
     while (true) {
@@ -1227,12 +1234,6 @@ bool CDeterministicMNManager::MigrateDBIfNeeded()
         return true;
     }
 
-    if (DeploymentActiveAt(*m_chainstate.m_chain.Tip(), consensusParams, Consensus::DEPLOYMENT_V19)) {
-        // too late
-        LogPrintf("CDeterministicMNManager::%s -- migration is not possible\n", __func__);
-        return false;
-    }
-
     // Removing the old EVODB_BEST_BLOCK value early results in older version to crash immediately, even if the upgrade
     // process is cancelled in-between. But if the new version sees that the old EVODB_BEST_BLOCK is already removed,
     // then we must assume that the upgrade process was already running before but was interrupted.
@@ -1254,6 +1255,13 @@ bool CDeterministicMNManager::MigrateDBIfNeeded()
         }
         return true;
     }
+
+    if (DeploymentActiveAt(*m_chainstate.m_chain.Tip(), consensusParams, Consensus::DEPLOYMENT_V19)) {
+        // too late
+        LogPrintf("CDeterministicMNManager::%s -- migration is not possible\n", __func__);
+        return false;
+    }
+
 
     CDBBatch batch(m_evoDb.GetRawDB());
 
@@ -1342,12 +1350,6 @@ bool CDeterministicMNManager::MigrateDBIfNeeded2()
         return true;
     }
 
-    if (DeploymentActiveAt(*m_chainstate.m_chain.Tip(), consensusParams, Consensus::DEPLOYMENT_V19)) {
-        // too late
-        LogPrintf("CDeterministicMNManager::%s -- migration is not possible\n", __func__);
-        return false;
-    }
-
     // Removing the old EVODB_BEST_BLOCK value early results in older version to crash immediately, even if the upgrade
     // process is cancelled in-between. But if the new version sees that the old EVODB_BEST_BLOCK is already removed,
     // then we must assume that the upgrade process was already running before but was interrupted.
@@ -1368,6 +1370,12 @@ bool CDeterministicMNManager::MigrateDBIfNeeded2()
             return false;
         }
         return true;
+    }
+
+    if (DeploymentActiveAt(*m_chainstate.m_chain.Tip(), consensusParams, Consensus::DEPLOYMENT_V19)) {
+        // too late
+        LogPrintf("CDeterministicMNManager::%s -- migration is not possible\n", __func__);
+        return false;
     }
 
     CDBBatch batch(m_evoDb.GetRawDB());

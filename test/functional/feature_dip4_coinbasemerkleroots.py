@@ -18,6 +18,7 @@ from test_framework.test_framework import DashTestFramework
 from test_framework.util import assert_equal
 
 DIP0008_HEIGHT = 432
+DIP0024_HEIGHT = 900
 
 # TODO: this helper used in many tests, find a new home for it
 class TestP2PConn(P2PInterface):
@@ -43,8 +44,19 @@ class TestP2PConn(P2PInterface):
 
 class LLMQCoinbaseCommitmentsTest(DashTestFramework):
     def set_test_params(self):
-        self.extra_args = [[ f'-testactivationheight=dip0008@{DIP0008_HEIGHT}', "-vbparams=testdummy:999999999999:999999999999" ]] * 4
+        self.extra_args = [[ f'-testactivationheight=dip0008@{DIP0008_HEIGHT}', f'-testactivationheight=dip0024@{DIP0024_HEIGHT}', "-vbparams=testdummy:999999999999:999999999999" ]] * 4
         self.set_dash_test_params(4, 3, extra_args = self.extra_args)
+
+    def remove_masternode(self, idx):
+        mn = self.mninfo[idx]
+        rawtx = self.nodes[0].createrawtransaction([{"txid": mn.collateral_txid, "vout": mn.collateral_vout}], {self.nodes[0].getnewaddress(): 999.9999})
+        rawtx = self.nodes[0].signrawtransactionwithwallet(rawtx)
+        self.nodes[0].sendrawtransaction(rawtx["hex"])
+        self.generate(self.nodes[0], 1)
+        self.mninfo.remove(mn)
+
+        self.log.info("Removed masternode %d", idx)
+
     def run_test(self):
         # No IS or Chainlocks in this test
         self.bump_mocktime(1)
@@ -103,7 +115,7 @@ class LLMQCoinbaseCommitmentsTest(DashTestFramework):
 
         # Verify that the first quorum appears in MNLISTDIFF
         expectedDeleted = []
-        expectedNew = [QuorumId(100, int(first_quorum, 16)), QuorumId(104, int(first_quorum, 16)), QuorumId(106, int(first_quorum, 16))]
+        expectedNew = [QuorumId(100, int(first_quorum, 16)), QuorumId(104, int(first_quorum, 16))]
         quorumList = self.test_getmnlistdiff_quorums(null_hash, self.nodes[0].getbestblockhash(), {}, expectedDeleted, expectedNew)
         baseBlockHash = self.nodes[0].getbestblockhash()
 
@@ -111,20 +123,20 @@ class LLMQCoinbaseCommitmentsTest(DashTestFramework):
 
         # Verify that the second quorum appears in MNLISTDIFF
         expectedDeleted = []
-        expectedNew = [QuorumId(100, int(second_quorum, 16)), QuorumId(104, int(second_quorum, 16)), QuorumId(106, int(second_quorum, 16))]
+        expectedNew = [QuorumId(100, int(second_quorum, 16)), QuorumId(104, int(second_quorum, 16))]
         quorums_before_third = self.test_getmnlistdiff_quorums(baseBlockHash, self.nodes[0].getbestblockhash(), quorumList, expectedDeleted, expectedNew)
         block_before_third = self.nodes[0].getbestblockhash()
 
         third_quorum = self.mine_quorum()
 
         # Verify that the first quorum is deleted and the third quorum is added in MNLISTDIFF (the first got inactive)
-        expectedDeleted = [QuorumId(100, int(first_quorum, 16)), QuorumId(104, int(first_quorum, 16)), QuorumId(106, int(first_quorum, 16))]
-        expectedNew = [QuorumId(100, int(third_quorum, 16)), QuorumId(104, int(third_quorum, 16)), QuorumId(106, int(third_quorum, 16))]
+        expectedDeleted = [QuorumId(100, int(first_quorum, 16)), QuorumId(104, int(first_quorum, 16))]
+        expectedNew = [QuorumId(100, int(third_quorum, 16)), QuorumId(104, int(third_quorum, 16))]
         self.test_getmnlistdiff_quorums(block_before_third, self.nodes[0].getbestblockhash(), quorums_before_third, expectedDeleted, expectedNew)
 
         # Verify that the diff between genesis and best block is the current active set (second and third quorum)
         expectedDeleted = []
-        expectedNew = [QuorumId(100, int(second_quorum, 16)), QuorumId(104, int(second_quorum, 16)), QuorumId(106, int(second_quorum, 16)), QuorumId(100, int(third_quorum, 16)), QuorumId(104, int(third_quorum, 16)), QuorumId(106, int(third_quorum, 16))]
+        expectedNew = [QuorumId(100, int(second_quorum, 16)), QuorumId(104, int(second_quorum, 16)), QuorumId(100, int(third_quorum, 16)), QuorumId(104, int(third_quorum, 16))]
         self.test_getmnlistdiff_quorums(null_hash, self.nodes[0].getbestblockhash(), {}, expectedDeleted, expectedNew)
 
         # Now verify that diffs are correct around the block that mined the third quorum.
@@ -141,8 +153,8 @@ class LLMQCoinbaseCommitmentsTest(DashTestFramework):
         self.test_getmnlistdiff_quorums(block_before_third, prev_block2, quorums_before_third, expectedDeleted, expectedNew)
         self.test_getmnlistdiff_quorums(block_before_third, prev_block, quorums_before_third, expectedDeleted, expectedNew)
         # The block in which the quorum was mined and the 2 after that should all give the same diff
-        expectedDeleted = [QuorumId(100, int(first_quorum, 16)), QuorumId(104, int(first_quorum, 16)), QuorumId(106, int(first_quorum, 16))]
-        expectedNew = [QuorumId(100, int(third_quorum, 16)), QuorumId(104, int(third_quorum, 16)), QuorumId(106, int(third_quorum, 16))]
+        expectedDeleted = [QuorumId(100, int(first_quorum, 16)), QuorumId(104, int(first_quorum, 16))]
+        expectedNew = [QuorumId(100, int(third_quorum, 16)), QuorumId(104, int(third_quorum, 16))]
         quorums_with_third = self.test_getmnlistdiff_quorums(block_before_third, mined_in_block, quorums_before_third, expectedDeleted, expectedNew)
         self.test_getmnlistdiff_quorums(block_before_third, next_block, quorums_before_third, expectedDeleted, expectedNew)
         self.test_getmnlistdiff_quorums(block_before_third, next_block2, quorums_before_third, expectedDeleted, expectedNew)

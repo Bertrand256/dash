@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2020 The Bitcoin Core developers
-// Copyright (c) 2014-2024 The Dash Core developers
+// Copyright (c) 2014-2025 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -337,21 +337,21 @@ BOOST_AUTO_TEST_CASE(netbase_getgroup)
 // try a few edge cases for port, service flags and time.
 
 static const std::vector<CAddress> fixture_addresses({
-    CAddress(
+    CAddress{
         CService(CNetAddr(in6_addr(IN6ADDR_LOOPBACK_INIT)), 0 /* port */),
         NODE_NONE,
-        0x4966bc61U /* Fri Jan  9 02:54:25 UTC 2009 */
-    ),
-    CAddress(
+        NodeSeconds{0x4966bc61s}, /* Fri Jan  9 02:54:25 UTC 2009 */
+    },
+    CAddress{
         CService(CNetAddr(in6_addr(IN6ADDR_LOOPBACK_INIT)), 0x00f1 /* port */),
         NODE_NETWORK,
-        0x83766279U /* Tue Nov 22 11:22:33 UTC 2039 */
-    ),
-    CAddress(
+        NodeSeconds{0x83766279s}, /* Tue Nov 22 11:22:33 UTC 2039 */
+    },
+    CAddress{
         CService(CNetAddr(in6_addr(IN6ADDR_LOOPBACK_INIT)), 0xf1f2 /* port */),
         static_cast<ServiceFlags>(NODE_NETWORK_LIMITED),
-        0xffffffffU /* Sun Feb  7 06:28:15 UTC 2106 */
-    )
+        NodeSeconds{0xffffffffs}, /* Sun Feb  7 06:28:15 UTC 2106 */
+    },
 });
 
 // fixture_addresses should equal to this when serialized in V1 format.
@@ -432,6 +432,37 @@ BOOST_AUTO_TEST_CASE(caddress_unserialize_v2)
 
     s >> addresses_unserialized;
     BOOST_CHECK(fixture_addresses == addresses_unserialized);
+}
+
+BOOST_AUTO_TEST_CASE(isbadport)
+{
+    BOOST_CHECK(IsBadPort(1));
+    BOOST_CHECK(IsBadPort(22));
+    BOOST_CHECK(IsBadPort(6000));
+
+    // We don't expect Dash Core to operate over HTTP(S)
+    BOOST_CHECK(IsBadPort(80));
+    BOOST_CHECK(IsBadPort(443));
+
+    // We shouldn't use ports used by Bitcoin Core
+    BOOST_CHECK(IsBadPort(8332));
+    BOOST_CHECK(IsBadPort(8333));
+    BOOST_CHECK(IsBadPort(18332));
+    BOOST_CHECK(IsBadPort(18333));
+
+    BOOST_CHECK(!IsBadPort(0));
+    BOOST_CHECK(!IsBadPort(9998));
+    BOOST_CHECK(!IsBadPort(9999));
+    BOOST_CHECK(!IsBadPort(26656));
+
+    // Check all ports, there must be 21 bad ports in addition to the restriction on privileged ports.
+    size_t total_bad_ports{0};
+    for (uint16_t port = std::numeric_limits<uint16_t>::max(); port > 0; --port) {
+        if (IsBadPort(port)) {
+            ++total_bad_ports;
+        }
+    }
+    BOOST_CHECK_EQUAL(total_bad_ports - PRIVILEGED_PORTS_THRESHOLD, 21);
 }
 
 BOOST_AUTO_TEST_CASE(netbase_parsenetwork)

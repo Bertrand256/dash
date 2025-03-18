@@ -18,6 +18,7 @@
 #include <util/moneystr.h>
 #include <util/overflow.h>
 #include <util/ranges_set.h>
+#include <util/readwritefile.h>
 #include <util/spanparsing.h>
 #include <util/strencodings.h>
 #include <util/string.h>
@@ -25,6 +26,7 @@
 #include <util/vector.h>
 
 #include <array>
+#include <fstream>
 #include <deque>
 #include <optional>
 #include <random>
@@ -35,9 +37,11 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
+#include <sys/types.h>
+
 #ifndef WIN32
 #include <signal.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 #endif
 
@@ -274,17 +278,17 @@ BOOST_AUTO_TEST_CASE(util_ReplaceAll)
 BOOST_AUTO_TEST_CASE(util_TrimString)
 {
     BOOST_CHECK_EQUAL(TrimString(" foo bar "), "foo bar");
-    BOOST_CHECK_EQUAL(TrimString("\t \n  \n \f\n\r\t\v\tfoo \n \f\n\r\t\v\tbar\t  \n \f\n\r\t\v\t\n "), "foo \n \f\n\r\t\v\tbar");
+    BOOST_CHECK_EQUAL(TrimStringView("\t \n  \n \f\n\r\t\v\tfoo \n \f\n\r\t\v\tbar\t  \n \f\n\r\t\v\t\n "), "foo \n \f\n\r\t\v\tbar");
     BOOST_CHECK_EQUAL(TrimString("\t \n foo \n\tbar\t \n "), "foo \n\tbar");
-    BOOST_CHECK_EQUAL(TrimString("\t \n foo \n\tbar\t \n ", "fobar"), "\t \n foo \n\tbar\t \n ");
+    BOOST_CHECK_EQUAL(TrimStringView("\t \n foo \n\tbar\t \n ", "fobar"), "\t \n foo \n\tbar\t \n ");
     BOOST_CHECK_EQUAL(TrimString("foo bar"), "foo bar");
-    BOOST_CHECK_EQUAL(TrimString("foo bar", "fobar"), " ");
+    BOOST_CHECK_EQUAL(TrimStringView("foo bar", "fobar"), " ");
     BOOST_CHECK_EQUAL(TrimString(std::string("\0 foo \0 ", 8)), std::string("\0 foo \0", 7));
-    BOOST_CHECK_EQUAL(TrimString(std::string(" foo ", 5)), std::string("foo", 3));
+    BOOST_CHECK_EQUAL(TrimStringView(std::string(" foo ", 5)), std::string("foo", 3));
     BOOST_CHECK_EQUAL(TrimString(std::string("\t\t\0\0\n\n", 6)), std::string("\0\0", 2));
-    BOOST_CHECK_EQUAL(TrimString(std::string("\x05\x04\x03\x02\x01\x00", 6)), std::string("\x05\x04\x03\x02\x01\x00", 6));
+    BOOST_CHECK_EQUAL(TrimStringView(std::string("\x05\x04\x03\x02\x01\x00", 6)), std::string("\x05\x04\x03\x02\x01\x00", 6));
     BOOST_CHECK_EQUAL(TrimString(std::string("\x05\x04\x03\x02\x01\x00", 6), std::string("\x05\x04\x03\x02\x01", 5)), std::string("\0", 1));
-    BOOST_CHECK_EQUAL(TrimString(std::string("\x05\x04\x03\x02\x01\x00", 6), std::string("\x05\x04\x03\x02\x01\x00", 6)), "");
+    BOOST_CHECK_EQUAL(TrimStringView(std::string("\x05\x04\x03\x02\x01\x00", 6), std::string("\x05\x04\x03\x02\x01\x00", 6)), "");
 }
 
 BOOST_AUTO_TEST_CASE(util_FormatParseISO8601DateTime)
@@ -295,9 +299,6 @@ BOOST_AUTO_TEST_CASE(util_FormatParseISO8601DateTime)
     BOOST_CHECK_EQUAL(ParseISO8601DateTime("1970-01-01T00:00:00Z"), 0);
     BOOST_CHECK_EQUAL(ParseISO8601DateTime("1960-01-01T00:00:00Z"), 0);
     BOOST_CHECK_EQUAL(ParseISO8601DateTime("2011-09-30T23:36:17Z"), 1317425777);
-
-    auto time = GetTimeSeconds();
-    BOOST_CHECK_EQUAL(ParseISO8601DateTime(FormatISO8601DateTime(time)), time);
 }
 
 BOOST_AUTO_TEST_CASE(util_FormatISO8601Date)
@@ -1374,7 +1375,7 @@ BOOST_AUTO_TEST_CASE(util_ParseMoney)
     BOOST_CHECK_EQUAL(ParseMoney("0.00000001 ").value(), COIN/100000000);
     BOOST_CHECK_EQUAL(ParseMoney(" 0.00000001").value(), COIN/100000000);
 
-    // Parsing amount that can not be represented should fail
+    // Parsing amount that cannot be represented should fail
     BOOST_CHECK(!ParseMoney("100000000.00"));
     BOOST_CHECK(!ParseMoney("0.000000001"));
 
@@ -1526,8 +1527,12 @@ BOOST_AUTO_TEST_CASE(util_time_GetTime)
     for (const auto& num_sleep : {0ms, 1ms}) {
         UninterruptibleSleep(num_sleep);
         BOOST_CHECK_EQUAL(111, GetTime()); // Deprecated time getter
+        BOOST_CHECK_EQUAL(111, Now<NodeSeconds>().time_since_epoch().count());
+        BOOST_CHECK_EQUAL(111, TicksSinceEpoch<std::chrono::seconds>(NodeClock::now()));
+        BOOST_CHECK_EQUAL(111, TicksSinceEpoch<SecondsDouble>(Now<NodeSeconds>()));
         BOOST_CHECK_EQUAL(111, GetTime<std::chrono::seconds>().count());
         BOOST_CHECK_EQUAL(111000, GetTime<std::chrono::milliseconds>().count());
+        BOOST_CHECK_EQUAL(111000, TicksSinceEpoch<std::chrono::milliseconds>(NodeClock::now()));
         BOOST_CHECK_EQUAL(111000000, GetTime<std::chrono::microseconds>().count());
     }
 
@@ -2689,13 +2694,13 @@ BOOST_AUTO_TEST_CASE(message_hash)
 BOOST_AUTO_TEST_CASE(remove_prefix)
 {
     BOOST_CHECK_EQUAL(RemovePrefix("./util/system.h", "./"), "util/system.h");
-    BOOST_CHECK_EQUAL(RemovePrefix("foo", "foo"), "");
+    BOOST_CHECK_EQUAL(RemovePrefixView("foo", "foo"), "");
     BOOST_CHECK_EQUAL(RemovePrefix("foo", "fo"), "o");
-    BOOST_CHECK_EQUAL(RemovePrefix("foo", "f"), "oo");
+    BOOST_CHECK_EQUAL(RemovePrefixView("foo", "f"), "oo");
     BOOST_CHECK_EQUAL(RemovePrefix("foo", ""), "foo");
-    BOOST_CHECK_EQUAL(RemovePrefix("fo", "foo"), "fo");
+    BOOST_CHECK_EQUAL(RemovePrefixView("fo", "foo"), "fo");
     BOOST_CHECK_EQUAL(RemovePrefix("f", "foo"), "f");
-    BOOST_CHECK_EQUAL(RemovePrefix("", "foo"), "");
+    BOOST_CHECK_EQUAL(RemovePrefixView("", "foo"), "");
     BOOST_CHECK_EQUAL(RemovePrefix("", ""), "");
 }
 
@@ -2745,6 +2750,52 @@ BOOST_AUTO_TEST_CASE(util_ParseByteUnits)
 
     // invalid unit
     BOOST_CHECK(!ParseByteUnits("1x", noop));
+}
+
+BOOST_AUTO_TEST_CASE(util_ReadBinaryFile)
+{
+    fs::path tmpfolder = m_args.GetDataDirBase();
+    fs::path tmpfile = tmpfolder / "read_binary.dat";
+    std::string expected_text;
+    for (int i = 0; i < 30; i++) {
+        expected_text += "0123456789";
+    }
+    {
+        std::ofstream file{tmpfile};
+        file << expected_text;
+    }
+    {
+        // read all contents in file
+        auto [valid, text] = ReadBinaryFile(tmpfile);
+        BOOST_CHECK(valid);
+        BOOST_CHECK_EQUAL(text, expected_text);
+    }
+    {
+        // read half contents in file
+        auto [valid, text] = ReadBinaryFile(tmpfile, expected_text.size() / 2);
+        BOOST_CHECK(valid);
+        BOOST_CHECK_EQUAL(text, expected_text.substr(0, expected_text.size() / 2));
+    }
+    {
+        // read from non-existent file
+        fs::path invalid_file = tmpfolder / "invalid_binary.dat";
+        auto [valid, text] = ReadBinaryFile(invalid_file);
+        BOOST_CHECK(!valid);
+        BOOST_CHECK(text.empty());
+    }
+}
+
+BOOST_AUTO_TEST_CASE(util_WriteBinaryFile)
+{
+    fs::path tmpfolder = m_args.GetDataDirBase();
+    fs::path tmpfile = tmpfolder / "write_binary.dat";
+    std::string expected_text = "bitcoin";
+    auto valid = WriteBinaryFile(tmpfile, expected_text);
+    std::string actual_text;
+    std::ifstream file{tmpfile};
+    file >> actual_text;
+    BOOST_CHECK(valid);
+    BOOST_CHECK_EQUAL(actual_text, expected_text);
 }
 
 BOOST_AUTO_TEST_CASE(clearshrink_test)

@@ -80,12 +80,8 @@ class LLMQQuorumRotationTest(DashTestFramework):
         self.log.info("Mining 2 quorums")
         h_0 = self.mine_quorum()
         h_100_0 = QuorumId(100, int(h_0, 16))
-        h_106_0 = QuorumId(106, int(h_0, 16))
-        h_104_0 = QuorumId(104, int(h_0, 16))
         h_1 = self.mine_quorum()
         h_100_1 = QuorumId(100, int(h_1, 16))
-        h_106_1 = QuorumId(106, int(h_1, 16))
-        h_104_1 = QuorumId(104, int(h_1, 16))
 
         self.log.info("Mine single block, wait for chainlock")
         self.generate(self.nodes[0], 1, sync_fun=self.no_op)
@@ -103,10 +99,10 @@ class LLMQQuorumRotationTest(DashTestFramework):
                 assert_equal(dkg_info['active_dkgs'], 0)
             nonzero_dkgs += dkg_info['active_dkgs']
             assert_equal(dkg_info['next_dkg'], next_dkg)
-        assert_equal(nonzero_dkgs, 11) # 2 quorums 4 nodes each and 1 quorum of 3 nodes
+        assert_equal(nonzero_dkgs, 4) # 1 quorums 4 nodes
 
         expectedDeleted = []
-        expectedNew = [h_100_0, h_106_0, h_104_0, h_100_1, h_106_1, h_104_1]
+        expectedNew = [h_100_0, h_100_1]
         quorumList = self.test_getmnlistdiff_quorums(b_h_0, b_h_1, {}, expectedDeleted, expectedNew, testQuorumsCLSigs=False)
 
         projected_activation_height = 900
@@ -154,7 +150,7 @@ class LLMQQuorumRotationTest(DashTestFramework):
             self.wait_for_chainlocked_block_all_nodes(self.nodes[0].getbestblockhash())
 
 
-        (quorum_info_0_0, quorum_info_0_1) = self.mine_cycle_quorum(llmq_type_name=llmq_type_name, llmq_type=llmq_type)
+        (quorum_info_0_0, quorum_info_0_1) = self.mine_cycle_quorum(is_first=False)
         assert(self.test_quorum_listextended(quorum_info_0_0, llmq_type_name))
         assert(self.test_quorum_listextended(quorum_info_0_1, llmq_type_name))
         quorum_members_0_0 = extract_quorum_members(quorum_info_0_0)
@@ -176,7 +172,7 @@ class LLMQQuorumRotationTest(DashTestFramework):
         self.log.info("Wait for chainlock")
         self.wait_for_chainlocked_block_all_nodes(self.nodes[0].getbestblockhash())
 
-        (quorum_info_1_0, quorum_info_1_1) = self.mine_cycle_quorum(llmq_type_name=llmq_type_name, llmq_type=llmq_type)
+        (quorum_info_1_0, quorum_info_1_1) = self.mine_cycle_quorum(is_first=False)
         assert(self.test_quorum_listextended(quorum_info_1_0, llmq_type_name))
         assert(self.test_quorum_listextended(quorum_info_1_1, llmq_type_name))
         quorum_members_1_0 = extract_quorum_members(quorum_info_1_0)
@@ -210,7 +206,7 @@ class LLMQQuorumRotationTest(DashTestFramework):
         self.wait_for_chainlocked_block_all_nodes(self.nodes[0].getbestblockhash())
 
         self.log.info("Mine a quorum to invalidate")
-        (quorum_info_3_0, quorum_info_3_1) = self.mine_cycle_quorum(llmq_type_name=llmq_type_name, llmq_type=llmq_type)
+        (quorum_info_3_0, quorum_info_3_1) = self.mine_cycle_quorum(is_first=False)
 
         new_quorum_list = self.nodes[0].quorum("list", llmq_type)
         assert_equal(len(new_quorum_list[llmq_type_name]), len(quorum_list[llmq_type_name]) + 2)
@@ -363,7 +359,6 @@ class LLMQQuorumRotationTest(DashTestFramework):
             100: 4, # In this test size for llmqType 100 is overwritten to 4
             102: 3,
             103: 4,
-            104: 4, # In this test size for llmqType 104 is overwritten to 4
             106: 3
         }.get(llmq_type, -1)
 
@@ -382,6 +377,20 @@ class LLMQQuorumRotationTest(DashTestFramework):
                 return False
             return True
         return False
+
+    def move_to_next_cycle(self):
+        cycle_length = 24
+        mninfos_online = self.mninfo.copy()
+        nodes = [self.nodes[0]] + [mn.node for mn in mninfos_online]
+        cur_block = self.nodes[0].getblockcount()
+
+        # move forward to next DKG
+        skip_count = cycle_length - (cur_block % cycle_length)
+        if skip_count != 0:
+            self.bump_mocktime(1)
+            self.generate(self.nodes[0], skip_count, sync_fun=self.no_op)
+        self.sync_blocks(nodes)
+        self.log.info('Moved from block %d to %d' % (cur_block, self.nodes[0].getblockcount()))
 
 
 if __name__ == '__main__':

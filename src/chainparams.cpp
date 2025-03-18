@@ -1,6 +1,6 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2020 The Bitcoin Core developers
-// Copyright (c) 2014-2024 The Dash Core developers
+// Copyright (c) 2014-2025 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -219,10 +219,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_WITHDRAWALS].useEHF = true;
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000009eb0f1d7fefc8750aebb"); // 2175051
+        consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000000a39050764808db046f5c"); // 2216986
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x000000000000001cf26547602d982dcaa909231bbcd1e70c0eb3c65de25473ba"); // 2175051
+        consensus.defaultAssumeValid = uint256S("0x0000000000000010b1135dc743f27f6fc8a138c6420a9d963fc676f96c2048f4"); // 2216986
 
         /**
          * The message start string is designed to be unlikely to occur in normal data.
@@ -284,7 +284,6 @@ public:
         fRequireRoutableExternalIP = true;
         m_is_test_chain = false;
         fAllowMultipleAddressesFromGroup = false;
-        fAllowMultiplePorts = false;
         nLLMQConnectionRetryTimeout = 60;
         m_is_mockable_chain = false;
 
@@ -333,6 +332,7 @@ public:
                 {2029000, uint256S("0x0000000000000020d5e38b6aef5bc8e430029444d7977b46f710c7d281ef1281")},
                 {2109672, uint256S("0x000000000000001889bd33ef019065e250d32bd46911f4003d3fdd8128b5358d")},
                 {2175051, uint256S("0x000000000000001cf26547602d982dcaa909231bbcd1e70c0eb3c65de25473ba")},
+                {2216986, uint256S("0x0000000000000010b1135dc743f27f6fc8a138c6420a9d963fc676f96c2048f4")},
             }
         };
 
@@ -417,10 +417,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_WITHDRAWALS].useEHF = true;
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000031ee38bc0876cef"); // 1143608
+        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000031f769ba78b4bee"); // 1189000
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x000000eef20eb0062abd4e799967e98bdebb165dd1c567ab4118c1c86c6e948f"); // 1143608
+        consensus.defaultAssumeValid = uint256S("0x000001690314036dfbbecbdf382b230ead8e9c584241290a51f9f05a87a9cf7e"); // 1189000
 
         pchMessageStart[0] = 0xce;
         pchMessageStart[1] = 0xe2;
@@ -476,7 +476,6 @@ public:
         fRequireRoutableExternalIP = true;
         m_is_test_chain = true;
         fAllowMultipleAddressesFromGroup = false;
-        fAllowMultiplePorts = true;
         nLLMQConnectionRetryTimeout = 60;
         m_is_mockable_chain = false;
 
@@ -507,6 +506,7 @@ public:
                 {960000, uint256S("0x0000000386cf5061ea16404c66deb83eb67892fa4f79b9e58e5eaab097ec2bd6")},
                 {1069875, uint256S("0x00000034bfeb926662ba547c0b8dd4ba8cbb6e0c581f4e7d1bddce8f9ca3a608")},
                 {1143608, uint256S("0x000000eef20eb0062abd4e799967e98bdebb165dd1c567ab4118c1c86c6e948f")},
+                {1189000, uint256S("0x000001690314036dfbbecbdf382b230ead8e9c584241290a51f9f05a87a9cf7e")},
             }
         };
 
@@ -659,7 +659,6 @@ public:
         fRequireRoutableExternalIP = true;
         m_is_test_chain = true;
         fAllowMultipleAddressesFromGroup = true;
-        fAllowMultiplePorts = true;
         nLLMQConnectionRetryTimeout = 60;
         m_is_mockable_chain = false;
 
@@ -790,15 +789,16 @@ public:
         consensus.BIP147Height = 1;  // Always active unless overridden
         consensus.CSVHeight = 1;     // Always active unless overridden
         consensus.DIP0001Height = 1; // Always active unless overridden
-        consensus.DIP0003Height = 432;
+        consensus.DIP0003Height = 432; // Always active for DashTestFramework in functional tests (see dip3params)
+                                       // For unit tests and for BitcoinTestFramework is disabled due to missing quorum commitment for blocks created by helpers such as create_blocks
         consensus.DIP0003EnforcementHeight = 500;
         consensus.DIP0003EnforcementHash = uint256();
         consensus.DIP0008Height = 1; // Always active unless overridden
         consensus.BRRHeight = 1;     // Always active unless overridden
         consensus.DIP0020Height = 1; // Always active unless overridden
-        consensus.DIP0024Height = 900;
-        consensus.DIP0024QuorumsHeight = 900;
-        consensus.V19Height = 900;
+        consensus.DIP0024Height = 1; // Always have dip0024 quorums unless overridden
+        consensus.DIP0024QuorumsHeight = 1; // Always have dip0024 quorums unless overridden
+        consensus.V19Height = 1; // Always active unless overriden
         consensus.V20Height = 900;
         consensus.MN_RRHeight = 900;
         consensus.MinBIP9WarningHeight = 0;
@@ -845,8 +845,6 @@ public:
 
         UpdateActivationParametersFromArgs(args);
         UpdateDIP3ParametersFromArgs(args);
-        UpdateDIP8ParametersFromArgs(args);
-        UpdateBIP147ParametersFromArgs(args);
         UpdateBudgetParametersFromArgs(args);
 
         genesis = CreateGenesisBlock(1417713337, 1096447, 0x207fffff, 1, 50 * COIN);
@@ -862,7 +860,6 @@ public:
         fRequireRoutableExternalIP = false;
         m_is_test_chain = true;
         fAllowMultipleAddressesFromGroup = true;
-        fAllowMultiplePorts = true;
         nLLMQConnectionRetryTimeout = 1; // must be lower then the LLMQ signing session timeout so that tests have control over failing behavior
         m_is_mockable_chain = true;
 
@@ -966,21 +963,6 @@ public:
     void UpdateDIP3ParametersFromArgs(const ArgsManager& args);
 
     /**
-     * Allows modifying the DIP8 activation height
-     */
-    void UpdateDIP8Parameters(int nActivationHeight)
-    {
-        consensus.DIP0008Height = nActivationHeight;
-    }
-    void UpdateDIP8ParametersFromArgs(const ArgsManager& args);
-
-    void UpdateBIP147Parameters(int nActivationHeight)
-    {
-        consensus.BIP147Height = nActivationHeight;
-    }
-    void UpdateBIP147ParametersFromArgs(const ArgsManager& args);
-
-    /**
      * Allows modifying the budget regtest parameters.
      */
     void UpdateBudgetParameters(int nMasternodePaymentsStartBlock, int nBudgetPaymentsStartBlock, int nSuperblockStartBlock)
@@ -1045,6 +1027,10 @@ static void MaybeUpdateHeights(const ArgsManager& args, Consensus::Params& conse
             consensus.DIP0001Height = int{height};
         } else if (name == "dip0008") {
             consensus.DIP0008Height = int{height};
+        } else if (name == "dip0024") {
+            consensus.DIP0024QuorumsHeight = int{height};
+        } else if (name == "v19") {
+            consensus.V19Height = int{height};
         } else if (name == "v20") {
             consensus.V20Height = int{height};
         } else if (name == "mn_rr") {
@@ -1134,35 +1120,6 @@ void CRegTestParams::UpdateDIP3ParametersFromArgs(const ArgsManager& args)
     }
     LogPrintf("Setting DIP3 parameters to activation=%ld, enforcement=%ld\n", nDIP3ActivationHeight, nDIP3EnforcementHeight);
     UpdateDIP3Parameters(nDIP3ActivationHeight, nDIP3EnforcementHeight);
-}
-
-void CRegTestParams::UpdateDIP8ParametersFromArgs(const ArgsManager& args)
-{
-    if (!args.IsArgSet("-dip8params")) return;
-
-    std::string strParams = args.GetArg("-dip8params", "");
-    std::vector<std::string> vParams = SplitString(strParams, ':');
-    if (vParams.size() != 1) {
-        throw std::runtime_error("DIP8 parameters malformed, expecting <activation>");
-    }
-    int nDIP8ActivationHeight;
-    if (!ParseInt32(vParams[0], &nDIP8ActivationHeight)) {
-        throw std::runtime_error(strprintf("Invalid activation height (%s)", vParams[0]));
-    }
-    LogPrintf("Setting DIP8 parameters to activation=%ld\n", nDIP8ActivationHeight);
-    UpdateDIP8Parameters(nDIP8ActivationHeight);
-}
-
-void CRegTestParams::UpdateBIP147ParametersFromArgs(const ArgsManager& args)
-{
-    if (!args.IsArgSet("-bip147height")) return;
-    int nBIP147Height;
-    const std::string strParams = args.GetArg("-bip147height", "");
-    if (!ParseInt32(strParams, &nBIP147Height)) {
-        throw std::runtime_error(strprintf("Invalid activation height (%s)", strParams));
-    }
-    LogPrintf("Setting BIP147 parameters to activation=%lld\n", nBIP147Height);
-    UpdateBIP147Parameters(nBIP147Height);
 }
 
 void CRegTestParams::UpdateBudgetParametersFromArgs(const ArgsManager& args)
@@ -1407,4 +1364,28 @@ void SelectParams(const std::string& network)
 {
     SelectBaseParams(network);
     globalChainParams = CreateChainParams(gArgs, network);
+}
+
+void SetupChainParamsOptions(ArgsManager& argsman)
+{
+    SetupChainParamsBaseOptions(argsman);
+
+    argsman.AddArg("-budgetparams=<masternode>:<budget>:<superblock>", "Override masternode, budget and superblock start heights (regtest-only)", ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::CHAINPARAMS);
+    argsman.AddArg("-dip3params=<activation>:<enforcement>", "Override DIP3 activation and enforcement heights (regtest-only)", ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::CHAINPARAMS);
+    argsman.AddArg("-highsubsidyblocks=<n>", "The number of blocks with a higher than normal subsidy to mine at the start of a chain. Block after that height will have fixed subsidy base. (default: 0, devnet-only)", ArgsManager::ALLOW_ANY, OptionsCategory::CHAINPARAMS);
+    argsman.AddArg("-highsubsidyfactor=<n>", "The factor to multiply the normal block subsidy by while in the highsubsidyblocks window of a chain (default: 1, devnet-only)", ArgsManager::ALLOW_ANY, OptionsCategory::CHAINPARAMS);
+    argsman.AddArg("-llmqchainlocks=<quorum name>", "Override the default LLMQ type used for ChainLocks. Allows using ChainLocks with smaller LLMQs. (default: llmq_devnet, devnet-only)", ArgsManager::ALLOW_ANY, OptionsCategory::CHAINPARAMS);
+    argsman.AddArg("-llmqdevnetparams=<size>:<threshold>", "Override the default LLMQ size for the LLMQ_DEVNET quorum (devnet-only)", ArgsManager::ALLOW_ANY, OptionsCategory::CHAINPARAMS);
+    argsman.AddArg("-llmqinstantsenddip0024=<quorum name>", "Override the default LLMQ type used for InstantSendDIP0024. (default: llmq_devnet_dip0024, devnet-only)", ArgsManager::ALLOW_ANY, OptionsCategory::CHAINPARAMS);
+    argsman.AddArg("-llmqplatform=<quorum name>", "Override the default LLMQ type used for Platform. (default: llmq_devnet_platform, devnet-only)", ArgsManager::ALLOW_ANY, OptionsCategory::CHAINPARAMS);
+    argsman.AddArg("-llmqmnhf=<quorum name>", "Override the default LLMQ type used for EHF. (default: llmq_devnet, devnet-only)", ArgsManager::ALLOW_ANY, OptionsCategory::CHAINPARAMS);
+    argsman.AddArg("-llmqtestinstantsenddip0024=<quorum name>", "Override the default LLMQ type used for InstantSendDIP0024. Used mainly to test Platform. (default: llmq_test_dip0024, regtest-only)", ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::CHAINPARAMS);
+    argsman.AddArg("-llmqtestinstantsendparams=<size>:<threshold>", "Override the default LLMQ size for the LLMQ_TEST_INSTANTSEND quorums (default: 3:2, regtest-only)", ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::CHAINPARAMS);
+    argsman.AddArg("-llmqtestparams=<size>:<threshold>", "Override the default LLMQ size for the LLMQ_TEST quorum (default: 3:2, regtest-only)", ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::CHAINPARAMS);
+    argsman.AddArg("-minimumdifficultyblocks=<n>", "The number of blocks that can be mined with the minimum difficulty at the start of a chain (default: 0, devnet-only)", ArgsManager::ALLOW_ANY, OptionsCategory::CHAINPARAMS);
+    argsman.AddArg("-powtargetspacing=<n>", "Override the default PowTargetSpacing value in seconds (default: 2.5 minutes, devnet-only)", ArgsManager::ALLOW_INT, OptionsCategory::CHAINPARAMS);
+    argsman.AddArg("-testactivationheight=name@height.", "Set the activation height of 'name' (bip147, bip34, dersig, cltv, csv, brr, dip0001, dip0008, dip0024, v19, v20, mn_rr). (regtest-only)", ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::CHAINPARAMS);
+    argsman.AddArg("-vbparams=<deployment>:<start>:<end>(:min_activation_height(:<window>:<threshold/thresholdstart>(:<thresholdmin>:<falloffcoeff>:<mnactivation>)))",
+                 "Use given start/end times and min_activation_height for specified version bits deployment (regtest-only). "
+                 "Specifying window, threshold/thresholdstart, thresholdmin, falloffcoeff and mnactivation is optional.", ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::CHAINPARAMS);
 }

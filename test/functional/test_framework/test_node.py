@@ -125,12 +125,19 @@ class TestNode():
             self.args.append("-logthreadnames")
         if self.version_is_at_least(21000000):
             self.args.append("-logsourcelocations")
+        if self.version_is_at_least(22010000):
+            self.args.append("-loglevel=trace")
 
         # Default behavior from global -v2transport flag is added to args to persist it over restarts.
         # May be overwritten in individual tests, using extra_args.
         self.default_to_v2 = v2transport
-        if self.default_to_v2:
-            self.args.append("-v2transport=1")
+        if self.version_is_at_least(22000000):
+            # 22.0 and later support v2transport
+            if v2transport:
+                self.args.append("-v2transport=1")
+            else:
+                self.args.append("-v2transport=0")
+        # if v2transport is requested via global flag but not supported for node version, ignore it
 
         self.cli = TestNodeCLI(bitcoin_cli, self.datadir)
         self.use_cli = use_cli
@@ -252,8 +259,13 @@ class TestNode():
         poll_per_s = 4
         for _ in range(poll_per_s * self.rpc_timeout):
             if self.process.poll() is not None:
+                # Attach abrupt shutdown error/s to the exception message
+                self.stderr.seek(0)
+                str_error = ''.join(line.decode('utf-8') for line in self.stderr)
+                str_error += "************************\n" if str_error else ''
+
                 raise FailedToStartError(self._node_msg(
-                    'dashd exited with status {} during initialization'.format(self.process.returncode)))
+                    f'dashd exited with status {self.process.returncode} during initialization. {str_error}'))
             try:
                 rpc = get_rpc_proxy(
                     rpc_url(self.datadir, self.index, self.chain, self.rpchost),

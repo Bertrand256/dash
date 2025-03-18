@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2024 The Dash Core developers
+// Copyright (c) 2021-2025 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -207,7 +207,8 @@ public:
     [[nodiscard]] UniValue ToJson() const;
 };
 
-bool BuildQuorumRotationInfo(CDeterministicMNManager& dmnman, const ChainstateManager& chainman, const CQuorumManager& qman,
+bool BuildQuorumRotationInfo(CDeterministicMNManager& dmnman, CQuorumSnapshotManager& qsnapman,
+                             const ChainstateManager& chainman, const CQuorumManager& qman,
                              const CQuorumBlockProcessor& qblockman, const CGetQuorumRotationInfo& request,
                              CQuorumRotationInfo& response, std::string& errorRet) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 uint256 GetLastBaseBlockHash(Span<const CBlockIndex*> baseBlockIndexes, const CBlockIndex* blockIndex);
@@ -228,9 +229,6 @@ public:
     std::optional<CQuorumSnapshot> GetSnapshotForBlock(Consensus::LLMQType llmqType, const CBlockIndex* pindex);
     void StoreSnapshotForBlock(Consensus::LLMQType llmqType, const CBlockIndex* pindex, const CQuorumSnapshot& snapshot);
 };
-
-extern std::unique_ptr<CQuorumSnapshotManager> quorumSnapshotManager;
-
 } // namespace llmq
 
-#endif //BITCOIN_LLMQ_SNAPSHOT_H
+#endif // BITCOIN_LLMQ_SNAPSHOT_H

@@ -7,7 +7,6 @@
 #include <addressindex.h>
 #include <chainparams.h>
 #include <consensus/consensus.h>
-#include <deploymentstatus.h>
 #include <evo/mnauth.h>
 #include <httpserver.h>
 #include <index/blockfilterindex.h>
@@ -21,7 +20,6 @@
 #include <key_io.h>
 #include <net.h>
 #include <node/context.h>
-#include <rpc/blockchain.h>
 #include <rpc/index_util.h>
 #include <rpc/server.h>
 #include <rpc/server_util.h>
@@ -29,8 +27,8 @@
 #include <scheduler.h>
 #include <script/descriptor.h>
 #include <txmempool.h>
+#include <univalue.h>
 #include <util/check.h>
-#include <util/message.h> // For MessageSign(), MessageVerify()
 #include <util/strencodings.h>
 #include <util/system.h>
 #include <validation.h>
@@ -42,8 +40,6 @@
 #ifdef HAVE_MALLOC_INFO
 #include <malloc.h>
 #endif
-
-#include <univalue.h>
 
 static RPCHelpMan debug()
 {
@@ -476,97 +472,6 @@ static RPCHelpMan deriveaddresses()
     };
 }
 
-static RPCHelpMan verifymessage()
-{
-    return RPCHelpMan{"verifymessage",
-        "\nVerify a signed message\n",
-        {
-            {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The Dash address to use for the signature."},
-            {"signature", RPCArg::Type::STR, RPCArg::Optional::NO, "The signature provided by the signer in base 64 encoding (see signmessage)."},
-            {"message", RPCArg::Type::STR, RPCArg::Optional::NO, "The message that was signed."},
-        },
-        RPCResult{
-            RPCResult::Type::BOOL, "", "If the signature is verified or not."
-        },
-        RPCExamples{
-    "\nUnlock the wallet for 30 seconds\n"
-    + HelpExampleCli("walletpassphrase", "\"mypassphrase\" 30") +
-    "\nCreate the signature\n"
-    + HelpExampleCli("signmessage", "\"" + EXAMPLE_ADDRESS[0] + "\" \"my message\"") +
-    "\nVerify the signature\n"
-    + HelpExampleCli("verifymessage", "\"" + EXAMPLE_ADDRESS[0] + "\" \"signature\" \"my message\"") +
-    "\nAs a JSON-RPC call\n"
-    + HelpExampleRpc("verifymessage", "\"" + EXAMPLE_ADDRESS[0] + "\", \"signature\", \"my message\"")
-        },
-    [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
-{
-
-    LOCK(cs_main);
-
-    std::string strAddress  = request.params[0].get_str();
-    std::string strSign     = request.params[1].get_str();
-    std::string strMessage  = request.params[2].get_str();
-
-    switch (MessageVerify(strAddress, strSign, strMessage)) {
-    case MessageVerificationResult::ERR_INVALID_ADDRESS:
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
-    case MessageVerificationResult::ERR_ADDRESS_NO_KEY:
-        throw JSONRPCError(RPC_TYPE_ERROR, "Address does not refer to key");
-    case MessageVerificationResult::ERR_MALFORMED_SIGNATURE:
-        throw JSONRPCError(RPC_TYPE_ERROR, "Malformed base64 encoding");
-    case MessageVerificationResult::ERR_PUBKEY_NOT_RECOVERED:
-    case MessageVerificationResult::ERR_NOT_SIGNED:
-        return false;
-    case MessageVerificationResult::OK:
-        return true;
-    }
-
-    return false;
-},
-    };
-}
-
-static RPCHelpMan signmessagewithprivkey()
-{
-    return RPCHelpMan{"signmessagewithprivkey",
-        "\nSign a message with the private key of an address\n",
-        {
-            {"privkey", RPCArg::Type::STR, RPCArg::Optional::NO, "The private key to sign the message with."},
-            {"message", RPCArg::Type::STR, RPCArg::Optional::NO, "The message to create a signature of."},
-        },
-        RPCResult{
-            RPCResult::Type::STR, "signature", "The signature of the message encoded in base 64"
-        },
-        RPCExamples{
-    "\nCreate the signature\n"
-    + HelpExampleCli("signmessagewithprivkey", "\"privkey\" \"my message\"") +
-    "\nVerify the signature\n"
-    + HelpExampleCli("verifymessage", "\"" + EXAMPLE_ADDRESS[0] + "\" \"signature\" \"my message\"") +
-    "\nAs a JSON-RPC call\n"
-    + HelpExampleRpc("signmessagewithprivkey", "\"privkey\", \"my message\"")
-        },
-    [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
-{
-
-    std::string strPrivkey = request.params[0].get_str();
-    std::string strMessage = request.params[1].get_str();
-
-    CKey key = DecodeSecret(strPrivkey);
-    if (!key.IsValid()) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid private key");
-    }
-
-    std::string signature;
-
-    if (!MessageSign(key, strMessage, signature)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Sign failed");
-    }
-
-    return signature;
-},
-    };
-}
-
 static RPCHelpMan setmocktime()
 {
     return RPCHelpMan{"setmocktime",
@@ -594,7 +499,7 @@ static RPCHelpMan setmocktime()
     RPCTypeCheck(request.params, {UniValue::VNUM});
     const int64_t time{request.params[0].get_int64()};
     if (time < 0) {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Mocktime can not be negative: %s.", time));
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Mocktime cannot be negative: %s.", time));
     }
     SetMockTime(time);
     if (auto* node_context = GetContext<NodeContext>(request.context)) {
@@ -633,11 +538,8 @@ static RPCHelpMan mnauth()
         throw JSONRPCError(RPC_INVALID_PARAMETER, "proTxHash invalid");
     }
 
-    ChainstateManager& chainman = EnsureAnyChainman(request.context);
-
     CBLSPublicKey publicKey;
-    const bool bls_legacy_scheme{!DeploymentActiveAfter(chainman.ActiveChain().Tip(), Params().GetConsensus(), Consensus::DEPLOYMENT_V19)};
-    publicKey.SetHexStr(request.params[2].get_str(), bls_legacy_scheme);
+    publicKey.SetHexStr(request.params[2].get_str(), /*bls_legacy_scheme=*/false);
     if (!publicKey.IsValid()) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "publicKey invalid");
     }
@@ -814,9 +716,7 @@ static RPCHelpMan getaddressutxos()
         },
     [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
-
     std::vector<std::pair<uint160, AddressType> > addresses;
-
     if (!getAddressesFromParams(request.params, addresses)) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
     }
@@ -887,8 +787,6 @@ static RPCHelpMan getaddressdeltas()
         },
     [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
-
-
     UniValue startValue = find_value(request.params[0].get_obj(), "start");
     UniValue endValue = find_value(request.params[0].get_obj(), "end");
 
@@ -979,7 +877,6 @@ static RPCHelpMan getaddressbalance()
         },
     [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
-
     std::vector<std::pair<uint160, AddressType> > addresses;
 
     if (!getAddressesFromParams(request.params, addresses)) {
@@ -1052,7 +949,6 @@ static RPCHelpMan getaddresstxids()
         },
     [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
-
     std::vector<std::pair<uint160, AddressType> > addresses;
 
     if (!getAddressesFromParams(request.params, addresses)) {
@@ -1142,7 +1038,6 @@ static RPCHelpMan getspentinfo()
         },
     [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
-
     UniValue txidValue = find_value(request.params[0].get_obj(), "txid");
     UniValue indexValue = find_value(request.params[0].get_obj(), "index");
 
@@ -1523,8 +1418,6 @@ static const CRPCCommand commands[] =
     { "util",               &createmultisig,          },
     { "util",               &deriveaddresses,         },
     { "util",               &getdescriptorinfo,       },
-    { "util",               &verifymessage,           },
-    { "util",               &signmessagewithprivkey,  },
     { "util",               &getindexinfo,            },
     { "blockchain",         &getspentinfo,            },
 

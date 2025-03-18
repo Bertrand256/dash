@@ -1,6 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2020 The Bitcoin Core developers
-// Copyright (c) 2014-2024 The Dash Core developers
+// Copyright (c) 2014-2025 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -19,6 +19,7 @@
 #include <node/blockstorage.h>
 #include <policy/feerate.h>
 #include <policy/packages.h>
+#include <policy/policy.h>
 #include <script/script_error.h>
 #include <serialize.h>
 #include <sync.h>
@@ -58,25 +59,8 @@ struct AssumeutxoData;
 
 namespace llmq {
 class CChainLocksHandler;
-class CInstantSendManager;
 } // namespace llmq
 
-/** Default for -minrelaytxfee, minimum relay fee for transactions */
-static const unsigned int DEFAULT_MIN_RELAY_TX_FEE = 1000;
-/** Default for -limitancestorcount, max number of in-mempool ancestors */
-static const unsigned int DEFAULT_ANCESTOR_LIMIT = 25;
-/** Default for -limitancestorsize, maximum kilobytes of tx + all in-mempool ancestors */
-static const unsigned int DEFAULT_ANCESTOR_SIZE_LIMIT = 101;
-/** Default for -limitdescendantcount, max number of in-mempool descendants */
-static const unsigned int DEFAULT_DESCENDANT_LIMIT = 25;
-/** Default for -limitdescendantsize, maximum kilobytes of in-mempool descendants */
-static const unsigned int DEFAULT_DESCENDANT_SIZE_LIMIT = 101;
-/**
- * An extra transaction can be added to a package, as long as it only has one
- * ancestor and is no larger than this. Not really any reason to make this
- * configurable as it doesn't materially change DoS parameters.
- */
-static const unsigned int EXTRA_DESCENDANT_TX_SIZE_LIMIT = 10000;
 /** Default for -mempoolexpiry, expiration time for mempool transactions in hours */
 static const unsigned int DEFAULT_MEMPOOL_EXPIRY = 336;
 /** Maximum number of dedicated script-checking threads allowed */
@@ -104,7 +88,7 @@ static const int DEFAULT_STOPATHEIGHT = 0;
 /** Block files containing a block-height within MIN_BLOCKS_TO_KEEP of ActiveChain().Tip() will not be pruned. */
 static const unsigned int MIN_BLOCKS_TO_KEEP = 288;
 static const signed int DEFAULT_CHECKBLOCKS = 6;
-static const unsigned int DEFAULT_CHECKLEVEL = 3;
+static constexpr int DEFAULT_CHECKLEVEL{3};
 
 // Require that user allocate at least 945 MiB for block & undo files (blk???.dat and rev???.dat)
 // At 2B MiB per block, 288 blocks = 576 MiB.
@@ -135,8 +119,6 @@ extern bool g_parallel_script_checks;
 extern bool fRequireStandard;
 extern bool fCheckBlockIndex;
 extern bool fCheckpointsEnabled;
-/** A fee rate smaller than this is considered zero fee (for relaying, mining and transaction creation) */
-extern CFeeRate minRelayTxFee;
 /** If the tip is older than this (in seconds), the node is considered to be in initial block download. */
 extern int64_t nMaxTipAge;
 
@@ -188,19 +170,30 @@ struct MempoolAcceptResult {
     enum class ResultType {
         VALID, //!> Fully validated, valid.
         INVALID, //!> Invalid.
+        MEMPOOL_ENTRY, //!> Valid, transaction was already in the mempool.
     };
+    /** Result type. Present in all MempoolAcceptResults. */
     const ResultType m_result_type;
+
+    /** Contains information about why the transaction failed. */
     const TxValidationState m_state;
 
-    // The following fields are only present when m_result_type = ResultType::VALID
+    // The following fields are only present when m_result_type = ResultType::VALID or MEMPOOL_ENTRY
+    /** Virtual size as used by the mempool, calculated using serialized size and sigops. */
+    const std::optional<int64_t> m_vsize;
     /** Raw base fees in satoshis. */
     const std::optional<CAmount> m_base_fees;
+
     static MempoolAcceptResult Failure(TxValidationState state) {
         return MempoolAcceptResult(state);
     }
 
-    static MempoolAcceptResult Success(CAmount fees) {
-        return MempoolAcceptResult(fees);
+    static MempoolAcceptResult Success(int64_t vsize, CAmount fees) {
+        return MempoolAcceptResult(vsize, fees);
+    }
+
+    static MempoolAcceptResult MempoolTx(int64_t vsize, CAmount fees) {
+        return MempoolAcceptResult(ResultType::MEMPOOL_ENTRY, vsize, fees);
     }
 
 // Private constructors. Use static methods MempoolAcceptResult::Success, etc. to construct.
@@ -212,8 +205,16 @@ private:
         }
 
     /** Constructor for success case */
-    explicit MempoolAcceptResult(CAmount fees)
-        : m_result_type(ResultType::VALID), m_base_fees(fees) {}
+    explicit MempoolAcceptResult(int64_t vsize, CAmount fees)
+        : m_result_type(ResultType::VALID), m_vsize{vsize}, m_base_fees(fees) {}
+
+    /** Constructor for already-in-mempool case. It wouldn't replace any transactions. */
+    // TODO: result_type should always be MEMPOOL_ENTRY but currently there are no
+    //       arguments to differentiate between SUCCESS and MEMPOOL_ENTRY cases so we
+    //       allow setting any result_type to differentiate by argument. If the SUCCESS
+    //       case accepts any new arguments, this change should be reverted.
+    explicit MempoolAcceptResult(ResultType result_type, int64_t vsize, CAmount fees)
+        : m_result_type(result_type), m_vsize{vsize}, m_base_fees(fees) {}
 };
 
 /**
@@ -257,15 +258,12 @@ MempoolAcceptResult AcceptToMemoryPool(CChainState& active_chainstate, const CTr
     EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
 /**
-* Atomically test acceptance of a package. If the package only contains one tx, package rules still
-* apply. The transaction(s) cannot spend the same inputs as any transaction in the mempool.
-* @param[in]    txns                Group of transactions which may be independent or contain
-*                                   parent-child dependencies. The transactions must not conflict
-*                                   with each other, i.e., must not spend the same inputs. If any
-*                                   dependencies exist, parents must appear anywhere in the list
-*                                   before their children.
+* Validate (and maybe submit) a package to the mempool. See doc/policy/packages.md for full details
+* on package validation rules.
+* @param[in]    test_accept     When true, run validation checks but don't submit to mempool.
 * @returns a PackageMempoolAcceptResult which includes a MempoolAcceptResult for each transaction.
-* If a transaction fails, validation will exit early and some results may be missing.
+* If a transaction fails, validation will exit early and some results may be missing. It is also
+* possible for the package to be partially submitted.
 */
 PackageMempoolAcceptResult ProcessNewPackage(CChainState& active_chainstate, CTxMemPool& pool,
                                              const Package& txns, bool test_accept)
@@ -367,7 +365,7 @@ public:
     ~CVerifyDB();
     bool VerifyDB(
         CChainState& chainstate,
-        const CChainParams& chainparams,
+        const Consensus::Params& consensus_params,
         CCoinsView& coinsview,
         CEvoDB& evoDb,
         int nCheckLevel,
@@ -486,8 +484,6 @@ protected:
 
     //! Dash
     const std::unique_ptr<CChainstateHelper>& m_chain_helper;
-    const std::unique_ptr<llmq::CChainLocksHandler>& m_clhandler;
-    const std::unique_ptr<llmq::CInstantSendManager>& m_isman;
     CEvoDB& m_evoDb;
 
 public:
@@ -508,8 +504,6 @@ public:
                          ChainstateManager& chainman,
                          CEvoDB& evoDb,
                          const std::unique_ptr<CChainstateHelper>& chain_helper,
-                         const std::unique_ptr<llmq::CChainLocksHandler>& clhandler,
-                         const std::unique_ptr<llmq::CInstantSendManager>& isman,
                          std::optional<uint256> from_snapshot_blockhash = std::nullopt);
 
     /**
@@ -713,7 +707,7 @@ public:
         LOCKS_EXCLUDED(::cs_main);
 
     /** Remove invalidity status from a block and its descendants. */
-    void ResetBlockFailureFlags(CBlockIndex* pindex) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
+    void ResetBlockFailureFlags(CBlockIndex* pindex, bool ignore_chainlocks = false) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
     /** Replay blocks that aren't fully applied to the database. */
     bool ReplayBlocks();
@@ -941,8 +935,6 @@ public:
     CChainState& InitializeChainstate(CTxMemPool* mempool,
                                       CEvoDB& evoDb,
                                       const std::unique_ptr<CChainstateHelper>& chain_helper,
-                                      const std::unique_ptr<llmq::CChainLocksHandler>& clhandler,
-                                      const std::unique_ptr<llmq::CInstantSendManager>& isman,
                                       const std::optional<uint256>& snapshot_blockhash = std::nullopt)
         LIFETIMEBOUND EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 

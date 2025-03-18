@@ -1,5 +1,5 @@
 // Copyright (c) 2011-2020 The Bitcoin Core developers
-// Copyright (c) 2014-2024 The Dash Core developers
+// Copyright (c) 2014-2025 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -207,7 +207,7 @@ void CoinControlDialog::buttonToggleLockClicked()
                 item->setIcon(COLUMN_CHECKBOX, QIcon());
             }
             else{
-                model->wallet().lockCoin(outpt);
+                model->wallet().lockCoin(outpt, /*write_to_db=*/true);
                 item->setDisabled(true);
                 item->setIcon(COLUMN_CHECKBOX, GUIUtil::getIcon("lock_closed", GUIUtil::ThemedColor::RED));
             }
@@ -300,7 +300,7 @@ void CoinControlDialog::lockCoin()
         contextMenuItem->setCheckState(COLUMN_CHECKBOX, Qt::Unchecked);
 
     COutPoint outpt(uint256S(contextMenuItem->data(COLUMN_ADDRESS, TxHashRole).toString().toStdString()), contextMenuItem->data(COLUMN_ADDRESS, VOutRole).toUInt());
-    model->wallet().lockCoin(outpt);
+    model->wallet().lockCoin(outpt, /*write_to_db=*/true);
     contextMenuItem->setDisabled(true);
     contextMenuItem->setIcon(COLUMN_CHECKBOX, GUIUtil::getIcon("lock_closed", GUIUtil::ThemedColor::RED));
     updateLabelLocked();
@@ -426,11 +426,10 @@ void CoinControlDialog::viewItemChanged(QTreeWidgetItem* item, int column)
 // shows count of locked unspent outputs
 void CoinControlDialog::updateLabelLocked()
 {
-    std::vector<COutPoint> vOutpts;
-    model->wallet().listLockedCoins(vOutpts);
-    if (vOutpts.size() > 0)
+    auto locked_coins{model->wallet().listLockedCoins().size()};
+    if (locked_coins > 0)
     {
-       ui->labelLocked->setText(tr("(%1 locked)").arg(vOutpts.size()));
+       ui->labelLocked->setText(tr("(%1 locked)").arg(locked_coins));
        ui->labelLocked->setVisible(true);
     }
     else ui->labelLocked->setVisible(false);
@@ -770,7 +769,7 @@ void CoinControlDialog::updateView()
 
             // CoinJoin rounds
             int nRounds = model->getRealOutpointCoinJoinRounds(output);
-            if (nRounds >= 0 || LogAcceptCategory(BCLog::COINJOIN)) {
+            if (nRounds >= 0 || LogAcceptDebug(BCLog::COINJOIN)) {
                 itemOutput->setText(COLUMN_COINJOIN_ROUNDS, QString::number(nRounds));
             } else {
                 itemOutput->setText(COLUMN_COINJOIN_ROUNDS, tr("n/a"));

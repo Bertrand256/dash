@@ -5,7 +5,7 @@
 #ifndef BITCOIN_TEST_UTIL_NET_H
 #define BITCOIN_TEST_UTIL_NET_H
 
-#include <compat.h>
+#include <compat/compat.h>
 #include <net.h>
 #include <net_permissions.h>
 #include <net_processing.h>
@@ -200,6 +200,10 @@ public:
         std::memset(name, 0x0, *name_len);
         return 0;
     }
+
+    bool SetNonBlocking() const override { return true; }
+
+    bool IsSelectable() const override { return true; }
 
     bool Wait(std::chrono::milliseconds timeout,
               Event requested,

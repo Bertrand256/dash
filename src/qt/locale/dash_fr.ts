@@ -94,6 +94,10 @@
         <translation>&amp;Modifier</translation>
     </message>
     <message>
+        <source>Show address &amp;QR code</source>
+        <translation>Voir le &amp;QR code de l'adresse</translation>
+    </message>
+    <message>
         <source>QR code</source>
         <translation>QR-code</translation>
     </message>
@@ -611,14 +615,6 @@
         <translation>Afficher les informations sur %1</translation>
     </message>
     <message>
-        <source>Load Partially Signed Dash Transaction</source>
-        <translation>Charger transaction Dash partiellement signée</translation>
-    </message>
-    <message>
-        <source>Load Partially Signed Bitcoin Transaction from clipboard</source>
-        <translation>Charger transaction Bitcoin partiellement signée depuis le presse-papiers</translation>
-    </message>
-    <message>
         <source>Open debugging and diagnostic console</source>
         <translation>Ouvrir la console de débogage et de diagnostic</translation>
     </message>
@@ -706,6 +702,26 @@
     <message>
         <source>Ctrl+M</source>
         <translation>Ctrl+M</translation>
+    </message>
+    <message>
+        <source>Click for more actions.</source>
+        <extracomment>A substring of the tooltip. "More actions" are available via the context menu.</extracomment>
+        <translation>Cliquez pour plus d'actions.</translation>
+    </message>
+    <message>
+        <source>Show Peers tab</source>
+        <extracomment>A context menu item. The "Peers tab" is an element of the "Node window".</extracomment>
+        <translation>Voir l'onglet des Pairs</translation>
+    </message>
+    <message>
+        <source>Disable network activity</source>
+        <extracomment>A context menu item.</extracomment>
+        <translation>Désactiver l'activité réseau</translation>
+    </message>
+    <message>
+        <source>Enable network activity</source>
+        <extracomment>A context menu item. The network activity was disabled previously.</extracomment>
+        <translation>Activer l'activité réseau</translation>
     </message>
     <message>
         <source>Syncing Headers (%1%)…</source>
@@ -945,6 +961,30 @@
         <translation>Copier le montant</translation>
     </message>
     <message>
+        <source>&amp;Copy address</source>
+        <translation>&amp;Copier l'adresse</translation>
+    </message>
+    <message>
+        <source>Copy &amp;label</source>
+        <translation>Copier l'étiquette</translation>
+    </message>
+    <message>
+        <source>Copy &amp;amount</source>
+        <translation>Copier le montant</translation>
+    </message>
+    <message>
+        <source>Copy transaction &amp;ID and output index</source>
+        <translation>Copier l'&amp;ID de transaction et l'index de sortie</translation>
+    </message>
+    <message>
+        <source>L&amp;ock unspent</source>
+        <translation>Verrouiller le non-dépensé</translation>
+    </message>
+    <message>
+        <source>&amp;Unlock unspent</source>
+        <translation>Déverrouiller le non-dépensé</translation>
+    </message>
+    <message>
         <source>Copy quantity</source>
         <translation>Copier la quantité</translation>
     </message>
@@ -1031,6 +1071,11 @@
 </context>
 <context>
     <name>CreateWalletActivity</name>
+    <message>
+        <source>Create Wallet</source>
+        <extracomment>Title of window indicating the progress of creation of a new wallet.</extracomment>
+        <translation>Créer un portefeuille</translation>
+    </message>
     <message>
         <source>Creating Wallet &lt;b&gt;%1&lt;/b&gt;…</source>
         <extracomment>Descriptive text of the create wallet progress window which indicates to the user which wallet is currently being created.</extracomment>
@@ -1279,10 +1324,6 @@
         <translation>Utiliser un répertoire de données personnalisé :</translation>
     </message>
     <message>
-        <source>%1 GB of free space available</source>
-        <translation>%1 Go d'espace disponible</translation>
-    </message>
-    <message>
         <source>(of %1 GB needed)</source>
         <translation>(de %1 Go nécessaire)</translation>
     </message>
@@ -1528,6 +1569,11 @@
         <translation>portefeuille par défaut</translation>
     </message>
     <message>
+        <source>Open Wallet</source>
+        <extracomment>Title of window indicating the progress of opening of a wallet.</extracomment>
+        <translation>Ouvrir un portefeuille</translation>
+    </message>
+    <message>
         <source>Opening Wallet &lt;b&gt;%1&lt;/b&gt;…</source>
         <extracomment>Descriptive text of the open wallet progress window which indicates to the user which wallet is currently being opened.</extracomment>
         <translation>Ouverture du portefeuille &lt;b&gt;%1&lt;/b&gt;…</translation>
@@ -1596,6 +1642,26 @@
         <source>Set the number of script verification threads. Negative values correspond to the number of cores you want to leave free to the system.</source>
         <extracomment>Tooltip text for Options window setting that sets the number of script verification threads. Explains that negative values mean to leave these many cores free to the system.</extracomment>
         <translation>Fixe le nombre de files de vérification de scripts. Les valeurs négatives correspondent au nombre de cœurs que vous souhaitez laisser disponibles au système.</translation>
+    </message>
+    <message>
+        <source>This allows you or a third party tool to communicate with the node through command-line and JSON-RPC commands.</source>
+        <extracomment>Tooltip text for Options window setting that enables the RPC server.</extracomment>
+        <translation>Cela permet à vous ou à un outil tiers de communiquer avec le nœud par ligne de commande et commandes JSON-RPC.</translation>
+    </message>
+    <message>
+        <source>Enable R&amp;PC server</source>
+        <extracomment>An Options window setting to enable the RPC server.</extracomment>
+        <translation>Activer le serveur R&amp;PC</translation>
+    </message>
+    <message>
+        <source>Whether to set subtract fee from amount as default or not.</source>
+        <extracomment>Tooltip text for Options window setting that sets subtracting the fee from a sending amount as default.</extracomment>
+        <translation>Activer ou non les frais soustraits par défaut au total.</translation>
+    </message>
+    <message>
+        <source>Subtract &amp;fee from amount by default</source>
+        <extracomment>An Options window setting to set subtracting the fee from a sending amount as default.</extracomment>
+        <translation>&amp;Frais soustraits au total par défaut</translation>
     </message>
     <message>
         <source>Whether to keep the specified custom change address or not.</source>
@@ -1952,7 +2018,7 @@ https://explore.transifex.com/dash/dash/</translation>
     </message>
     <message>
         <source>Balances</source>
-        <translation>soldes</translation>
+        <translation>Soldes</translation>
     </message>
     <message>
         <source>Unconfirmed transactions to watch-only addresses</source>
@@ -2223,6 +2289,10 @@ https://explore.transifex.com/dash/dash/</translation>
         <translation>* Envoie %1 à %2</translation>
     </message>
     <message>
+        <source>own address</source>
+        <translation>propre adresse</translation>
+    </message>
+    <message>
         <source>Unable to calculate transaction fee or total transaction amount.</source>
         <translation>Impossible de calculer les frais de transaction ou le montant total de la transaction.@</translation>
     </message>
@@ -2249,6 +2319,10 @@ https://explore.transifex.com/dash/dash/</translation>
     <message>
         <source>Transaction still needs signature(s).</source>
         <translation>La transaction a encore besoin de signature(s).</translation>
+    </message>
+    <message>
+        <source>(But no wallet is loaded.)</source>
+        <translation>(Mais aucun portefeuille n'est chargé.)</translation>
     </message>
     <message>
         <source>(But this wallet cannot sign transactions.)</source>
@@ -2286,6 +2360,12 @@ https://explore.transifex.com/dash/dash/</translation>
         <translation>'dash://' n'est pas un URI valide. Utilisez 'dash:' à la place.</translation>
     </message>
     <message>
+        <source>Cannot process payment request as BIP70 is no longer supported.
+Due to discontinued support, you should request the merchant to provide you with a BIP21 compatible URI or use a wallet that does continue to support BIP70.</source>
+        <translation>Impossible de traiter la requête de paiement car BIP70 n'est plus supporté.
+En raison d'un support interrompu, vous devriez demander au vendeur de vous communiquer une URI compatible BIP21, ou bien d'utiliser un portefeuille qui continue à supporter BIP70.</translation>
+    </message>
+    <message>
         <source>URI cannot be parsed! This can be caused by an invalid Dash address or malformed URI parameters.</source>
         <translation>L'URI ne peut être analysée ! Cela peut provenir d'une adresse Dash invalide, ou de paramètres d'URI mal composés.</translation>
     </message>
@@ -2312,6 +2392,16 @@ https://explore.transifex.com/dash/dash/</translation>
         <translation>Pair</translation>
     </message>
     <message>
+        <source>Age</source>
+        <extracomment>Title of Peers Table column which indicates the duration (length of time) since the peer connection started.</extracomment>
+        <translation>Âge</translation>
+    </message>
+    <message>
+        <source>Direction</source>
+        <extracomment>Title of Peers Table column which indicates the direction the peer connection was initiated from.</extracomment>
+        <translation>Direction</translation>
+    </message>
+    <message>
         <source>Type</source>
         <extracomment>Title of Peers Table column which describes the type of peer connection. The "type" describes why the connection exists.</extracomment>
         <translation>Type</translation>
@@ -2336,7 +2426,17 @@ https://explore.transifex.com/dash/dash/</translation>
         <extracomment>Title of Peers Table column which states the network the peer connected through.</extracomment>
         <translation>Réseau</translation>
     </message>
-    </context>
+    <message>
+        <source>Inbound</source>
+        <extracomment>An Inbound Connection from a Peer.</extracomment>
+        <translation>Entrée</translation>
+    </message>
+    <message>
+        <source>Outbound</source>
+        <extracomment>An Outbound Connection to a Peer.</extracomment>
+        <translation>Sortie</translation>
+    </message>
+</context>
 <context>
     <name>Proposal</name>
     <message>
@@ -2393,6 +2493,11 @@ https://explore.transifex.com/dash/dash/</translation>
         <source>Do you want to reset settings to default values, or to abort without making changes?</source>
         <extracomment>Explanatory text shown on startup when the settings file cannot be read. Prompts user to make a choice between resetting or aborting.</extracomment>
         <translation>Souhaitez-vous réinitialiser les réglages à leurs valeurs de défaut, ou abandonner sans faire de modification ?</translation>
+    </message>
+    <message>
+        <source>A fatal error occurred. Check that settings file is writable, or try running with -nosettings.</source>
+        <extracomment>Explanatory text shown on startup when the settings file could not be written. Prompts user to check that we have the ability to write to the file. Explains that the user has the option of running without a settings file.</extracomment>
+        <translation>Une erreur fatale s'est produite. Vérifiez que le fichier des paramètres n'est pas verrouillé, ou essayez de relancer avec le paramètre -nosettings.</translation>
     </message>
     <message>
         <source>Choose data directory on startup (default: %u)</source>
@@ -2600,6 +2705,10 @@ https://explore.transifex.com/dash/dash/</translation>
     <message>
         <source>%1 B</source>
         <translation>%1 o</translation>
+    </message>
+    <message>
+        <source>%1 kB</source>
+        <translation>%1 Ko</translation>
     </message>
     <message>
         <source>%1 MB</source>
@@ -2937,6 +3046,22 @@ https://explore.transifex.com/dash/dash/</translation>
         <translation>Score PoSe</translation>
     </message>
     <message>
+        <source>The transport layer version: %1</source>
+        <translation>Version de la couche de transport : %1</translation>
+    </message>
+    <message>
+        <source>Transport</source>
+        <translation>Transport</translation>
+    </message>
+    <message>
+        <source>The BIP324 session ID string in hex.</source>
+        <translation>La chaîne d'ID de la session BIP324 en hexadécimal.</translation>
+    </message>
+    <message>
+        <source>Session ID</source>
+        <translation>ID de session</translation>
+    </message>
+    <message>
         <source>The network protocol this peer is connected through: IPv4, IPv6, Onion, I2P, or CJDNS.</source>
         <translation>Le protocole de réseau à travers lequel ce pair est connecté : IPv4, IPv6, Onion, I2P ou CJDNS.</translation>
     </message>
@@ -2991,6 +3116,16 @@ https://explore.transifex.com/dash/dash/</translation>
     <message>
         <source>&amp;Wallet Repair</source>
         <translation>&amp;Réparation de portefeuille</translation>
+    </message>
+    <message>
+        <source>The total number of addresses received from this peer that were processed (excludes addresses that were dropped due to rate-limiting).</source>
+        <extracomment>Tooltip text for the Addresses Processed field in the peer details area, which displays the total number of addresses received from this peer that were processed (excludes addresses that were dropped due to rate-limiting).</extracomment>
+        <translation>Le nombre total d'adresses reçues de ce pair qui ont été traitées (exclut les adresses qui ont été abandonnées en raison des limites du taux)</translation>
+    </message>
+    <message>
+        <source>The total number of addresses received from this peer that were dropped (not processed) due to rate-limiting.</source>
+        <extracomment>Tooltip text for the Addresses Rate-Limited field in the peer details area, which displays the total number of addresses received from this peer that were dropped (not processed) due to rate-limiting.</extracomment>
+        <translation>Le nombre total d'adresses reçues de ce pair qui ont été abandonnées (non traitées) en raison de la limite de taux.</translation>
     </message>
     <message>
         <source>Wallet repair options.</source>
@@ -3103,6 +3238,26 @@ https://explore.transifex.com/dash/dash/</translation>
         <translation>Exécution de commande sans aucun portefeuille</translation>
     </message>
     <message>
+        <source>Ctrl++</source>
+        <extracomment>Main shortcut to increase the RPC console font size.</extracomment>
+        <translation>Ctrl++</translation>
+    </message>
+    <message>
+        <source>Ctrl+=</source>
+        <extracomment>Secondary shortcut to increase the RPC console font size.</extracomment>
+        <translation>Ctrl+=</translation>
+    </message>
+    <message>
+        <source>Ctrl+-</source>
+        <extracomment>Main shortcut to decrease the RPC console font size.</extracomment>
+        <translation>Ctrl+-</translation>
+    </message>
+    <message>
+        <source>Ctrl+_</source>
+        <extracomment>Secondary shortcut to decrease the RPC console font size.</extracomment>
+        <translation>Ctrl+_</translation>
+    </message>
+    <message>
         <source>Ctrl+Shift+I</source>
         <translation>Ctrl+Maj+I</translation>
     </message>
@@ -3127,6 +3282,57 @@ https://explore.transifex.com/dash/dash/</translation>
         <translation>Exécution de commande avec le portefeuille "%1"</translation>
     </message>
     <message>
+        <source>detecting: peer could be v1 or v2</source>
+        <extracomment>Explanatory text for "detecting" transport type.</extracomment>
+        <translation>détection : le pair pourrait être de v.1 ou v.2</translation>
+    </message>
+    <message>
+        <source>v1: unencrypted, plaintext transport protocol</source>
+        <extracomment>Explanatory text for v1 transport type.</extracomment>
+        <translation>v.1 : non chiffré, protocole de transport en texte clair</translation>
+    </message>
+    <message>
+        <source>v2: BIP324 encrypted transport protocol</source>
+        <extracomment>Explanatory text for v2 transport type.</extracomment>
+        <translation>v.2 : protocole de transport chiffré BIP324</translation>
+    </message>
+    <message>
+        <source>&amp;Copy address</source>
+        <extracomment>Context menu action to copy the address of a peer</extracomment>
+        <translation>&amp;Copier l'adresse</translation>
+    </message>
+    <message>
+        <source>1 d&amp;ay</source>
+        <translation>1 jour</translation>
+    </message>
+    <message>
+        <source>&amp;Copy IP/Netmask</source>
+        <extracomment>Context menu action to copy the IP/Netmask of a banned peer. IP/Netmask is the combination of a peer's IP address and its Netmask. For IP address see: https://en.wikipedia.org/wiki/IP_address</extracomment>
+        <translation>&amp;Copier l'IP/netmask</translation>
+    </message>
+    <message>
+        <source>Welcome to the %1 RPC console.
+Use up and down arrows to navigate history, and %2 to clear screen.
+Use %3 and %4 to increase or decrease the font size.
+Type %5 for an overview of available commands.
+For more information on using this console, type %6.
+
+%7WARNING: Scammers have been active, telling users to type commands here, stealing their wallet contents. Do not use this console without fully understanding the ramifications of a command.%8</source>
+        <extracomment>RPC console welcome message. Placeholders %7 and %8 are style tags for the warning content, and they are not space separated from the rest of the text intentionally.</extracomment>
+        <translation>Bienvenue à la console RPC %1.
+Utilisez les flèches haut et bas pour naviguer dans l'historique, et %2 pour vider l'écran.
+Utilisez %3 et %4 pour modifier la taille de la police de caractères.
+Tapez %5 pour un aperçu des commandes disponibles.
+Pour plus d'informations sur l'utilisation de cette console, tapez %6.
+
+%7ATTENTION : Il existe des escrocs qui peuvent demander aux utilisateurs de taper ici des commandes, afin de voler le contenu de leur portefeuille. N'utilisez pas cette console sans comprendre entièrement les conséquences d'une commande.%8</translation>
+    </message>
+    <message>
+        <source>Executing…</source>
+        <extracomment>A console message indicating an entered command is currently being executed.</extracomment>
+        <translation>En cours d'exécution...</translation>
+    </message>
+    <message>
         <source>(peer: %1)</source>
         <translation>(pair : %1)</translation>
     </message>
@@ -3145,6 +3351,10 @@ https://explore.transifex.com/dash/dash/</translation>
     <message>
         <source>Verified Masternode</source>
         <translation>Masternode vérifié</translation>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation>Oui</translation>
     </message>
     <message>
         <source>Unknown</source>
@@ -3232,6 +3442,26 @@ https://explore.transifex.com/dash/dash/</translation>
     <message>
         <source>Enter a message to attach to the payment request</source>
         <translation>Saisissez un message à joindre à la requête de paiement</translation>
+    </message>
+    <message>
+        <source>Copy &amp;URI</source>
+        <translation>Copier l'&amp;URI</translation>
+    </message>
+    <message>
+        <source>&amp;Copy address</source>
+        <translation>&amp;Copier l'adresse</translation>
+    </message>
+    <message>
+        <source>Copy &amp;label</source>
+        <translation>Copier l'étiquette</translation>
+    </message>
+    <message>
+        <source>Copy &amp;message</source>
+        <translation>Copier le &amp;message</translation>
+    </message>
+    <message>
+        <source>Copy &amp;amount</source>
+        <translation>Copier le montant</translation>
     </message>
     <message>
         <source>Could not unlock wallet.</source>
@@ -3525,10 +3755,6 @@ https://explore.transifex.com/dash/dash/</translation>
     <message>
         <source>Cr&amp;eate Unsigned</source>
         <translation>Créer non-signée</translation>
-    </message>
-    <message>
-        <source>Creates a Partially Signed Bitcoin Transaction (PSBT) for use with e.g. an offline %1 wallet, or a PSBT-compatible hardware wallet.</source>
-        <translation>Créer une transaction Bitcoin partiellement signée (PSBT) pour utilisation avec (par exemple) un portefeuille %1 hors ligne, ou un portefeuille matériel compatible PSBT.</translation>
     </message>
     <message>
         <source> from wallet '%1'</source>
@@ -3935,9 +4161,21 @@ https://explore.transifex.com/dash/dash/</translation>
 </context>
 <context>
     <name>SplashScreen</name>
-    </context>
+    <message>
+        <source>(press q to shutdown and continue later)</source>
+        <translation>(appuyez sur q pour fermer et continuer plus tard)</translation>
+    </message>
+    <message>
+        <source>press q to shutdown</source>
+        <translation>appuyez sur q pour fermer</translation>
+    </message>
+</context>
 <context>
     <name>TrafficGraphWidget</name>
+    <message>
+        <source>kB/s</source>
+        <translation>Ko/s</translation>
+    </message>
     <message>
         <source>Total</source>
         <translation>Total</translation>
@@ -4012,6 +4250,10 @@ https://explore.transifex.com/dash/dash/</translation>
     <message>
         <source>Generated</source>
         <translation>Généré</translation>
+    </message>
+    <message>
+        <source>Platform Transfer</source>
+        <translation>Transfert Platform</translation>
     </message>
     <message>
         <source>From</source>
@@ -4212,6 +4454,10 @@ https://explore.transifex.com/dash/dash/</translation>
         <translation>Miné</translation>
     </message>
     <message>
+        <source>Platform Transfer</source>
+        <translation>Transfert Platform</translation>
+    </message>
+    <message>
         <source>%1 Mixing</source>
         <translation>Mélange %1</translation>
     </message>
@@ -4339,6 +4585,10 @@ https://explore.transifex.com/dash/dash/</translation>
         <translation>Miné</translation>
     </message>
     <message>
+        <source>Platform Transfer</source>
+        <translation>Transfert Platform</translation>
+    </message>
+    <message>
         <source>Other</source>
         <translation>Autres</translation>
     </message>
@@ -4349,6 +4599,50 @@ https://explore.transifex.com/dash/dash/</translation>
     <message>
         <source>Min amount</source>
         <translation>Montant min.</translation>
+    </message>
+    <message>
+        <source>&amp;Copy address</source>
+        <translation>&amp;Copier l'adresse</translation>
+    </message>
+    <message>
+        <source>Copy &amp;label</source>
+        <translation>Copier l'étiquette</translation>
+    </message>
+    <message>
+        <source>Copy &amp;amount</source>
+        <translation>Copier le montant</translation>
+    </message>
+    <message>
+        <source>Copy transaction &amp;ID</source>
+        <translation>Copier l'&amp;ID de transaction</translation>
+    </message>
+    <message>
+        <source>Copy &amp;raw transaction</source>
+        <translation>Copier la transaction brute</translation>
+    </message>
+    <message>
+        <source>Copy full transaction &amp;details</source>
+        <translation>Copier tous les &amp;détails de la transaction</translation>
+    </message>
+    <message>
+        <source>&amp;Show transaction details</source>
+        <translation>Afficher les détails de la transaction</translation>
+    </message>
+    <message>
+        <source>A&amp;bandon transaction</source>
+        <translation>A&amp;bandonner la transaction</translation>
+    </message>
+    <message>
+        <source>Rese&amp;nd transaction</source>
+        <translation>Envoyer à nouveau la transaction</translation>
+    </message>
+    <message>
+        <source>&amp;Edit address label</source>
+        <translation>Modifier l'étiquette de l'adresse</translation>
+    </message>
+    <message>
+        <source>Show address &amp;QR code</source>
+        <translation>Afficher le &amp;QR-code de l'adresse</translation>
     </message>
     <message>
         <source>Export Transaction History</source>
@@ -4460,7 +4754,31 @@ Allez à Fichier &gt; Ouvrir le portefeuille pour charger un portefeuille.
         <source>Create a new wallet</source>
         <translation>Créer un nouveau portefeuille</translation>
     </message>
-    </context>
+    <message>
+        <source>Error</source>
+        <translation>Erreur</translation>
+    </message>
+    <message>
+        <source>Unable to decode PSBT from clipboard (invalid base64)</source>
+        <translation>Impossible de décoder le PSBT du presse-papiers (base64 invalide)</translation>
+    </message>
+    <message>
+        <source>Load Transaction Data</source>
+        <translation>Charger les données de transaction</translation>
+    </message>
+    <message>
+        <source>Partially Signed Transaction (*.psbt)</source>
+        <translation>Transaction partiellement signée (*.psbt)</translation>
+    </message>
+    <message>
+        <source>PSBT file must be smaller than 100 MiB</source>
+        <translation>Le fichier PSBT doit être plus petit que 100 Mo</translation>
+    </message>
+    <message>
+        <source>Unable to decode PSBT</source>
+        <translation>Impossible de décoder PSBT</translation>
+    </message>
+</context>
 <context>
     <name>WalletModel</name>
     <message>
@@ -4518,10 +4836,6 @@ Allez à Fichier &gt; Ouvrir le portefeuille pour charger un portefeuille.
 </context>
 <context>
     <name>dash-core</name>
-    <message>
-        <source>Error: Listening for incoming connections failed (listen returned error %s)</source>
-        <translation>Erreur : l'écoute des connexions entrantes a échoué (erreur retournée : %s)</translation>
-    </message>
     <message>
         <source>Fee estimation failed. Fallbackfee is disabled. Wait a few blocks or enable -fallbackfee.</source>
         <translation>Échec de l'estimation des frais. Les frais de secours sont désactivés. Laissez passer quelques blocs ou activez -fallbackfee.</translation>
@@ -4601,10 +4915,6 @@ Allez à Fichier &gt; Ouvrir le portefeuille pour charger un portefeuille.
     <message>
         <source>-maxtxfee is set very high! Fees this large could be paid on a single transaction.</source>
         <translation>-maxtxfee est réglée sur un montant très élevé ! Ces frais aussi élevés peuvent être payés sur une transaction unique.</translation>
-    </message>
-    <message>
-        <source>Cannot provide specific connections and have addrman find outgoing connections at the same.</source>
-        <translation>Impossible de fournir des connexions spécifiques tout en cherchant des connexions sortantes avec addrman.</translation>
     </message>
     <message>
         <source>Found unconfirmed denominated outputs, will wait till they confirm to continue.</source>
@@ -4851,10 +5161,6 @@ Allez à Fichier &gt; Ouvrir le portefeuille pour charger un portefeuille.
         <translation>Erreur en chargeant %s : les clés privées ne peuvent être désactivées que pendant la création</translation>
     </message>
     <message>
-        <source>Error upgrading evo database</source>
-        <translation>Erreur en mettant à jour la base de données evo</translation>
-    </message>
-    <message>
         <source>Error: Couldn't create cursor into database</source>
         <translation>Erreur : impossible de créer de curseur dans la base de données</translation>
     </message>
@@ -4879,12 +5185,12 @@ Allez à Fichier &gt; Ouvrir le portefeuille pour charger un portefeuille.
         <translation>Erreur : keypool épuisé, veuillez appeler d'abord keypoolrefill</translation>
     </message>
     <message>
-        <source>Exceeded max tries.</source>
-        <translation>Le nombre maximal d'essais est dépassé.</translation>
+        <source>Error: No addresses available.</source>
+        <translation>Erreur : aucune adresse disponible.</translation>
     </message>
     <message>
-        <source>Failed to commit EvoDB</source>
-        <translation>Impossible d'atteindre EvoDB</translation>
+        <source>Exceeded max tries.</source>
+        <translation>Le nombre maximal d'essais est dépassé.</translation>
     </message>
     <message>
         <source>Failed to create backup %s!</source>
@@ -4907,12 +5213,20 @@ Allez à Fichier &gt; Ouvrir le portefeuille pour charger un portefeuille.
         <translation>Échec de la vérification de la base de données</translation>
     </message>
     <message>
+        <source>Fee rate (%s) is lower than the minimum fee rate setting (%s)</source>
+        <translation>Le taux des frais (%s) est inférieur au paramètre de taux minimum de frais (%s)</translation>
+    </message>
+    <message>
         <source>Found enough users, signing…</source>
         <translation>Nombre suffisant d'utilisateurs trouvé, signature…</translation>
     </message>
     <message>
         <source>Ignoring duplicate -wallet %s.</source>
         <translation>Portefeuille en double ignoré -wallet %s.</translation>
+    </message>
+    <message>
+        <source>Input not found or already spent</source>
+        <translation>Entrée non trouvée ou déjà dépensée</translation>
     </message>
     <message>
         <source>Invalid P2P permission: '%s'</source>
@@ -4943,16 +5257,16 @@ Allez à Fichier &gt; Ouvrir le portefeuille pour charger un portefeuille.
         <translation>Mélange en cours…</translation>
     </message>
     <message>
+        <source>No addresses available</source>
+        <translation>Aucune adresse disponible</translation>
+    </message>
+    <message>
         <source>No errors detected.</source>
         <translation>Aucune erreur détectée.</translation>
     </message>
     <message>
         <source>No matching denominations found for mixing.</source>
         <translation>Pas de coupures équivalentes trouvées pour le mélange.</translation>
-    </message>
-    <message>
-        <source>No proxy server specified. Use -proxy=&lt;ip&gt; or -proxy=&lt;ip:port&gt;.</source>
-        <translation>Aucun serveur proxy spécifié. Utilisez -proxy=&lt;ip&gt; ou -proxy=&lt;ip:port&gt;.</translation>
     </message>
     <message>
         <source>Not compatible with existing transactions.</source>
@@ -5059,6 +5373,10 @@ Allez à Fichier &gt; Ouvrir le portefeuille pour charger un portefeuille.
         <translation>Impossible d'ouvrir %s pour y écrire</translation>
     </message>
     <message>
+        <source>Unable to parse -maxuploadtarget: '%s' (possible integer overflow?)</source>
+        <translation>Impossible de traiter -maxuploadtarge : '%s' (débordement d'entier ?)</translation>
+    </message>
+    <message>
         <source>Unknown -blockfilterindex value %s.</source>
         <translation>Valeur inconnue de -blockfilterindex %s.</translation>
     </message>
@@ -5111,6 +5429,18 @@ Allez à Fichier &gt; Ouvrir le portefeuille pour charger un portefeuille.
         <translation>%s utilise des montants exacts de coupures pour envoyer des fonds, vous pourriez simplement avoir besoin de mélanger plus de fonds.</translation>
     </message>
     <message>
+        <source>-reindex-chainstate option is not compatible with -blockfilterindex. Please temporarily disable blockfilterindex while using -reindex-chainstate, or replace -reindex-chainstate with -reindex to fully rebuild all indexes.</source>
+        <translation>L'option -reindex-chainstate n'est pas compatible avec -blockfilterindex. Veuillez désactiver temporairement blockfilterindex lors de l'utilisation de -reindex-chainstate, ou remplacez -reindex-chainstate par -reindex pour reconstruire intégralement tous les index.</translation>
+    </message>
+    <message>
+        <source>-reindex-chainstate option is not compatible with -coinstatsindex. Please temporarily disable coinstatsindex while using -reindex-chainstate, or replace -reindex-chainstate with -reindex to fully rebuild all indexes.</source>
+        <translation>L'option -reindex-chainstate n'est pas compatible avec -coinstatsindex. Veuillez désactiver temporairement coinstatsindex lors de l'utilisation de -reindex-chainstate, ou remplacez -reindex-chainstate par -reindex pour reconstruire intégralement tous les index.</translation>
+    </message>
+    <message>
+        <source>-reindex-chainstate option is not compatible with -txindex. Please temporarily disable txindex while using -reindex-chainstate, or replace -reindex-chainstate with -reindex to fully rebuild all indexes.</source>
+        <translation>L'option -reindex-chainstate n'est pas compatible avec -txindex. Veuillez désactiver temporairement txindex lors de l'utilisation de -reindex-chainstate, ou remplacez -reindex-chainstate par -reindex pour reconstruire intégralement tous les index.</translation>
+    </message>
+    <message>
         <source>Cannot downgrade wallet from version %i to version %i. Wallet version unchanged.</source>
         <translation>Impossible de baisser le portefeuille de la version %i à %i. Version de portefeuille inchangée.</translation>
     </message>
@@ -5131,6 +5461,10 @@ Allez à Fichier &gt; Ouvrir le portefeuille pour charger un portefeuille.
         <translation>Erreur en chargeant %s : Impossible d'activer HD sur un portefeuille non-HD déjà existant</translation>
     </message>
     <message>
+        <source>Error loading wallet. Wallet requires blocks to be downloaded, and software does not currently support loading wallets while blocks are being downloaded out of order when using assumeutxo snapshots. Wallet should be able to load successfully after node sync reaches height %s</source>
+        <translation>Erreur lors du chargement du portefeuille. Le portefeuille doit télécharger les blocs, et le logiciel ne peut actuellement charger des portefeuilles pendant que les blocs sont chargés sans ordre avec l'utilisation des instantanés assumeutxo. Le portefeuille devrait pouvoir charger avec succès une fois que le nœud aura atteint la hauteur %s</translation>
+    </message>
+    <message>
         <source>Error reading %s! All keys read correctly, but transaction data or address book entries might be missing or incorrect.</source>
         <translation>Erreur de lecture de %s ! Toutes les clés ont été lues correctement, mais les données transactionnelles ou les entrées du carnet d’adresses sont peut-être manquantes ou incorrectes.</translation>
     </message>
@@ -5147,8 +5481,16 @@ Allez à Fichier &gt; Ouvrir le portefeuille pour charger un portefeuille.
         <translation>Erreur : version de dumpfile non supportée. Cette version de bitcoin-wallet supporte seulement les dumpfiles de version 1. Obtenu un dumpfile de version %s</translation>
     </message>
     <message>
+        <source>Failed to rename invalid peers.dat file. Please move or delete it and try again.</source>
+        <translation>Impossible de renommer le fichier invalide peers.dat. Veuillez le déplacer, ou bien effacez-le et réessayez.</translation>
+    </message>
+    <message>
         <source>File %s already exists. If you are sure this is what you want, move it out of the way first.</source>
         <translation>Le fichier %s existe déjà. Si vous êtes sûr que c'est ce que vous souhaitez, sortez-le d'abord.</translation>
+    </message>
+    <message>
+        <source>Incompatible options: -dnsseed=1 was explicitly specified, but -onlynet forbids connections to IPv4/IPv6</source>
+        <translation>Options incompatibles : -dnsseed=1 a été spécifié explicitement, mais -onlynet interdit les connexions vers IPv4/IPv6</translation>
     </message>
     <message>
         <source>Incorrect or no devnet genesis block found. Wrong datadir for devnet specified?</source>
@@ -5187,6 +5529,14 @@ Allez à Fichier &gt; Ouvrir le portefeuille pour charger un portefeuille.
         <translation>Si vous trouvez %s utile, vous pouvez y contribuer. Vous trouverez davantage d’informations à propos du logiciel sur %s.</translation>
     </message>
     <message>
+        <source>Prune mode is incompatible with -reindex-chainstate. Use full -reindex instead.</source>
+        <translation>Le mode prune est incompatible avec -reindex-chainstate. Utilisez à la place -reindex.</translation>
+    </message>
+    <message>
+        <source>The block index db contains a legacy 'txindex'. To clear the occupied disk space, run a full -reindex, otherwise ignore this error. This error message will not be displayed again.</source>
+        <translation>La base de données d'index de blocs comporte un ancien 'txindex'. Pour vider l'espace-disque occupé, lancez un -reindex intégral, ou bien ignorez cette erreur. Ce message d'erreur ne sera plus affiché.</translation>
+    </message>
+    <message>
         <source>This is the maximum transaction fee you pay (in addition to the normal fee) to prioritize partial spend avoidance over regular coin selection.</source>
         <translation>Ceci sont les frais de transaction maximaux que vous payez (en addition des frais normaux) pour prioriser l'évitement de dépense partielle sur le choix normal de pièces.</translation>
     </message>
@@ -5213,6 +5563,10 @@ Allez à Fichier &gt; Ouvrir le portefeuille pour charger un portefeuille.
     <message>
         <source>Warning: Private keys detected in wallet {%s} with disabled private keys</source>
         <translation>Avertissement : clés privées détectées dans le portefeuille {%s} avec des clés privées désactivées</translation>
+    </message>
+    <message>
+        <source>You need to rebuild the database using -reindex to enable -timestampindex</source>
+        <translation>Vous devez reconstruire la base de données avec -reindex afin d'activer -timestampindex</translation>
     </message>
     <message>
         <source>%s -- Incorrect seed, it should be a hex string</source>
@@ -5253,10 +5607,6 @@ Allez à Fichier &gt; Ouvrir le portefeuille pour charger un portefeuille.
     <message>
         <source>Cannot write to data directory '%s'; check permissions.</source>
         <translation>Impossible d'écrire dans le répertoire de données '%s' ; vérifiez les droits.</translation>
-    </message>
-    <message>
-        <source>Change index out of range</source>
-        <translation>L’index de changement est hors échelle</translation>
     </message>
     <message>
         <source>Copyright (C)</source>
@@ -5515,8 +5865,24 @@ Allez à Fichier &gt; Ouvrir le portefeuille pour charger un portefeuille.
         <translation>Impossible de désactiver la validation de gouvernance sur un masternode.</translation>
     </message>
     <message>
+        <source>You need to rebuild the database using -reindex to enable -addressindex</source>
+        <translation>Vous devez reconstruire la base de données avec -reindex afin d'activer -addressindex</translation>
+    </message>
+    <message>
+        <source>You need to rebuild the database using -reindex to enable -spentindex</source>
+        <translation>Vous devez reconstruire la base de données avec -reindex afin d'activer -spentindex</translation>
+    </message>
+    <message>
         <source>Your entries added successfully.</source>
         <translation>Vos entrées ajoutées avec succès.</translation>
     </message>
-    </context>
+    <message>
+        <source>Settings file could not be read</source>
+        <translation>Le fichier des paramètres n'a pas pu être lu</translation>
+    </message>
+    <message>
+        <source>Settings file could not be written</source>
+        <translation>Le fichier des paramètres n'a pas pu être écrit</translation>
+    </message>
+</context>
 </TS>

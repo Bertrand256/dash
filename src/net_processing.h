@@ -7,7 +7,6 @@
 #define BITCOIN_NET_PROCESSING_H
 
 #include <net.h>
-#include <sync.h>
 #include <validationinterface.h>
 #include <version.h>
 
@@ -28,8 +27,6 @@ class CSporkManager;
 class CTransaction;
 struct CJContext;
 struct LLMQContext;
-
-extern RecursiveMutex cs_main;
 
 /** Default for -maxorphantxsize, maximum size in megabytes the orphan map can grow before entries are removed */
 static const unsigned int DEFAULT_MAX_ORPHAN_TRANSACTIONS_SIZE = 10; // this allows around 100 TXs of max size (and many more of normal size)
@@ -91,6 +88,9 @@ public:
     /** Is an inventory in the known inventory filter. Used by InstantSend. */
     virtual bool IsInvInFilter(NodeId nodeid, const uint256& hash) const = 0;
 
+    /** Ask a number of our peers, which have a transaction in their inventory, for the transaction. */
+    virtual void AskPeersForTransaction(const uint256& txid, bool is_masternode) = 0;
+
     /** Broadcast inventory message to a specific peer. */
     virtual void PushInventory(NodeId nodeid, const CInv& inv) = 0;
 
@@ -98,7 +98,8 @@ public:
     virtual void RelayDSQ(const CCoinJoinQueue& queue) = 0;
 
     /** Relay inventories to all peers */
-    virtual void RelayInv(CInv &inv, const int minProtoVersion = MIN_PEER_PROTO_VERSION) = 0;
+    virtual void RelayInv(CInv &inv) = 0;
+    virtual void RelayInv(CInv &inv, const int minProtoVersion) = 0;
     virtual void RelayInvFiltered(CInv &inv, const CTransaction &relatedTx,
                                   const int minProtoVersion = MIN_PEER_PROTO_VERSION) = 0;
 
@@ -110,8 +111,10 @@ public:
                                   const int minProtoVersion = MIN_PEER_PROTO_VERSION) = 0;
 
     /** Relay transaction to all peers. */
-    virtual void RelayTransaction(const uint256& txid)
-        EXCLUSIVE_LOCKS_REQUIRED(cs_main) = 0;
+    virtual void RelayTransaction(const uint256& txid) = 0;
+
+    /** Relay recovered sigs to all interested peers */
+    virtual void RelayRecoveredSig(const uint256& sigHash) = 0;
 
     /** Set the best height */
     virtual void SetBestHeight(int height) = 0;

@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024 The Dash Core developers
+// Copyright (c) 2018-2025 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -30,8 +30,9 @@ extern RecursiveMutex cs_main;
 
 namespace llmq
 {
-
 class CFinalCommitment;
+class CQuorumSnapshotManager;
+
 using CFinalCommitmentPtr = std::unique_ptr<CFinalCommitment>;
 
 class CQuorumBlockProcessor
@@ -40,6 +41,7 @@ private:
     CChainState& m_chainstate;
     CDeterministicMNManager& m_dmnman;
     CEvoDB& m_evoDb;
+    CQuorumSnapshotManager& m_qsnapman;
 
     mutable Mutex minableCommitmentsCs;
     std::map<std::pair<Consensus::LLMQType, uint256>, uint256> minableCommitmentsByQuorum GUARDED_BY(minableCommitmentsCs);
@@ -48,7 +50,8 @@ private:
     mutable std::map<Consensus::LLMQType, unordered_lru_cache<uint256, bool, StaticSaltedHasher>> mapHasMinedCommitmentCache GUARDED_BY(minableCommitmentsCs);
 
 public:
-    explicit CQuorumBlockProcessor(CChainState& chainstate, CDeterministicMNManager& dmnman, CEvoDB& evoDb);
+    explicit CQuorumBlockProcessor(CChainState& chainstate, CDeterministicMNManager& dmnman, CEvoDB& evoDb,
+                                   CQuorumSnapshotManager& qsnapman);
 
     MessageProcessingResult ProcessMessage(const CNode& peer, std::string_view msg_type, CDataStream& vRecv);
 

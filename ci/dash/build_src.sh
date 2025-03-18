@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright (c) 2021-2023 The Dash Core developers
+# Copyright (c) 2021-2024 The Dash Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #
@@ -25,7 +25,7 @@ if [ "$CHECK_DOC" = 1 ]; then
     # TODO: Check docs (re-enable after all Bitcoin PRs have been merged and docs fully fixed)
     #test/lint/check-doc.py
     # Run all linters
-    test/lint/lint-all.sh
+    test/lint/all-lint.py
 fi
 
 ccache --zero-stats --max-size=$CCACHE_SIZE

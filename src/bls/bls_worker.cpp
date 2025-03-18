@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2023 The Dash Core developers
+// Copyright (c) 2018-2024 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -762,7 +762,7 @@ bool CBLSWorker::VerifyVerificationVectors(Span<BLSVerificationVectorPtr> vvecs)
 void CBLSWorker::AsyncSign(const CBLSSecretKey& secKey, const uint256& msgHash, const CBLSWorker::SignDoneCallback& doneCallback)
 {
     workerPool.push([secKey, msgHash, doneCallback](int threadId) {
-        doneCallback(secKey.Sign(msgHash));
+        doneCallback(secKey.Sign(msgHash, bls::bls_legacy_scheme.load()));
     });
 }
 

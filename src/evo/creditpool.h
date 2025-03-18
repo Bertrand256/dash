@@ -10,11 +10,13 @@
 #include <serialize.h>
 #include <sync.h>
 #include <threadsafety.h>
+#include <tinyformat.h>
 #include <unordered_lru_cache.h>
 #include <util/ranges_set.h>
 
 #include <evo/assetlocktx.h>
 
+#include <gsl/pointers.h>
 #include <optional>
 #include <unordered_set>
 
@@ -133,11 +135,12 @@ private:
     std::optional<CCreditPool> GetFromCache(const CBlockIndex& block_index);
     void AddToCache(const uint256& block_hash, int height, const CCreditPool& pool);
 
-    CCreditPool ConstructCreditPool(const CBlockIndex* block_index, CCreditPool prev, const Consensus::Params& consensusParams);
+    CCreditPool ConstructCreditPool(const gsl::not_null<const CBlockIndex*> block_index, CCreditPool prev,
+                                    const Consensus::Params& consensusParams);
 };
 
 std::optional<CCreditPoolDiff> GetCreditPoolDiffForBlock(CCreditPoolManager& cpoolman, const BlockManager& blockman, const llmq::CQuorumManager& qman,
                                                          const CBlock& block, const CBlockIndex* pindexPrev, const Consensus::Params& consensusParams,
                                                          const CAmount blockSubsidy, BlockValidationState& state);
 
-#endif
+#endif // BITCOIN_EVO_CREDITPOOL_H

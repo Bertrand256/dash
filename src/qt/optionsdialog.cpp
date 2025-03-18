@@ -24,6 +24,8 @@
 #include <util/underlying.h>
 
 #include <QButtonGroup>
+#include <chrono>
+
 #include <QDataWidgetMapper>
 #include <QDir>
 #include <QIntValidator>
@@ -457,7 +459,7 @@ void OptionsDialog::showRestartWarning(bool fPersistent)
         ui->statusLabel->setText(tr("This change would require a client restart."));
         // clear non-persistent status label after 10 seconds
         // Todo: should perhaps be a class attribute, if we extend the use of statusLabel
-        QTimer::singleShot(10000, this, &OptionsDialog::clearStatusLabel);
+        QTimer::singleShot(10s, this, &OptionsDialog::clearStatusLabel);
     }
 }
 
@@ -544,7 +546,9 @@ void OptionsDialog::updateWidth()
     // Add 10 per button as padding and use minimum 585 which is what we used in css before
     int nWidth = std::max<int>(585, (nWidthWidestButton + 10) * nButtonsVisible);
     setMinimumWidth(nWidth);
-    resize(nWidth, height());
+
+    // Resize to new minimum width but don't shrink window
+    resize(std::max(width(), nWidth), height());
 }
 
 void OptionsDialog::showEvent(QShowEvent* event)

@@ -14,7 +14,7 @@
 #include <memory>
 
 FuzzedSock::FuzzedSock(FuzzedDataProvider& fuzzed_data_provider)
-    : m_fuzzed_data_provider{fuzzed_data_provider}
+    : m_fuzzed_data_provider{fuzzed_data_provider}, m_selectable{fuzzed_data_provider.ConsumeBool()}
 {
     m_socket = fuzzed_data_provider.ConsumeIntegralInRange<SOCKET>(INVALID_SOCKET - 1, INVALID_SOCKET);
 }
@@ -257,6 +257,24 @@ int FuzzedSock::GetSockName(sockaddr* name, socklen_t* name_len) const
     return 0;
 }
 
+bool FuzzedSock::SetNonBlocking() const
+{
+    constexpr std::array setnonblocking_errnos{
+        EBADF,
+        EPERM,
+    };
+    if (m_fuzzed_data_provider.ConsumeBool()) {
+        SetFuzzedErrNo(m_fuzzed_data_provider, setnonblocking_errnos);
+        return false;
+    }
+    return true;
+}
+
+bool FuzzedSock::IsSelectable() const
+{
+    return m_selectable;
+}
+
 bool FuzzedSock::Wait(std::chrono::milliseconds timeout, Event requested, Event* occurred) const
 {
     constexpr std::array wait_errnos{
@@ -390,6 +408,11 @@ bool ContainsSpentInput(const CTransaction& tx, const CCoinsViewCache& inputs) n
     return false;
 }
 
+CAddress ConsumeAddress(FuzzedDataProvider& fuzzed_data_provider) noexcept
+{
+    return {ConsumeService(fuzzed_data_provider), ConsumeWeakEnum(fuzzed_data_provider, ALL_SERVICE_FLAGS), NodeSeconds{std::chrono::seconds{fuzzed_data_provider.ConsumeIntegral<uint32_t>()}}};
+}
+
 FILE* FuzzedFileProvider::open()
 {
     SetFuzzedErrNo(m_fuzzed_data_provider);
@@ -456,7 +479,7 @@ ssize_t FuzzedFileProvider::write(void* cookie, const char* buf, size_t size)
     SetFuzzedErrNo(fuzzed_file->m_fuzzed_data_provider);
     const ssize_t n = fuzzed_file->m_fuzzed_data_provider.ConsumeIntegralInRange<ssize_t>(0, size);
     if (AdditionOverflow(fuzzed_file->m_offset, (int64_t)n)) {
-        return fuzzed_file->m_fuzzed_data_provider.ConsumeBool() ? 0 : -1;
+        return 0;
     }
     fuzzed_file->m_offset += n;
     return n;

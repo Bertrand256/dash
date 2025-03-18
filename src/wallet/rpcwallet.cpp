@@ -1,6 +1,6 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2020 The Bitcoin Core developers
-// Copyright (c) 2014-2024 The Dash Core developers
+// Copyright (c) 2014-2025 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -2015,7 +2015,7 @@ static RPCHelpMan walletpassphrase()
         }
 
         if (strWalletPass.empty()) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "passphrase can not be empty");
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "passphrase cannot be empty");
         }
 
         if (!pwallet->Unlock(strWalletPass, fForMixingOnly)) {
@@ -2087,7 +2087,7 @@ static RPCHelpMan walletpassphrasechange()
     strNewWalletPass = request.params[1].get_str().c_str();
 
     if (strOldWalletPass.empty() || strNewWalletPass.empty()) {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "passphrase can not be empty");
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "passphrase cannot be empty");
     }
 
     if (!pwallet->ChangeWalletPassphrase(strOldWalletPass, strNewWalletPass)) {
@@ -2184,7 +2184,7 @@ static RPCHelpMan encryptwallet()
     strWalletPass = request.params[0].get_str().c_str();
 
     if (strWalletPass.empty()) {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "passphrase can not be empty");
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "passphrase cannot be empty");
     }
 
     if (!pwallet->EncryptWallet(strWalletPass)) {
@@ -2204,8 +2204,9 @@ static RPCHelpMan lockunspent()
         "If no transaction outputs are specified when unlocking then all current locked transaction outputs are unlocked.\n"
         "A locked transaction output will not be chosen by automatic coin selection, when spending Dash.\n"
         "Manually selected coins are automatically unlocked.\n"
-        "Locks are stored in memory only. Nodes start with zero locked outputs, and the locked output list\n"
-        "is always cleared (by virtue of process exit) when a node stops or fails.\n"
+        "Locks are stored in memory only, unless persistent=true, in which case they will be written to the\n"
+        "wallet database and loaded on node start. Unwritten (persistent=false) locks are always cleared\n"
+        "(by virtue of process exit) when a node stops or fails. Unlocking will clear both persistent and not.\n"
         "Also see the listunspent call\n",
         {
             {"unlock", RPCArg::Type::BOOL, RPCArg::Optional::NO, "Whether to unlock (true) or lock (false) the specified transactions"},
@@ -2219,6 +2220,7 @@ static RPCHelpMan lockunspent()
                     },
                 },
             },
+            {"persistent", RPCArg::Type::BOOL, RPCArg::Default{false}, "Whether to write/erase this lock in the wallet database, or keep the change in memory only. Ignored for unlocking."},
         },
         RPCResult{
             RPCResult::Type::BOOL, "", "Whether the command was successful or not"
@@ -2232,6 +2234,8 @@ static RPCHelpMan lockunspent()
     + HelpExampleCli("listlockunspent", "") +
     "\nUnlock the transaction again\n"
     + HelpExampleCli("lockunspent", "true \"[{\\\"txid\\\":\\\"a08e6907dbbd3d809776dbfc5d82e371b764ed838b5655e72f463568df1aadf0\\\",\\\"vout\\\":1}]\"") +
+    "\nLock the transaction persistently in the wallet database\n"
+    + HelpExampleCli("lockunspent", "false \"[{\\\"txid\\\":\\\"a08e6907dbbd3d809776dbfc5d82e371b764ed838b5655e72f463568df1aadf0\\\",\\\"vout\\\":1}]\" true") +
     "\nAs a JSON-RPC call\n"
     + HelpExampleRpc("lockunspent", "false, \"[{\\\"txid\\\":\\\"a08e6907dbbd3d809776dbfc5d82e371b764ed838b5655e72f463568df1aadf0\\\",\\\"vout\\\":1}]\"")
         },
@@ -2250,9 +2254,13 @@ static RPCHelpMan lockunspent()
 
     bool fUnlock = request.params[0].get_bool();
 
+    const bool persistent{request.params[2].isNull() ? false : request.params[2].get_bool()};
+
     if (request.params[1].isNull()) {
-        if (fUnlock)
-            pwallet->UnlockAllCoins();
+        if (fUnlock) {
+            if (!pwallet->UnlockAllCoins())
+                throw JSONRPCError(RPC_WALLET_ERROR, "Unlocking coins failed");
+        }
         return true;
     }
 
@@ -2303,17 +2311,24 @@ static RPCHelpMan lockunspent()
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, expected locked output");
         }
 
-        if (!fUnlock && is_locked) {
+        if (!fUnlock && is_locked && !persistent) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, output already locked");
         }
 
         outputs.push_back(outpt);
     }
 
+    std::unique_ptr<WalletBatch> batch = nullptr;
+    // Unlock is always persistent
+    if (fUnlock || persistent) batch = std::make_unique<WalletBatch>(pwallet->GetDatabase());
+
     // Atomically set (un)locked status for the outputs.
     for (const COutPoint& outpt : outputs) {
-        if (fUnlock) pwallet->UnlockCoin(outpt);
-        else pwallet->LockCoin(outpt);
+        if (fUnlock) {
+            if (!pwallet->UnlockCoin(outpt, batch.get())) throw JSONRPCError(RPC_WALLET_ERROR, "Unlocking coin failed");
+        } else {
+            if (!pwallet->LockCoin(outpt, batch.get())) throw JSONRPCError(RPC_WALLET_ERROR, "Locking coin failed");
+        }
     }
 
     return true;
@@ -2356,14 +2371,9 @@ static RPCHelpMan listlockunspent()
 
     LOCK(pwallet->cs_wallet);
 
-    std::vector<COutPoint> vOutpts;
-    pwallet->ListLockedCoins(vOutpts);
-
     UniValue ret(UniValue::VARR);
-
-    for (const COutPoint& outpt : vOutpts) {
+    for (const COutPoint& outpt : pwallet->ListLockedCoins()) {
         UniValue o(UniValue::VOBJ);
-
         o.pushKV("txid", outpt.hash.GetHex());
         o.pushKV("vout", (int)outpt.n);
         ret.push_back(o);
@@ -4448,7 +4458,7 @@ RPCHelpMan walletprocesspsbt()
                 HELP_REQUIRING_PASSPHRASE,
         {
             {"psbt", RPCArg::Type::STR, RPCArg::Optional::NO, "The transaction base64 string"},
-            {"sign", RPCArg::Type::BOOL, RPCArg::Default{true}, "Also sign the transaction when updating"},
+            {"sign", RPCArg::Type::BOOL, RPCArg::Default{true}, "Also sign the transaction when updating (requires wallet to be unlocked)"},
             {"sighashtype", RPCArg::Type::STR, RPCArg::Default{"ALL"}, "The signature hash type to sign with if not specified by the PSBT. Must be one of\n"
     "       \"ALL\"\n"
     "       \"NONE\"\n"
@@ -4457,6 +4467,7 @@ RPCHelpMan walletprocesspsbt()
     "       \"NONE|ANYONECANPAY\"\n"
     "       \"SINGLE|ANYONECANPAY\""},
             {"bip32derivs", RPCArg::Type::BOOL, RPCArg::Default{true}, "Include BIP 32 derivation paths for public keys if we know them"},
+            {"finalize", RPCArg::Type::BOOL, RPCArg::Default{true}, "Also finalize inputs if possible"},
         },
         RPCResult{
             RPCResult::Type::OBJ, "", "",
@@ -4470,7 +4481,7 @@ RPCHelpMan walletprocesspsbt()
         },
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
-    RPCTypeCheck(request.params, {UniValue::VSTR, UniValue::VBOOL, UniValue::VSTR});
+    RPCTypeCheck(request.params, {UniValue::VSTR});
 
     std::shared_ptr<CWallet> const pwallet = GetWalletForJSONRPCRequest(request);
     if (!pwallet) return NullUniValue;
@@ -4497,8 +4508,12 @@ RPCHelpMan walletprocesspsbt()
     // Fill transaction with our data and also sign
     bool sign = request.params[1].isNull() ? true : request.params[1].get_bool();
     bool bip32derivs = request.params[3].isNull() ? true : request.params[3].get_bool();
+    bool finalize = request.params[4].isNull() ? true : request.params[4].get_bool();
     bool complete = true;
-    const TransactionError err{wallet.FillPSBT(psbtx, complete, nHashType, sign, bip32derivs)};
+
+    if (sign) EnsureWalletIsUnlocked(*pwallet);
+
+    const TransactionError err{wallet.FillPSBT(psbtx, complete, nHashType, sign, bip32derivs, nullptr, finalize)};
     if (err != TransactionError::OK) {
         throw JSONRPCTransactionError(err);
     }

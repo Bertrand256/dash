@@ -1,6 +1,6 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2020 The Bitcoin Core developers
-// Copyright (c) 2014-2024 The Dash Core developers
+// Copyright (c) 2014-2025 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -75,6 +75,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "waitforblockheight", 0, "height" },
     { "waitforblockheight", 1, "timeout" },
     { "waitforblock", 1, "timeout" },
+    { "reconsiderblock", 1, "ignore_chainlocks" },
     { "waitfornewblock", 0, "timeout" },
     { "listtransactions", 1, "count" },
     { "listtransactions", 2, "skip" },
@@ -115,6 +116,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "gettransaction", 1, "include_watchonly" },
     { "gettransaction", 2, "verbose" },
     { "getrawtransaction", 1, "verbose" },
+    { "getislocks", 0, "txids" },
     { "getrawtransactionmulti", 0, "transactions" },
     { "getrawtransactionmulti", 1, "verbose" },
     { "gettxchainlocks", 0, "txids" },
@@ -138,6 +140,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "walletcreatefundedpsbt", 4, "bip32derivs" },
     { "walletprocesspsbt", 1, "sign" },
     { "walletprocesspsbt", 3, "bip32derivs" },
+    { "walletprocesspsbt", 4, "finalize" },
     { "createpsbt", 0, "inputs" },
     { "createpsbt", 1, "outputs" },
     { "createpsbt", 2, "locktime" },
@@ -152,6 +155,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "gettxoutsetinfo", 2, "use_index"},
     { "lockunspent", 0, "unlock" },
     { "lockunspent", 1, "transactions" },
+    { "lockunspent", 2, "persistent" },
     { "send", 0, "outputs" },
     { "send", 1, "conf_target" },
     { "send", 3, "fee_rate"},

@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2024 The Dash Core developers
+// Copyright (c) 2021-2025 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -54,7 +54,7 @@ struct LLMQParams {
     // the size of the quorum, e.g. 50 or 400
     int size;
 
-    // The minimum number of valid members after the DKK. If less members are determined valid, no commitment can be
+    // The minimum number of valid members after the DKG. If less members are determined valid, no commitment can be
     // created. Should be higher then the threshold to allow some room for failing nodes, otherwise quorum might end up
     // not being able to ever created a recovered signature if more nodes fail after the DKG
     int minSize;

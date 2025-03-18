@@ -1,6 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2020 The Bitcoin Core developers
-// Copyright (c) 2014-2024 The Dash Core developers
+// Copyright (c) 2014-2025 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -152,8 +152,8 @@ extern const std::map<uint64_t,std::string> WALLET_FLAG_CAVEATS;
 // evaluating arguments when logging for the category is not enabled.
 #define WalletCJLogPrint(wallet, ...)               \
     do {                                            \
-        if (LogAcceptCategory(BCLog::COINJOIN)) {   \
-            wallet->WalletLogPrintf(__VA_ARGS__);    \
+        if (LogAcceptDebug(BCLog::COINJOIN)) {      \
+            wallet->WalletLogPrintf(__VA_ARGS__);   \
         }                                           \
     } while (0)
 
@@ -759,10 +759,16 @@ private:
      */
     typedef std::multimap<COutPoint, uint256> TxSpends;
     TxSpends mapTxSpends GUARDED_BY(cs_wallet);
-    void AddToSpends(const COutPoint& outpoint, const uint256& wtxid) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
-    void AddToSpends(const uint256& wtxid) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    void AddToSpends(const COutPoint& outpoint, const uint256& wtxid, WalletBatch* batch = nullptr) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    void AddToSpends(const uint256& wtxid, WalletBatch* batch = nullptr) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     std::set<COutPoint> setWalletUTXO;
+    /** Add new UTXOs to the wallet UTXO set
+     *
+     *  @param[in] tx         Transaction to scan eligible UTXOs from
+     *  @param[in] ret_dups   Allow UTXOs already in set to be included in return value
+     *  @returns              Set of all new UTXOs (eligible to be) added to set */
+    std::set<COutPoint> AddWalletUTXOs(CTransactionRef tx, bool ret_dups) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     mutable std::map<COutPoint, int> mapOutpointRoundsCache GUARDED_BY(cs_wallet);
 
     /**
@@ -1032,12 +1038,16 @@ public:
 
     std::vector<OutputGroup> GroupOutputs(const std::vector<COutput>& outputs, bool separate_coins, const CFeeRate& effective_feerate, const CFeeRate& long_term_feerate, const CoinEligibilityFilter& filter, bool positive_only) const;
 
+    void RecalculateMixedCredit(const uint256 hash) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+
     bool IsLockedCoin(uint256 hash, unsigned int n) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
-    void LockCoin(const COutPoint& output) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
-    void UnlockCoin(const COutPoint& output) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
-    void UnlockAllCoins() EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
-    void ListLockedCoins(std::vector<COutPoint>& vOutpts) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
-    void ListProTxCoins(std::vector<COutPoint>& vOutpts) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    bool LockCoin(const COutPoint& output, WalletBatch* batch = nullptr) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    bool UnlockCoin(const COutPoint& output, WalletBatch* batch = nullptr) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    bool UnlockAllCoins() EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    std::vector<COutPoint> ListLockedCoins() const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    std::vector<COutPoint> ListProTxCoins() const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    std::vector<COutPoint> ListProTxCoins(const std::set<COutPoint>& utxos) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    void LockProTxCoins(const std::set<COutPoint>& utxos, WalletBatch* batch = nullptr) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /*
      * Rescan abort properties
@@ -1162,6 +1172,8 @@ public:
      * @param[in]  sighash_type the sighash type to use when signing (if PSBT does not specify)
      * @param[in]  sign whether to sign or not
      * @param[in]  bip32derivs whether to fill in bip32 derivation information if available
+     * @param[out] n_signed the number of inputs signed by this wallet
+     * @param[in] finalize whether to create the final scriptSig
      * return error
      */
     [[nodiscard]] TransactionError FillPSBT(PartiallySignedTransaction& psbtx,
@@ -1169,7 +1181,8 @@ public:
                   int sighash_type = 1 /* SIGHASH_ALL */,
                   bool sign = true,
                   bool bip32derivs = true,
-                  size_t* n_signed = nullptr) const;
+                  size_t* n_signed = nullptr,
+                  bool finalize = true) const;
 
     /**
      * Create a new transaction paying the recipients with a set of coins

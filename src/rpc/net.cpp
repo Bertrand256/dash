@@ -24,6 +24,7 @@
 #include <timedata.h>
 #include <util/strencodings.h>
 #include <util/string.h>
+#include <util/time.h>
 #include <util/translation.h>
 #include <validation.h>
 #include <version.h>
@@ -240,7 +241,7 @@ static RPCHelpMan getpeerinfo()
         obj.pushKV("masternode", stats.m_masternode_connection);
         if (fStateStats) {
             if (IsDeprecatedRPCEnabled("banscore")) {
-                // banscore is deprecated in v21 for removal in v22
+                // TODO: banscore is deprecated in v21 for removal in v22, maybe impossible due to usages in p2p_quorum_data.py
                 obj.pushKV("banscore", statestats.m_misbehavior_score);
             }
             obj.pushKV("startingheight", statestats.m_starting_height);
@@ -359,7 +360,7 @@ static RPCHelpMan addconnection()
         {
             {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The IP address and port to attempt connecting to."},
             {"connection_type", RPCArg::Type::STR, RPCArg::Optional::NO, "Type of connection to open (\"outbound-full-relay\", \"block-relay-only\", \"addr-fetch\" or \"feeler\")."},
-            {"v2transport", RPCArg::Type::BOOL, RPCArg::Default{false}, "Attempt to connect using BIP324 v2 transport protocol"},
+            {"v2transport", RPCArg::Type::BOOL, RPCArg::Optional::NO, "Attempt to connect using BIP324 v2 transport protocol"},
         },
         RPCResult{
             RPCResult::Type::OBJ, "", "",
@@ -687,9 +688,9 @@ static RPCHelpMan getnetworkinfo()
         obj.pushKV("connections_mn",   (int)node.connman->GetNodeCount(ConnectionDirection::Verified));
         obj.pushKV("connections_mn_in",   (int)node.connman->GetNodeCount(ConnectionDirection::VerifiedIn));
         obj.pushKV("connections_mn_out",   (int)node.connman->GetNodeCount(ConnectionDirection::VerifiedOut));
-        std::string sem_str = SEMToString(node.connman->GetSocketEventsMode());
+        std::string_view sem_str = SEMToString(node.connman->GetSocketEventsMode());
         CHECK_NONFATAL(sem_str != "unknown");
-        obj.pushKV("socketevents", sem_str);
+        obj.pushKV("socketevents", std::string(sem_str));
     }
     obj.pushKV("networks",      GetNetworksInfo());
     obj.pushKV("relayfee",      ValueFromAmount(::minRelayTxFee.GetFeePerK()));
@@ -922,7 +923,9 @@ static RPCHelpMan setnetworkactive()
 static RPCHelpMan getnodeaddresses()
 {
     return RPCHelpMan{"getnodeaddresses",
-                "\nReturn known addresses, which can potentially be used to find new nodes in the network.\n",
+                "Return known addresses, after filtering for quality and recency.\n"
+                "These can potentially be used to find new peers in the network.\n"
+                "The total number of addresses known to the node may be higher.",
                 {
                     {"count", RPCArg::Type::NUM, RPCArg::Default{1}, "The maximum number of addresses to return. Specify 0 to return all known addresses."},
                     {"network", RPCArg::Type::STR, RPCArg::DefaultHint{"all networks"}, "Return only addresses of the specified network. Can be one of: " + Join(GetNetworkNames(), ", ") + "."},
@@ -966,7 +969,7 @@ static RPCHelpMan getnodeaddresses()
 
     for (const CAddress& addr : vAddr) {
         UniValue obj(UniValue::VOBJ);
-        obj.pushKV("time", (int)addr.nTime);
+        obj.pushKV("time", int64_t{TicksSinceEpoch<std::chrono::seconds>(addr.nTime)});
         obj.pushKV("services", (uint64_t)addr.nServices);
         obj.pushKV("address", addr.ToStringAddr());
         obj.pushKV("port", addr.GetPort());
@@ -1015,7 +1018,7 @@ static RPCHelpMan addpeeraddress()
 
     if (net_addr.has_value()) {
         CAddress address{{net_addr.value(), port}, ServiceFlags{NODE_NETWORK}};
-        address.nTime = GetAdjustedTime();
+        address.nTime = Now<NodeSeconds>();
         // The source address is set equal to the address. This is equivalent to the peer
         // announcing itself.
         if (node.addrman->Add({address}, address)) {
@@ -1123,10 +1126,10 @@ static const CRPCCommand commands[] =
     { "network",             &setban,                  },
     { "network",             &listbanned,              },
     { "network",             &clearbanned,             },
-    { "network",             &cleardiscouraged,        },
     { "network",             &setnetworkactive,        },
     { "network",             &getnodeaddresses,        },
 
+    { "hidden",              &cleardiscouraged,        },
     { "hidden",              &addconnection,           },
     { "hidden",              &addpeeraddress,          },
     { "hidden",              &sendmsgtopeer            },

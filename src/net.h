@@ -9,7 +9,7 @@
 #include <bip324.h>
 #include <chainparams.h>
 #include <common/bloom.h>
-#include <compat.h>
+#include <compat/compat.h>
 #include <consensus/amount.h>
 #include <fs.h>
 #include <crypto/siphash.h>
@@ -42,6 +42,7 @@
 #include <cstdint>
 #include <deque>
 #include <functional>
+#include <list>
 #include <map>
 #include <memory>
 #include <optional>
@@ -115,7 +116,7 @@ static const bool DEFAULT_FIXEDSEEDS = true;
 static const size_t DEFAULT_MAXRECEIVEBUFFER = 5 * 1000;
 static const size_t DEFAULT_MAXSENDBUFFER    = 1 * 1000;
 
-static constexpr bool DEFAULT_V2_TRANSPORT{false};
+static constexpr bool DEFAULT_V2_TRANSPORT{true};
 
 #if defined USE_KQUEUE
 #define DEFAULT_SOCKETEVENTS "kqueue"
@@ -764,7 +765,7 @@ public:
     const std::chrono::seconds m_connected;
     std::atomic<int64_t> nTimeOffset{0};
     std::atomic<int64_t> nLastWarningTime{0};
-    std::atomic<int64_t> nTimeFirstMessageReceived{0};
+    std::atomic<std::chrono::seconds> nTimeFirstMessageReceived{0s};
     std::atomic<bool> fFirstMessageIsMNAUTH{false};
     // Address of this peer
     const CAddress addr;
@@ -976,8 +977,6 @@ public:
     // If true, we will send him CoinJoin queue messages
     std::atomic<bool> fSendDSQueue{false};
 
-    // If true, we will announce/send him plain recovered sigs (usually true for full nodes)
-    std::atomic<bool> fSendRecSigs{false};
     // If true, we will send him all quorum related messages, even if he is not a member of our quorums
     std::atomic<bool> qwatch{false};
 
@@ -1230,7 +1229,7 @@ public:
         nMaxAddnode = connOptions.nMaxAddnode;
         nMaxFeeler = connOptions.nMaxFeeler;
         m_max_outbound = m_max_outbound_full_relay + m_max_outbound_block_relay + nMaxFeeler;
-        clientInterface = connOptions.uiInterface;
+        m_client_interface = connOptions.uiInterface;
         m_banman = connOptions.m_banman;
         m_msgproc = connOptions.m_msgproc;
         nSendBufferMaxSize = connOptions.nSendBufferMaxSize;
@@ -1464,10 +1463,7 @@ public:
     void SetTryNewOutboundPeer(bool flag);
     bool GetTryNewOutboundPeer() const;
 
-    void StartExtraBlockRelayPeers() {
-        LogPrint(BCLog::NET, "net: enabling extra block-relay-only peers\n");
-        m_start_extra_block_relay_peers = true;
-    }
+    void StartExtraBlockRelayPeers();
 
     // Return the number of outbound peers we have in excess of our target (eg,
     // if we previously called SetTryNewOutboundPeer(true), and have since set
@@ -1501,14 +1497,14 @@ public:
         EXCLUSIVE_LOCKS_REQUIRED(!m_unused_i2p_sessions_mutex, !mutexMsgProc);
 
     bool AddPendingMasternode(const uint256& proTxHash);
-    void SetMasternodeQuorumNodes(Consensus::LLMQType llmqType, const uint256& quorumHash, const std::set<uint256>& proTxHashes);
-    void SetMasternodeQuorumRelayMembers(Consensus::LLMQType llmqType, const uint256& quorumHash, const std::set<uint256>& proTxHashes);
-    bool HasMasternodeQuorumNodes(Consensus::LLMQType llmqType, const uint256& quorumHash);
-    std::set<uint256> GetMasternodeQuorums(Consensus::LLMQType llmqType);
+    void SetMasternodeQuorumNodes(Consensus::LLMQType llmqType, const uint256& quorumHash, const std::unordered_set<uint256, StaticSaltedHasher>& proTxHashes);
+    void SetMasternodeQuorumRelayMembers(Consensus::LLMQType llmqType, const uint256& quorumHash, const std::unordered_set<uint256, StaticSaltedHasher>& proTxHashes);
+    bool HasMasternodeQuorumNodes(Consensus::LLMQType llmqType, const uint256& quorumHash) const;
+    std::unordered_set<uint256, StaticSaltedHasher> GetMasternodeQuorums(Consensus::LLMQType llmqType) const;
     // also returns QWATCH nodes
-    std::set<NodeId> GetMasternodeQuorumNodes(Consensus::LLMQType llmqType, const uint256& quorumHash) const;
+    std::unordered_set<NodeId> GetMasternodeQuorumNodes(Consensus::LLMQType llmqType, const uint256& quorumHash) const;
     void RemoveMasternodeQuorumNodes(Consensus::LLMQType llmqType, const uint256& quorumHash);
-    bool IsMasternodeQuorumNode(const CNode* pnode, const CDeterministicMNList& tip_mn_list);
+    bool IsMasternodeQuorumNode(const CNode* pnode, const CDeterministicMNList& tip_mn_list) const;
     bool IsMasternodeQuorumRelayMember(const uint256& protxHash);
     void AddPendingProbeConnections(const std::set<uint256>& proTxHashes);
 
@@ -1815,8 +1811,8 @@ private:
 
     std::vector<uint256> vPendingMasternodes;
     mutable RecursiveMutex cs_vPendingMasternodes;
-    std::map<std::pair<Consensus::LLMQType, uint256>, std::set<uint256>> masternodeQuorumNodes GUARDED_BY(cs_vPendingMasternodes);
-    std::map<std::pair<Consensus::LLMQType, uint256>, std::set<uint256>> masternodeQuorumRelayMembers GUARDED_BY(cs_vPendingMasternodes);
+    std::map<std::pair<Consensus::LLMQType, uint256>, std::unordered_set<uint256, StaticSaltedHasher>> masternodeQuorumNodes GUARDED_BY(cs_vPendingMasternodes);
+    std::map<std::pair<Consensus::LLMQType, uint256>, std::unordered_set<uint256, StaticSaltedHasher>> masternodeQuorumRelayMembers GUARDED_BY(cs_vPendingMasternodes);
     std::set<uint256> masternodePendingProbes GUARDED_BY(cs_vPendingMasternodes);
 
     mutable Mutex cs_mapSocketToNode;
@@ -1879,7 +1875,7 @@ private:
     int nMaxFeeler;
     int m_max_outbound;
     bool m_use_addrman_outgoing;
-    CClientUIInterface* clientInterface;
+    CClientUIInterface* m_client_interface;
     NetEventsInterface* m_msgproc;
     /** Pointer to this node's banman. May be nullptr - check existence before dereferencing. */
     BanMan* m_banman;
@@ -1985,6 +1981,8 @@ private:
         std::string destination;
         ConnectionType conn_type;
         bool use_v2transport;
+        bool masternode_connection;
+        bool masternode_probe_connection;
     };
 
     /**

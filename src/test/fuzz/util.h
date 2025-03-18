@@ -9,7 +9,7 @@
 #include <attributes.h>
 #include <chainparamsbase.h>
 #include <coins.h>
-#include <compat.h>
+#include <compat/compat.h>
 #include <consensus/amount.h>
 #include <consensus/consensus.h>
 #include <key.h>
@@ -53,6 +53,13 @@ class FuzzedSock : public Sock
      */
     mutable std::optional<uint8_t> m_peek_data;
 
+    /**
+     * Whether to pretend that the socket is select(2)-able. This is randomly set in the
+     * constructor. It should remain constant so that repeated calls to `IsSelectable()`
+     * return the same value.
+     */
+    const bool m_selectable;
+
 public:
     explicit FuzzedSock(FuzzedDataProvider& fuzzed_data_provider);
 
@@ -79,6 +86,10 @@ public:
     int SetSockOpt(int level, int opt_name, const void* opt_val, socklen_t opt_len) const override;
 
     int GetSockName(sockaddr* name, socklen_t* name_len) const override;
+
+    bool SetNonBlocking() const override;
+
+    bool IsSelectable() const override;
 
     bool Wait(std::chrono::milliseconds timeout, Event requested, Event* occurred = nullptr) const override;
 
@@ -307,10 +318,7 @@ inline CService ConsumeService(FuzzedDataProvider& fuzzed_data_provider) noexcep
     return {ConsumeNetAddr(fuzzed_data_provider), fuzzed_data_provider.ConsumeIntegral<uint16_t>()};
 }
 
-inline CAddress ConsumeAddress(FuzzedDataProvider& fuzzed_data_provider) noexcept
-{
-    return {ConsumeService(fuzzed_data_provider), ConsumeWeakEnum(fuzzed_data_provider, ALL_SERVICE_FLAGS), fuzzed_data_provider.ConsumeIntegral<uint32_t>()};
-}
+CAddress ConsumeAddress(FuzzedDataProvider& fuzzed_data_provider) noexcept;
 
 template <bool ReturnUniquePtr = false>
 auto ConsumeNode(FuzzedDataProvider& fuzzed_data_provider, const std::optional<NodeId>& node_id_in = std::nullopt) noexcept

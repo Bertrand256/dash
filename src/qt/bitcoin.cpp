@@ -16,7 +16,7 @@
 #include <interfaces/node.h>
 #include <net.h>
 #include <node/context.h>
-#include <node/ui_interface.h>
+#include <node/interface_ui.h>
 #include <noui.h>
 #include <qt/bitcoingui.h>
 #include <qt/clientmodel.h>
@@ -44,6 +44,7 @@
 #endif // ENABLE_WALLET
 
 #include <boost/signals2/connection.hpp>
+#include <chrono>
 #include <memory>
 
 #include <QApplication>
@@ -262,7 +263,6 @@ void BitcoinApplication::createSplashScreen(const NetworkStyle *networkStyle)
     // We don't hold a direct pointer to the splash screen after creation, but the splash
     // screen will take care of deleting itself when finish() happens.
     m_splash->show();
-    connect(this, &BitcoinApplication::requestedInitialize, m_splash, &SplashScreen::handleLoadWallet);
     connect(this, &BitcoinApplication::splashFinished, m_splash, &SplashScreen::finish);
     connect(this, &BitcoinApplication::requestedShutdown, m_splash, &QWidget::close);
 }
@@ -398,10 +398,10 @@ void BitcoinApplication::initializeResult(bool success, interfaces::BlockAndHead
             connect(paymentServer, &PaymentServer::message, [this](const QString& title, const QString& message, unsigned int style) {
                 window->message(title, message, style);
             });
-            QTimer::singleShot(100, paymentServer, &PaymentServer::uiReady);
+            QTimer::singleShot(100ms, paymentServer, &PaymentServer::uiReady);
         }
 #endif
-        pollShutdownTimer->start(200);
+        pollShutdownTimer->start(SHUTDOWN_POLLING_DELAY);
     } else {
         Q_EMIT splashFinished(); // Make sure splash screen doesn't stick around during shutdown
         quit(); // Exit first main loop invocation
@@ -510,7 +510,7 @@ int GuiMain(int argc, char* argv[])
         InitError(strprintf(Untranslated("Error parsing command line arguments: %s\n"), error));
         // Create a message box, because the gui has neither been created nor has subscribed to core signals
         QMessageBox::critical(nullptr, PACKAGE_NAME,
-            // message can not be translated because translations have not been initialized
+            // message cannot be translated because translations have not been initialized
             QString::fromStdString("Error parsing command line arguments: %1.").arg(QString::fromStdString(error)));
         return EXIT_FAILURE;
     }
@@ -680,7 +680,7 @@ int GuiMain(int argc, char* argv[])
     }
     // Validate/set custom css directory
     if (gArgs.IsArgSet("-custom-css-dir")) {
-        fs::path customDir = fs::PathFromString(gArgs.GetArg("-custom-css-dir", ""));
+        fs::path customDir = gArgs.GetPathArg("-custom-css-dir");
         QString strCustomDir = GUIUtil::PathToQString(customDir);
         std::vector<QString> vecRequiredFiles = GUIUtil::listStyleSheets();
         QString strFile;

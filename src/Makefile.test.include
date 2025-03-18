@@ -139,6 +139,7 @@ BITCOIN_TESTS =\
   test/net_peer_eviction_tests.cpp \
   test/net_tests.cpp \
   test/netbase_tests.cpp \
+  test/orphanage_tests.cpp \
   test/pmt_tests.cpp \
   test/policyestimator_tests.cpp \
   test/pool_tests.cpp \
@@ -174,6 +175,7 @@ BITCOIN_TESTS =\
   test/torcontrol_tests.cpp \
   test/transaction_tests.cpp \
   test/txindex_tests.cpp \
+  test/txpackage_tests.cpp \
   test/txreconciliation_tests.cpp \
   test/txvalidation_tests.cpp \
   test/txvalidationcache_tests.cpp \
@@ -375,8 +377,8 @@ check-unit: $(BITCOIN_TESTS:.cpp=.cpp.test)
 
 check-local: check-unit
 if BUILD_BITCOIN_TX
-	@echo "Running test/util/bitcoin-util-test.py..."
-	$(PYTHON) $(top_builddir)/test/util/bitcoin-util-test.py
+	@echo "Running test/util/test_runner.py..."
+	$(PYTHON) $(top_builddir)/test/util/test_runner.py
 endif
 	@echo "Running test/util/rpcauth-test.py..."
 	$(PYTHON) $(top_builddir)/test/util/rpcauth-test.py

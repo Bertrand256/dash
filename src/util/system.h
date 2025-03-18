@@ -1,6 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2020 The Bitcoin Core developers
-// Copyright (c) 2014-2024 The Dash Core developers
+// Copyright (c) 2014-2025 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -16,8 +16,8 @@
 #endif
 
 #include <attributes.h>
-#include <compat.h>
 #include <compat/assumptions.h>
+#include <compat/compat.h>
 #include <consensus/amount.h>
 #include <fs.h>
 #include <logging.h>
@@ -98,6 +98,7 @@ std::streampos GetFileSize(const char* path, std::streamsize max = std::numeric_
 /** Release all directory locks. This is used for unit testing only, at runtime
  * the global destructor will take care of the locks.
  */
+/** Dash: We also use this to release locks earlier when restarting the client */
 void ReleaseDirectoryLocks();
 
 bool TryCreateDirectories(const fs::path& p);
@@ -178,12 +179,19 @@ struct SectionInfo
 class ArgsManager
 {
 public:
+    /**
+     * Flags controlling how config and command line arguments are validated and
+     * interpreted.
+     */
     enum Flags : uint32_t {
-        // Boolean options can accept negation syntax -noOPTION or -noOPTION=1
-        ALLOW_BOOL = 0x01,
-        ALLOW_INT = 0x02,
-        ALLOW_STRING = 0x04,
-        ALLOW_ANY = ALLOW_BOOL | ALLOW_INT | ALLOW_STRING,
+        ALLOW_ANY = 0x01,         //!< disable validation
+        ALLOW_BOOL = 0x02,        //!< unimplemented, draft implementation in #16545
+        ALLOW_INT = 0x04,         //!< unimplemented, draft implementation in #16545
+        ALLOW_STRING = 0x08,      //!< unimplemented, draft implementation in #16545
+        ALLOW_LIST = 0x10,        //!< unimplemented, draft implementation in #16545
+        DISALLOW_NEGATION = 0x20, //!< disallow -nofoo syntax
+        DISALLOW_ELISION = 0x40,  //!< disallow -foo syntax that doesn't assign any value
+
         DEBUG_ONLY = 0x100,
         /* Some options would cause cross-contamination if values for
          * mainnet were used while running on regtest/testnet (or vice-versa).
@@ -284,16 +292,6 @@ protected:
     const std::map<std::string, std::vector<util::SettingsValue>> GetCommandLineArgs() const;
 
     /**
-     * Get a normalized path from a specified pathlike argument
-     *
-     * It is guaranteed that the returned path has no trailing slashes.
-     *
-     * @param pathlike_arg Pathlike argument to get a path from (e.g., "-datadir", "-blocksdir" or "-walletdir")
-     * @return Normalized path which is get from a specified pathlike argument
-     */
-    fs::path GetPathArg(std::string pathlike_arg) const;
-
-    /**
      * Get blocks directory path
      *
      * @return Blocks path which is network specific
@@ -356,6 +354,18 @@ protected:
      * @return command-line argument or default value
      */
     std::string GetArg(const std::string& strArg, const std::string& strDefault) const;
+
+    /**
+     * Return path argument or default value
+     *
+     * @param arg Argument to get a path from (e.g., "-datadir", "-blocksdir" or "-walletdir")
+     * @param default_value Optional default value to return instead of the empty path.
+     * @return normalized path if argument is set, with redundant "." and ".."
+     * path components and trailing separators removed (see patharg unit test
+     * for examples or implementation for details). If argument is empty or not
+     * set, default_value is returned unchanged.
+     */
+    fs::path GetPathArg(std::string arg, const fs::path& default_value = {}) const;
 
     /**
      * Return integer argument or default value

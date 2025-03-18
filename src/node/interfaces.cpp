@@ -30,7 +30,7 @@
 #include <node/blockstorage.h>
 #include <node/coin.h>
 #include <node/context.h>
-#include <node/ui_interface.h>
+#include <node/interface_ui.h>
 #include <node/transaction.h>
 #include <policy/feerate.h>
 #include <policy/fees.h>
@@ -43,7 +43,6 @@
 #include <shutdown.h>
 #include <support/allocators/secure.h>
 #include <sync.h>
-#include <timedata.h>
 #include <txmempool.h>
 #include <uint256.h>
 #include <util/check.h>
@@ -528,6 +527,10 @@ public:
     {
         return MakeHandler(::uiInterface.ShowProgress_connect(fn));
     }
+    std::unique_ptr<Handler> handleInitWallet(InitWalletFn fn) override
+    {
+        return MakeHandler(::uiInterface.InitWallet_connect(fn));
+    }
     std::unique_ptr<Handler> handleNotifyNumConnectionsChanged(NotifyNumConnectionsChangedFn fn) override
     {
         return MakeHandler(::uiInterface.NotifyNumConnectionsChanged_connect(fn));
@@ -783,7 +786,7 @@ public:
         if (m_node.llmq_ctx == nullptr || m_node.llmq_ctx->clhandler == nullptr) return false;
         return m_node.llmq_ctx->clhandler->HasChainLock(height, hash);
     }
-    std::vector<COutPoint> listMNCollaterials(const std::vector<std::pair<const CTransactionRef&, unsigned int>>& outputs) override
+    std::vector<COutPoint> listMNCollaterials(const std::vector<std::pair<const CTransactionRef&, uint32_t>>& outputs) override
     {
         const CBlockIndex *tip = WITH_LOCK(::cs_main, return chainman().ActiveChain().Tip());
         CDeterministicMNList mnList{};

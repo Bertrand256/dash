@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2024 The Dash Core developers
+// Copyright (c) 2014-2025 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -426,13 +426,12 @@ std::string GetCrashInfoStrFromSerializedStr(const std::string& ciStr)
 {
     static uint64_t basePtr = GetBaseAddress();
 
-    bool dataInvalid = false;
-    auto buf = DecodeBase32(ciStr.c_str(), &dataInvalid);
-    if (buf.empty() || dataInvalid) {
+    auto opt_buf = DecodeBase32(ciStr.c_str());
+    if (!opt_buf.has_value() || opt_buf->empty()) {
         return "Error while deserializing crash info";
     }
 
-    CDataStream ds(buf, SER_DISK, 0);
+    CDataStream ds(*opt_buf, SER_DISK, 0);
 
     crash_info_header hdr;
     try {

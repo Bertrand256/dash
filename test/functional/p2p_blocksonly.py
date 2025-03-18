@@ -57,6 +57,7 @@ class P2PBlocksOnly(BitcoinTestFramework):
         second_peer = self.nodes[0].add_p2p_connection(P2PInterface())
         peer_1_info = self.nodes[0].getpeerinfo()[0]
         assert_equal(peer_1_info['permissions'], ['relay'])
+        assert_equal(first_peer.relay, 1)
         peer_2_info = self.nodes[0].getpeerinfo()[1]
         assert_equal(peer_2_info['permissions'], ['relay'])
         assert_equal(self.nodes[0].testmempoolaccept([tx_hex])[0]['allowed'], True)
@@ -115,7 +116,7 @@ class P2PBlocksOnly(BitcoinTestFramework):
 
     def check_p2p_tx_violation(self):
         self.log.info('Check that txs from P2P are rejected and result in disconnect')
-        spendtx = self.miniwallet.create_self_transfer(from_node=self.nodes[0])
+        spendtx = self.miniwallet.create_self_transfer()
 
         with self.nodes[0].assert_debug_log(['tx sent in violation of protocol peer=0']):
             self.nodes[0].p2ps[0].send_message(msg_tx(spendtx['tx']))

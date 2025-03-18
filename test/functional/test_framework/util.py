@@ -36,13 +36,14 @@ def assert_approx(v, vexp, vspan=0.00001):
         raise AssertionError("%s > [%s..%s]" % (str(v), str(vexp - vspan), str(vexp + vspan)))
 
 
-def assert_fee_amount(fee, tx_size, fee_per_kB):
-    """Assert the fee was in range"""
-    target_fee = round(tx_size * fee_per_kB / 1000, 8)
+def assert_fee_amount(fee, tx_size, feerate_DASH_kvB):
+    """Assert the fee is in range."""
+    feerate_DASH_vB = feerate_DASH_kvB / 1000
+    target_fee = satoshi_round(tx_size * feerate_DASH_vB)
     if fee < target_fee:
         raise AssertionError("Fee of %s DASH too low! (Should be %s DASH)" % (str(fee), str(target_fee)))
     # allow the wallet's estimation to be at most 2 bytes off
-    if fee > (tx_size + 2) * fee_per_kB / 1000:
+    if fee > (tx_size + 2) * feerate_DASH_vB:
         raise AssertionError("Fee of %s DASH too high! (Should be %s DASH)" % (str(fee), str(target_fee)))
 
 
@@ -526,9 +527,7 @@ def force_finish_mnsync(node):
     Masternodes won't accept incoming connections while IsSynced is false.
     Force them to switch to this state to speed things up.
     """
-    while True:
-        if node.mnsync("status")['IsSynced']:
-            break
+    while not node.mnsync("status")['IsSynced']:
         node.mnsync("next")
 
 # Transaction/Block functions
@@ -645,17 +644,17 @@ def create_lots_of_big_transactions(node, txouts, utxos, num, fee):
     return txids
 
 
-def mine_large_block(test_framework, node, utxos=None):
+def mine_large_block(test_framework, mini_wallet, node):
     # generate a 66k transaction,
     # and 14 of them is close to the 1MB block limit
-    num = 14
     txouts = gen_return_txouts()
-    utxos = utxos if utxos is not None else []
-    if len(utxos) < num:
-        utxos.clear()
-        utxos.extend(node.listunspent())
-    fee = 100 * node.getnetworkinfo()["relayfee"]
-    create_lots_of_big_transactions(node, txouts, utxos, num, fee=fee)
+    from .messages import COIN
+    fee = 100 * int(node.getnetworkinfo()["relayfee"] * COIN)
+    for _ in range(14):
+        tx = mini_wallet.create_self_transfer(from_node=node, fee_rate=0, mempool_valid=False)['tx']
+        tx.vout[0].nValue -= fee
+        tx.vout.extend(txouts)
+        mini_wallet.sendrawtransaction(from_node=node, tx_hex=tx.serialize().hex())
     test_framework.generate(node, 1)
 
 

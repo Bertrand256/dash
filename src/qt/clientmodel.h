@@ -1,5 +1,5 @@
 // Copyright (c) 2011-2020 The Bitcoin Core developers
-// Copyright (c) 2014-2024 The Dash Core developers
+// Copyright (c) 2014-2025 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -122,7 +122,7 @@ private:
     // representation of the list in UI during initial sync/reindex, so we cache it here too.
     mutable RecursiveMutex cs_mnlinst; // protects mnListCached
     CDeterministicMNListPtr mnListCached;
-    const CBlockIndex* mnListTip;
+    const CBlockIndex* mnListTip{nullptr};
 
     void subscribeToCoreSignals();
     void unsubscribeFromCoreSignals();

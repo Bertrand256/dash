@@ -1,5 +1,5 @@
 // Copyright (c) 2011-2020 The Bitcoin Core developers
-// Copyright (c) 2014-2024 The Dash Core developers
+// Copyright (c) 2014-2025 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -36,7 +36,7 @@
 #include <interfaces/coinjoin.h>
 #include <interfaces/handler.h>
 #include <interfaces/node.h>
-#include <node/ui_interface.h>
+#include <node/interface_ui.h>
 #include <qt/governancelist.h>
 #include <qt/masternodelist.h>
 #include <util/system.h>
@@ -409,9 +409,9 @@ void BitcoinGUI::createActions()
     verifyMessageAction = new QAction(tr("&Verify message…"), this);
     verifyMessageAction->setStatusTip(tr("Verify messages to ensure they were signed with specified Dash addresses"));
     m_load_psbt_action = new QAction(tr("&Load PSBT from file…"), this);
-    m_load_psbt_action->setStatusTip(tr("Load Partially Signed Dash Transaction"));
+    m_load_psbt_action->setStatusTip(tr("Load Partially Signed Blockchain Transaction"));
     m_load_psbt_clipboard_action = new QAction(tr("Load PSBT from clipboard…"), this);
-    m_load_psbt_clipboard_action->setStatusTip(tr("Load Partially Signed Bitcoin Transaction from clipboard"));
+    m_load_psbt_clipboard_action->setStatusTip(tr("Load Partially Signed Blockchain Transaction from clipboard"));
 
     openInfoAction = new QAction(tr("&Information"), this);
     openInfoAction->setStatusTip(tr("Show diagnostic information"));
@@ -1419,7 +1419,9 @@ void BitcoinGUI::updateWidth()
     // Use nButtonsVisible + 1 <- for the dash logo
     int nWidth = std::max<int>(980, (nWidthWidestButton + 30) * (nButtonsVisible + 1));
     setMinimumWidth(nWidth);
-    resize(nWidth, height());
+
+    // Resize to new minimum width but don't shrink window
+    resize(std::max(width(), nWidth), height());
 }
 
 void BitcoinGUI::setNumBlocks(int count, const QDateTime& blockDate, const QString& blockHash, double nVerificationProgress, bool header, SynchronizationState sync_state)

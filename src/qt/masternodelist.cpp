@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2024 The Dash Core developers
+// Copyright (c) 2016-2025 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -164,6 +164,7 @@ void MasternodeList::updateDIP3List()
     }
 
     auto [mnList, pindex] = clientModel->getMasternodeList();
+    if (!pindex) return;
     auto projectedPayees = mnList.GetProjectedMNPayees(pindex);
 
     if (projectedPayees.empty() && mnList.GetValidMNsCount() > 0) {
@@ -204,9 +205,7 @@ void MasternodeList::updateDIP3List()
 
     std::set<COutPoint> setOutpts;
     if (walletModel && ui->checkBoxMyMasternodesOnly->isChecked()) {
-        std::vector<COutPoint> vOutpts;
-        walletModel->wallet().listProTxCoins(vOutpts);
-        for (const auto& outpt : vOutpts) {
+        for (const auto& outpt : walletModel->wallet().listProTxCoins()) {
             setOutpts.emplace(outpt);
         }
     }

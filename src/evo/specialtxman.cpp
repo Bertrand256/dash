@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024 The Dash Core developers
+// Copyright (c) 2018-2025 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -19,10 +19,11 @@
 #include <primitives/block.h>
 #include <validation.h>
 
-static bool CheckSpecialTxInner(CDeterministicMNManager& dmnman, const ChainstateManager& chainman,
-                                const llmq::CQuorumManager& qman, const CTransaction& tx, const CBlockIndex* pindexPrev,
-                                const CCoinsViewCache& view, const std::optional<CRangesSet>& indexes, bool check_sigs,
-                                TxValidationState& state) EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
+static bool CheckSpecialTxInner(CDeterministicMNManager& dmnman, llmq::CQuorumSnapshotManager& qsnapman,
+                                const ChainstateManager& chainman, const llmq::CQuorumManager& qman,
+                                const CTransaction& tx, const CBlockIndex* pindexPrev, const CCoinsViewCache& view,
+                                const std::optional<CRangesSet>& indexes, bool check_sigs, TxValidationState& state)
+    EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
 {
     AssertLockHeld(cs_main);
 
@@ -47,7 +48,7 @@ static bool CheckSpecialTxInner(CDeterministicMNManager& dmnman, const Chainstat
         case TRANSACTION_COINBASE:
             return CheckCbTx(tx, pindexPrev, state);
         case TRANSACTION_QUORUM_COMMITMENT:
-            return llmq::CheckLLMQCommitment(dmnman, chainman, tx, pindexPrev, state);
+            return llmq::CheckLLMQCommitment(dmnman, qsnapman, chainman, tx, pindexPrev, state);
         case TRANSACTION_MNHF_SIGNAL:
             return CheckMNHFTx(chainman, qman, tx, pindexPrev, state);
         case TRANSACTION_ASSET_LOCK:
@@ -66,7 +67,8 @@ static bool CheckSpecialTxInner(CDeterministicMNManager& dmnman, const Chainstat
 bool CSpecialTxProcessor::CheckSpecialTx(const CTransaction& tx, const CBlockIndex* pindexPrev, const CCoinsViewCache& view, bool check_sigs, TxValidationState& state)
 {
     AssertLockHeld(cs_main);
-    return CheckSpecialTxInner(m_dmnman, m_chainman, m_qman, tx, pindexPrev, view, std::nullopt, check_sigs, state);
+    return CheckSpecialTxInner(m_dmnman, m_qsnapman, m_chainman, m_qman, tx, pindexPrev, view, std::nullopt, check_sigs,
+                               state);
 }
 
 [[nodiscard]] bool CSpecialTxProcessor::ProcessSpecialTx(const CTransaction& tx, const CBlockIndex* pindex, TxValidationState& state)
@@ -145,7 +147,8 @@ bool CSpecialTxProcessor::ProcessSpecialTxsInBlock(const CBlock& block, const CB
             TxValidationState tx_state;
             // At this moment CheckSpecialTx() and ProcessSpecialTx() may fail by 2 possible ways:
             // consensus failures and "TX_BAD_SPECIAL"
-            if (!CheckSpecialTxInner(m_dmnman, m_chainman, m_qman, *ptr_tx, pindex->pprev, view, creditPool.indexes, fCheckCbTxMerkleRoots, tx_state)) {
+            if (!CheckSpecialTxInner(m_dmnman, m_qsnapman, m_chainman, m_qman, *ptr_tx, pindex->pprev, view,
+                                     creditPool.indexes, fCheckCbTxMerkleRoots, tx_state)) {
                 assert(tx_state.GetResult() == TxValidationResult::TX_CONSENSUS || tx_state.GetResult() == TxValidationResult::TX_BAD_SPECIAL);
                 return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, tx_state.GetRejectReason(),
                                  strprintf("Special Transaction check failed (tx hash %s) %s", ptr_tx->GetHash().ToString(), tx_state.GetDebugMessage()));
@@ -170,7 +173,7 @@ bool CSpecialTxProcessor::ProcessSpecialTxsInBlock(const CBlock& block, const CB
         nTimeQuorum += nTime3 - nTime2;
         LogPrint(BCLog::BENCHMARK, "        - m_qblockman: %.2fms [%.2fs]\n", 0.001 * (nTime3 - nTime2), nTimeQuorum * 0.000001);
 
-        if (!m_dmnman.ProcessBlock(block, pindex, state, view, fJustCheck, updatesRet)) {
+        if (!m_dmnman.ProcessBlock(block, pindex, state, view, m_qsnapman, fJustCheck, updatesRet)) {
             // pass the state returned by the function above
             return false;
         }
@@ -179,7 +182,7 @@ bool CSpecialTxProcessor::ProcessSpecialTxsInBlock(const CBlock& block, const CB
         nTimeDMN += nTime4 - nTime3;
         LogPrint(BCLog::BENCHMARK, "        - m_dmnman: %.2fms [%.2fs]\n", 0.001 * (nTime4 - nTime3), nTimeDMN * 0.000001);
 
-        if (fCheckCbTxMerkleRoots && !CheckCbTxMerkleRoots(block, pindex, m_dmnman, m_qblockman, state, view)) {
+        if (fCheckCbTxMerkleRoots && !CheckCbTxMerkleRoots(block, pindex, m_dmnman, m_qsnapman, m_qblockman, state, view)) {
             // pass the state returned by the function above
             return false;
         }
@@ -206,7 +209,7 @@ bool CSpecialTxProcessor::ProcessSpecialTxsInBlock(const CBlock& block, const CB
         nTimeMnehf += nTime7 - nTime6;
         LogPrint(BCLog::BENCHMARK, "        - m_mnhfman: %.2fms [%.2fs]\n", 0.001 * (nTime7 - nTime6), nTimeMnehf * 0.000001);
 
-        if (Params().GetConsensus().V19Height == pindex->nHeight + 1) {
+        if (DeploymentActiveAfter(pindex, m_consensus_params, Consensus::DEPLOYMENT_V19) && bls::bls_legacy_scheme.load()) {
             // NOTE: The block next to the activation is the one that is using new rules.
             // V19 activated just activated, so we must switch to the new rules here.
             bls::bls_legacy_scheme.store(false);
@@ -227,7 +230,7 @@ bool CSpecialTxProcessor::UndoSpecialTxsInBlock(const CBlock& block, const CBloc
     auto bls_legacy_scheme = bls::bls_legacy_scheme.load();
 
     try {
-        if (Params().GetConsensus().V19Height == pindex->nHeight + 1) {
+        if (!DeploymentActiveAt(*pindex, m_consensus_params, Consensus::DEPLOYMENT_V19) && !bls_legacy_scheme) {
             // NOTE: The block next to the activation is the one that is using new rules.
             // Removing the activation block here, so we must switch back to the old rules.
             bls::bls_legacy_scheme.store(true);
@@ -267,16 +270,20 @@ bool CSpecialTxProcessor::CheckCreditPoolDiffForBlock(const CBlock& block, const
 
     try {
         if (!DeploymentActiveAt(*pindex, m_consensus_params, Consensus::DEPLOYMENT_DIP0003)) return true;
+        if (!DeploymentActiveAt(*pindex, m_consensus_params, Consensus::DEPLOYMENT_DIP0008)) return true;
         if (!DeploymentActiveAt(*pindex, m_consensus_params, Consensus::DEPLOYMENT_V20)) return true;
 
         auto creditPoolDiff = GetCreditPoolDiffForBlock(m_cpoolman, m_chainman.m_blockman, m_qman, block, pindex->pprev, m_consensus_params, blockSubsidy, state);
         if (!creditPoolDiff.has_value()) return false;
 
         // If we get there we have v20 activated and credit pool amount must be included in block CbTx
+        if (block.vtx.empty()) {
+            return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-missing-cbtx");
+        }
         const auto& tx = *block.vtx[0];
-        assert(tx.IsCoinBase());
-        assert(tx.IsSpecialTxVersion());
-        assert(tx.nType == TRANSACTION_COINBASE);
+        if (!tx.IsCoinBase() || !tx.IsSpecialTxVersion() || tx.nType != TRANSACTION_COINBASE) {
+            return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-cbtx-type");
+        }
 
         const auto opt_cbTx = GetTxPayload<CCbTx>(tx);
         if (!opt_cbTx) {

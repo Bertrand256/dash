@@ -10,7 +10,7 @@
 
 #include <chainparamsbase.h>
 #include <netbase.h>
-#include <node/ui_interface.h>
+#include <node/interface_ui.h>
 #include <rpc/protocol.h> // For HTTP status codes
 #include <shutdown.h>
 #include <sync.h>
@@ -272,12 +272,11 @@ static void http_request_cb(struct evhttp_request* req, void* arg)
             return false;
 
         std::string strUserPass64 = TrimString(strAuth.substr(6));
-        bool invalid;
-        std::string strUserPass = DecodeBase64(strUserPass64, &invalid);
-        if (invalid) return false;
-
-        if (strUserPass.find(':') == std::string::npos) return false;
-        const std::string username{strUserPass.substr(0, strUserPass.find(':'))};
+        auto opt_strUserPass = DecodeBase64(strUserPass64);
+        if (!opt_strUserPass.has_value()) return false;
+        auto it = std::find(opt_strUserPass->begin(), opt_strUserPass->end(), ':');
+        if (it == opt_strUserPass->end()) return false;
+        const std::string username = std::string(opt_strUserPass->begin(), it);
         return find(g_external_usernames.begin(), g_external_usernames.end(), username) != g_external_usernames.end();
     }();
 
@@ -375,11 +374,22 @@ static void HTTPWorkQueueRun(WorkQueue<HTTPClosure>* queue, int worker_num)
 /** libevent event log callback */
 static void libevent_log_cb(int severity, const char *msg)
 {
-    if (severity >= EVENT_LOG_WARN) // Log warn messages and higher without debug category
-        LogPrintf("libevent: %s\n", msg);
-    // The below code causes log spam on Travis and the output of these logs has never been of any use so far
-    //else
-    //    LogPrint(BCLog::LIBEVENT, "libevent: %s\n", msg);
+    BCLog::Level level;
+    switch (severity) {
+    case EVENT_LOG_DEBUG:
+        level = BCLog::Level::Debug;
+        break;
+    case EVENT_LOG_MSG:
+        level = BCLog::Level::Info;
+        break;
+    case EVENT_LOG_WARN:
+        level = BCLog::Level::Warning;
+        break;
+    default: // EVENT_LOG_ERR and others are mapped to error
+        level = BCLog::Level::Error;
+        break;
+    }
+    LogPrintLevel(BCLog::LIBEVENT, level, "%s\n", msg);
 }
 
 bool InitHTTPServer()

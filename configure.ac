@@ -1,10 +1,10 @@
 AC_PREREQ([2.69])
 dnl Don't forget to push a corresponding tag when updating any of _CLIENT_VERSION_* numbers
 define(_CLIENT_VERSION_MAJOR, 22)
-define(_CLIENT_VERSION_MINOR, 0)
-define(_CLIENT_VERSION_BUILD, 0)
+define(_CLIENT_VERSION_MINOR, 1)
+define(_CLIENT_VERSION_BUILD, 1)
 define(_CLIENT_VERSION_IS_RELEASE, true)
-define(_COPYRIGHT_YEAR, 2024)
+define(_COPYRIGHT_YEAR, 2025)
 define(_COPYRIGHT_HOLDERS,[The %s developers])
 define(_COPYRIGHT_HOLDERS_SUBSTITUTION,[[Dash Core]])
 AC_INIT([Dash Core],m4_join([.], _CLIENT_VERSION_MAJOR, _CLIENT_VERSION_MINOR, _CLIENT_VERSION_BUILD),[https://github.com/dashpay/dash/issues],[dashcore],[https://dash.org/])
@@ -122,11 +122,10 @@ AC_PATH_PROG(CCACHE,ccache)
 AC_PATH_PROG(XGETTEXT,xgettext)
 AC_PATH_PROG(HEXDUMP,hexdump)
 AC_PATH_TOOL(OBJCOPY, objcopy)
+AC_PATH_TOOL([OBJDUMP], [objdump])
 AC_PATH_TOOL(DSYMUTIL, dsymutil)
 AC_PATH_PROG(DOXYGEN, doxygen)
 AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
-
-AC_ARG_VAR(PYTHONPATH, Augments the default search path for python module files)
 
 AC_ARG_ENABLE([wallet],
   [AS_HELP_STRING([--disable-wallet],
@@ -345,11 +344,6 @@ AC_ARG_WITH([boost-process],
     [boost_process=$withval],
     [boost_process=no])
 
-AC_ARG_ENABLE([lto],
-    [AS_HELP_STRING([--enable-lto],[build using LTO (default is no)])],
-    [enable_lto=$enableval],
-    [enable_lto=no])
-
 AC_LANG_PUSH([C++])
 
 dnl Check for a flag to turn compiler warnings into errors. This is helpful for checks which may
@@ -376,7 +370,9 @@ case $host in
 esac
 
 if test "x$enable_debug" = xyes; then
-  dnl Clear default -g -O2 flags
+  dnl If debugging is enabled, and the user hasn't overriden CXXFLAGS, clear
+  dnl them, to prevent autoconfs "-g -O2" being added. Otherwise we'd end up
+  dnl with "-O0 -g3 -g -O2".
   if test "x$CXXFLAGS_overridden" = xno; then
 	CXXFLAGS=""
   fi
@@ -393,6 +389,7 @@ if test "x$enable_debug" = xyes; then
 
   AX_CHECK_PREPROC_FLAG([-DDEBUG_CORE],[[DEBUG_CPPFLAGS="$DEBUG_CPPFLAGS -DDEBUG_CORE"]],,[[$CXXFLAG_WERROR]])
   AX_CHECK_PREPROC_FLAG([-DDEBUG_LOCKORDER],[[DEBUG_CPPFLAGS="$DEBUG_CPPFLAGS -DDEBUG_LOCKORDER"]],,[[$CXXFLAG_WERROR]])
+  AX_CHECK_PREPROC_FLAG([-DDEBUG_LOCKCONTENTION], [DEBUG_CPPFLAGS="$DEBUG_CPPFLAGS -DDEBUG_LOCKCONTENTION"], [], [$CXXFLAG_WERROR])
   AX_CHECK_PREPROC_FLAG([-DABORT_ON_FAILED_ASSUME],[[DEBUG_CPPFLAGS="$DEBUG_CPPFLAGS -DABORT_ON_FAILED_ASSUME"]],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-ftrapv],[DEBUG_CXXFLAGS="$DEBUG_CXXFLAGS -ftrapv"],,[[$CXXFLAG_WERROR]])
 else
@@ -400,17 +397,12 @@ else
     # Stacktraces will be suboptimal due to optimization, but better than nothing. Also, -fno-omit-frame-pointer
     # mitigates this a little bit
     if test "x$GCC" = xyes; then
-        CFLAGS="$CFLAGS -g1 -fno-omit-frame-pointer"
+        DEBUG_CFLAGS="$DEBUG_CFLAGS -g1 -fno-omit-frame-pointer"
     fi
 
     if test "x$GXX" = xyes; then
-        CXXFLAGS="$CXXFLAGS -g1 -fno-omit-frame-pointer"
+        DEBUG_CXXFLAGS="$DEBUG_CXXFLAGS -g1 -fno-omit-frame-pointer"
     fi
-fi
-
-if test "x$enable_lto" = "xyes"; then
-  AX_CHECK_COMPILE_FLAG([-flto], [LTO_CXXFLAGS="$LTO_CXXFLAGS -flto"], [AC_MSG_ERROR([compile failed with -flto])], [$CXXFLAG_WERROR])
-  AX_CHECK_LINK_FLAG([-flto], [LTO_LDFLAGS="$LTO_LDFLAGS -flto"], [AC_MSG_ERROR([link failed with -flto])], [$CXXFLAG_WERROR])
 fi
 
 if test "x$enable_stacktraces" != xno; then
@@ -437,7 +429,7 @@ if test x$LINK_WRAP_SUPPORTED = "xyes"; then
 fi
 
 # Needed for MinGW targets when debug symbols are enabled as compiled objects get very large
-AX_CHECK_COMPILE_FLAG([-Wa,-mbig-obj], [CXXFLAGS="$CXXFLAGS -Wa,-mbig-obj"],,,)
+AX_CHECK_COMPILE_FLAG([-Wa,-mbig-obj], [DEBUG_CXXFLAGS="$DEBUG_CXXFLAGS -Wa,-mbig-obj"],,,)
 
 if test x$use_sanitizers != x; then
   dnl First check if the compiler accepts flags. If an incompatible pair like
@@ -540,7 +532,7 @@ if test "x$CXXFLAGS_overridden" = "xno"; then
 fi
 
 dnl Don't allow extended (non-ASCII) symbols in identifiers. This is easier for code review.
-AX_CHECK_COMPILE_FLAG([-fno-extended-identifiers],[[CXXFLAGS="$CXXFLAGS -fno-extended-identifiers"]],,[[$CXXFLAG_WERROR]])
+AX_CHECK_COMPILE_FLAG([-fno-extended-identifiers],[[CORE_CXXFLAGS="$CORE_CXXFLAGS -fno-extended-identifiers"]],,[[$CXXFLAG_WERROR]])
 
 enable_arm_crc=no
 enable_arm_shani=no
@@ -691,7 +683,7 @@ CXXFLAGS="$TEMP_CXXFLAGS"
 
 fi
 
-CPPFLAGS="$CPPFLAGS -DHAVE_BUILD_INFO -DGSL_NO_IOSTREAMS"
+CORE_CPPFLAGS="$CORE_CPPFLAGS -DHAVE_BUILD_INFO -DGSL_NO_IOSTREAMS"
 
 AC_ARG_WITH([utils],
   [AS_HELP_STRING([--with-utils],
@@ -763,7 +755,10 @@ case $host in
        AC_MSG_ERROR("windres not found")
      fi
 
-     CPPFLAGS="$CPPFLAGS -D_MT -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0601 -D_WIN32_IE=0x0501 -DWIN32_LEAN_AND_MEAN"
+     CORE_CPPFLAGS="$CORE_CPPFLAGS -D_MT -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0601 -D_WIN32_IE=0x0501 -DWIN32_LEAN_AND_MEAN"
+     dnl Prevent the definition of min/max macros.
+     dnl We always want to use the standard library.
+     CORE_CPPFLAGS="$CORE_CPPFLAGS -DNOMINMAX"
 
      dnl libtool insists upon adding -nostdlib and a list of objects/libs to link against.
      dnl That breaks our ability to build dll's with static libgcc/libstdc++/libssp. Override
@@ -774,12 +769,15 @@ case $host in
      postdeps_CXX=
 
      dnl We require Windows 7 (NT 6.1) or later
-     AX_CHECK_LINK_FLAG([[-Wl,--major-subsystem-version -Wl,6 -Wl,--minor-subsystem-version -Wl,1]],[LDFLAGS="$LDFLAGS -Wl,--major-subsystem-version -Wl,6 -Wl,--minor-subsystem-version -Wl,1"],,[[$LDFLAG_WERROR]])
+     AX_CHECK_LINK_FLAG([[-Wl,--major-subsystem-version -Wl,6 -Wl,--minor-subsystem-version -Wl,1]],[CORE_LDFLAGS="$CORE_LDFLAGS -Wl,--major-subsystem-version -Wl,6 -Wl,--minor-subsystem-version -Wl,1"],,[[$LDFLAG_WERROR]])
      ;;
   *darwin*)
      TARGET_OS=darwin
      if  test x$cross_compiling != xyes; then
        BUILD_OS=darwin
+
+       AX_CHECK_LINK_FLAG([[-Wl,-headerpad_max_install_names]], [CORE_LDFLAGS="$CORE_LDFLAGS -Wl,-headerpad_max_install_names"],, [[$LDFLAG_WERROR]])
+
        AC_CHECK_PROG([BREW],brew, brew)
        if test x$BREW = xbrew; then
          dnl These Homebrew packages may be keg-only, meaning that they won't be found
@@ -805,8 +803,8 @@ case $host in
 
          gmp_prefix=$($BREW --prefix gmp 2>/dev/null)
          if test x$gmp_prefix != x; then
-           CPPFLAGS="$CPPFLAGS -I$gmp_prefix/include"
-           LDFLAGS="$LDFLAGS -L$gmp_prefix/lib"
+           CORE_CPPFLAGS="$CORE_CPPFLAGS -I$gmp_prefix/include"
+           CORE_LDFLAGS="$CORE_LDFLAGS -L$gmp_prefix/lib"
          fi
 
          case $host in
@@ -818,20 +816,20 @@ case $host in
              if test "x$use_upnp" != xno && $BREW list --versions miniupnpc >/dev/null; then
                miniupnpc_prefix=$($BREW --prefix miniupnpc 2>/dev/null)
                if test "x$suppress_external_warnings" != xno; then
-                 CPPFLAGS="$CPPFLAGS -isystem $miniupnpc_prefix/include"
+                 CORE_CPPFLAGS="$CORE_CPPFLAGS -isystem $miniupnpc_prefix/include"
                else
-                 CPPFLAGS="$CPPFLAGS -I$miniupnpc_prefix/include"
+                 CORE_CPPFLAGS="$CORE_CPPFLAGS -I$miniupnpc_prefix/include"
                fi
-               LDFLAGS="$LDFLAGS -L$miniupnpc_prefix/lib"
+               CORE_LDFLAGS="$CORE_LDFLAGS -L$miniupnpc_prefix/lib"
              fi
              if test "x$use_natpmp" != xno && $BREW list --versions libnatpmp >/dev/null; then
                libnatpmp_prefix=$($BREW --prefix libnatpmp 2>/dev/null)
                if test "x$suppress_external_warnings" != xno; then
-                 CPPFLAGS="$CPPFLAGS -isystem $libnatpmp_prefix/include"
+                 CORE_CPPFLAGS="$CORE_CPPFLAGS -isystem $libnatpmp_prefix/include"
                else
-                 CPPFLAGS="$CPPFLAGS -I$libnatpmp_prefix/include"
+                 CORE_CPPFLAGS="$CORE_CPPFLAGS -I$libnatpmp_prefix/include"
                fi
-               LDFLAGS="$LDFLAGS -L$libnatpmp_prefix/lib"
+               CORE_LDFLAGS="$CORE_LDFLAGS -L$libnatpmp_prefix/lib"
              fi
              ;;
          esac
@@ -843,9 +841,7 @@ case $host in
            ;;
          *)
            AC_PATH_TOOL([DSYMUTIL], [dsymutil], dsymutil)
-           AC_PATH_TOOL([INSTALL_NAME_TOOL], [install_name_tool], install_name_tool)
-           AC_PATH_TOOL([OTOOL], [otool], otool)
-           AC_PATH_PROGS([XORRISOFS], [xorrisofs], xorrisofs)
+           AC_PATH_PROG([ZIP], [zip], [zip])
 
            dnl libtool will try to strip the static lib, which is a problem for
            dnl cross-builds because strip attempts to call a hard-coded ld,
@@ -856,8 +852,7 @@ case $host in
        esac
      fi
 
-     AX_CHECK_LINK_FLAG([[-Wl,-headerpad_max_install_names]], [LDFLAGS="$LDFLAGS -Wl,-headerpad_max_install_names"],, [[$LDFLAG_WERROR]])
-     CPPFLAGS="$CPPFLAGS -DMAC_OSX -DOBJC_OLD_DISPATCH_PROTOTYPES=0"
+     CORE_CPPFLAGS="$CORE_CPPFLAGS -DMAC_OSX -DOBJC_OLD_DISPATCH_PROTOTYPES=0"
      OBJCXXFLAGS="$CXXFLAGS"
      ;;
    *android*)
@@ -920,11 +915,17 @@ if test x$use_lcov = xyes; then
   AC_SUBST(COV_TOOL_WRAPPER, "cov_tool_wrapper.sh")
   LCOV="$LCOV --gcov-tool $(pwd)/$COV_TOOL_WRAPPER"
 
-  AX_CHECK_LINK_FLAG([[--coverage]], [LDFLAGS="$LDFLAGS --coverage"],
+  AX_CHECK_LINK_FLAG([[--coverage]], [CORE_LDFLAGS="$CORE_LDFLAGS --coverage"],
     [AC_MSG_ERROR("lcov testing requested but --coverage linker flag does not work")])
-  AX_CHECK_COMPILE_FLAG([--coverage],[CXXFLAGS="$CXXFLAGS --coverage"],
+  AX_CHECK_COMPILE_FLAG([--coverage],[CORE_CXXFLAGS="$CORE_CXXFLAGS --coverage"],
     [AC_MSG_ERROR("lcov testing requested but --coverage flag does not work")])
-  CXXFLAGS="$CXXFLAGS -Og"
+  dnl If coverage is enabled, and the user hasn't overriden CXXFLAGS, clear
+  dnl them, to prevent autoconfs "-g -O2" being added. Otherwise we'd end up
+  dnl with "--coverage -Og -O0 -g -O2".
+  if test "$CXXFLAGS_overridden" = "no"; then
+  CXXFLAGS=""
+  fi
+  CORE_CXXFLAGS="$CORE_CXXFLAGS -Og -O0"
 fi
 
 if test x$use_lcov_branch != xno; then
@@ -950,13 +951,13 @@ AC_FUNC_STRERROR_R
 if test x$ac_cv_sys_file_offset_bits != x &&
    test x$ac_cv_sys_file_offset_bits != xno &&
    test x$ac_cv_sys_file_offset_bits != xunknown; then
-  CPPFLAGS="$CPPFLAGS -D_FILE_OFFSET_BITS=$ac_cv_sys_file_offset_bits"
+  CORE_CPPFLAGS="$CORE_CPPFLAGS -D_FILE_OFFSET_BITS=$ac_cv_sys_file_offset_bits"
 fi
 
 if test x$ac_cv_sys_large_files != x &&
    test x$ac_cv_sys_large_files != xno &&
    test x$ac_cv_sys_large_files != xunknown; then
-  CPPFLAGS="$CPPFLAGS -D_LARGE_FILES=$ac_cv_sys_large_files"
+  CORE_CPPFLAGS="$CORE_CPPFLAGS -D_LARGE_FILES=$ac_cv_sys_large_files"
 fi
 
 if test "x$enable_gprof" = xyes; then
@@ -1045,8 +1046,8 @@ dnl These flags are specific to ld64, and may cause issues with other linkers.
 dnl For example: GNU ld will interpret -dead_strip as -de and then try and use
 dnl "ad_strip" as the symbol for the entry point.
 if test x$TARGET_OS = xdarwin; then
-  AX_CHECK_LINK_FLAG([[-Wl,-dead_strip]], [LDFLAGS="$LDFLAGS -Wl,-dead_strip"],, [[$LDFLAG_WERROR]])
-  AX_CHECK_LINK_FLAG([[-Wl,-dead_strip_dylibs]], [LDFLAGS="$LDFLAGS -Wl,-dead_strip_dylibs"],, [[$LDFLAG_WERROR]])
+  AX_CHECK_LINK_FLAG([[-Wl,-dead_strip]], [CORE_LDFLAGS="$CORE_LDFLAGS -Wl,-dead_strip"],, [[$LDFLAG_WERROR]])
+  AX_CHECK_LINK_FLAG([[-Wl,-dead_strip_dylibs]], [CORE_LDFLAGS="$CORE_LDFLAGS -Wl,-dead_strip_dylibs"],, [[$LDFLAG_WERROR]])
   AX_CHECK_LINK_FLAG([[-Wl,-fixup_chains]], [HARDENED_LDFLAGS="$HARDENED_LDFLAGS -Wl,-fixup_chains"], [], [[$LDFLAG_WERROR]])
 fi
 
@@ -1056,7 +1057,6 @@ AC_CHECK_DECLS([getifaddrs, freeifaddrs],[CHECK_SOCKET],,
     [#include <sys/types.h>
     #include <ifaddrs.h>]
 )
-AC_CHECK_DECLS([strnlen])
 
 dnl These are used for daemonization in dashd
 AC_CHECK_DECLS([fork])
@@ -1369,7 +1369,7 @@ if test "x$enable_fuzz" = "xyes"; then
     [[-fsanitize=$use_sanitizers]],
     [AC_MSG_RESULT([no])],
     [AC_MSG_RESULT([yes])
-     CPPFLAGS="$CPPFLAGS -DPROVIDE_FUZZ_MAIN_FUNCTION"],
+     CORE_CPPFLAGS="$CORE_CPPFLAGS -DPROVIDE_FUZZ_MAIN_FUNCTION"],
     [],
     [AC_LANG_PROGRAM([[
       #include <cstdint>
@@ -1393,7 +1393,7 @@ else
       QT_TEST_INCLUDES=SUPPRESS_WARNINGS($QT_TEST_INCLUDES)
     fi
 
-    CPPFLAGS="$CPPFLAGS -DPROVIDE_FUZZ_MAIN_FUNCTION"
+    CORE_CPPFLAGS="$CORE_CPPFLAGS -DPROVIDE_FUZZ_MAIN_FUNCTION"
 fi
 
 if test x$enable_wallet != xno; then
@@ -1526,9 +1526,10 @@ fi
 
 dnl Check for reduced exports
 if test x$use_reduce_exports = xyes; then
-    AX_CHECK_COMPILE_FLAG([-fvisibility=hidden],[CXXFLAGS="$CXXFLAGS -fvisibility=hidden"],
+    AX_CHECK_COMPILE_FLAG([-fvisibility=hidden],[CORE_CXXFLAGS="$CORE_CXXFLAGS -fvisibility=hidden"],
     [AC_MSG_ERROR([Cannot set hidden symbol visibility. Use --disable-reduce-exports.])],[[$CXXFLAG_WERROR]])
     AX_CHECK_LINK_FLAG([[-Wl,--exclude-libs,ALL]],[RELDFLAGS="-Wl,--exclude-libs,ALL"],,[[$LDFLAG_WERROR]])
+    AX_CHECK_LINK_FLAG([-Wl,-no_exported_symbols], [LIBTOOL_APP_LDFLAGS="$LIBTOOL_APP_LDFLAGS -Wl,-no_exported_symbols"], [], [$LDFLAG_WERROR])
 fi
 
 if test x$use_tests = xyes; then
@@ -1877,18 +1878,20 @@ AC_SUBST(BITCOIN_MP_NODE_NAME)
 AC_SUBST(BITCOIN_MP_GUI_NAME)
 
 AC_SUBST(RELDFLAGS)
+AC_SUBST(CORE_LDFLAGS)
+AC_SUBST(CORE_CPPFLAGS)
+AC_SUBST(CORE_CXXFLAGS)
+AC_SUBST(DEBUG_CFLAGS)
 AC_SUBST(DEBUG_CPPFLAGS)
+AC_SUBST(DEBUG_CXXFLAGS)
 AC_SUBST(WARN_CXXFLAGS)
 AC_SUBST(NOWARN_CXXFLAGS)
-AC_SUBST(DEBUG_CXXFLAGS)
 AC_SUBST(ERROR_CXXFLAGS)
 AC_SUBST(GPROF_CXXFLAGS)
 AC_SUBST(GPROF_LDFLAGS)
 AC_SUBST(HARDENED_CXXFLAGS)
 AC_SUBST(HARDENED_CPPFLAGS)
 AC_SUBST(HARDENED_LDFLAGS)
-AC_SUBST(LTO_CXXFLAGS)
-AC_SUBST(LTO_LDFLAGS)
 AC_SUBST(PIC_FLAGS)
 AC_SUBST(PIE_FLAGS)
 AC_SUBST(SANITIZER_CXXFLAGS)
@@ -1929,10 +1932,9 @@ AC_CONFIG_LINKS([contrib/devtools/test-security-check.py:contrib/devtools/test-s
 AC_CONFIG_LINKS([contrib/devtools/symbol-check.py:contrib/devtools/symbol-check.py])
 AC_CONFIG_LINKS([contrib/devtools/test-symbol-check.py:contrib/devtools/test-symbol-check.py])
 AC_CONFIG_LINKS([contrib/filter-lcov.py:contrib/filter-lcov.py])
-AC_CONFIG_LINKS([contrib/macdeploy/background.tiff:contrib/macdeploy/background.tiff])
 AC_CONFIG_LINKS([test/functional/test_runner.py:test/functional/test_runner.py])
 AC_CONFIG_LINKS([test/fuzz/test_runner.py:test/fuzz/test_runner.py])
-AC_CONFIG_LINKS([test/util/bitcoin-util-test.py:test/util/bitcoin-util-test.py])
+AC_CONFIG_LINKS([test/util/test_runner.py:test/util/test_runner.py])
 AC_CONFIG_LINKS([test/util/rpcauth-test.py:test/util/rpcauth-test.py])
 
 dnl boost's m4 checks do something really nasty: they export these vars. As a
@@ -1972,16 +1974,16 @@ echo "  boost process       = $with_boost_process"
 echo "  multiprocess        = $build_multiprocess"
 echo "  with libs           = $build_bitcoin_libs"
 echo "  with wallet         = $enable_wallet"
-echo "  with gui / qt       = $bitcoin_enable_qt"
 if test "x$enable_wallet" != "xno"; then
-    echo "  with sqlite         = $use_sqlite"
-    echo "  with bdb            = $use_bdb"
+    echo "    with sqlite       = $use_sqlite"
+    echo "    with bdb          = $use_bdb"
 fi
+echo "  with gui / qt       = $bitcoin_enable_qt"
 if test x$bitcoin_enable_qt != xno; then
     echo "    with qr           = $use_qr"
 fi
 echo "  with zmq            = $use_zmq"
-if test x$enable_fuzz == xno; then
+if test x$enable_fuzz = xno; then
     echo "  with test           = $use_tests"
 else
     echo "  with test           = not building test_dash because fuzzing is enabled"
@@ -1999,16 +2001,16 @@ echo "  crash hooks enabled = $enable_crashhooks"
 echo "  miner enabled       = $enable_miner"
 echo "  gprof enabled       = $enable_gprof"
 echo "  werror              = $enable_werror"
-echo "  LTO                 = $enable_lto"
 echo
 echo "  target os           = $host_os"
 echo "  build os            = $build_os"
 echo
 echo "  CC                  = $CC"
-echo "  CFLAGS              = $PTHREAD_CFLAGS $CFLAGS"
-echo "  CPPFLAGS            = $DEBUG_CPPFLAGS $HARDENED_CPPFLAGS $CPPFLAGS"
+echo "  CFLAGS              = $DEBUG_CFLAGS $PTHREAD_CFLAGS $CFLAGS"
+echo "  CPPFLAGS            = $DEBUG_CPPFLAGS $HARDENED_CPPFLAGS $CORE_CPPFLAGS $CPPFLAGS"
 echo "  CXX                 = $CXX"
-echo "  CXXFLAGS            = $LTO_CXXFLAGS $DEBUG_CXXFLAGS $HARDENED_CXXFLAGS $WARN_CXXFLAGS $NOWARN_CXXFLAGS $ERROR_CXXFLAGS $GPROF_CXXFLAGS $CXXFLAGS"
-echo "  LDFLAGS             = $LTO_LDFLAGS $PTHREAD_LIBS $HARDENED_LDFLAGS $GPROF_LDFLAGS $LDFLAGS"
+echo "  CXXFLAGS            = $DEBUG_CXXFLAGS $HARDENED_CXXFLAGS $WARN_CXXFLAGS $NOWARN_CXXFLAGS $ERROR_CXXFLAGS $GPROF_CXXFLAGS $CORE_CXXFLAGS $CXXFLAGS"
+echo "  LDFLAGS             = $PTHREAD_LIBS $HARDENED_LDFLAGS $GPROF_LDFLAGS $CORE_LDFLAGS $LDFLAGS"
+echo "  AR                  = $AR"
 echo "  ARFLAGS             = $ARFLAGS"
 echo

@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2024 The Dash Core developers
+// Copyright (c) 2014-2025 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -33,6 +33,7 @@ class TxValidationState;
 
 namespace llmq {
 class CChainLocksHandler;
+class CInstantSendManager;
 } // namespace llmq
 
 extern RecursiveMutex cs_main;
@@ -308,7 +309,9 @@ protected:
 
     virtual void SetNull() EXCLUSIVE_LOCKS_REQUIRED(cs_coinjoin);
 
-    bool IsValidInOuts(CChainState& active_chainstate, const CTxMemPool& mempool, const std::vector<CTxIn>& vin, const std::vector<CTxOut>& vout, PoolMessage& nMessageIDRet, bool* fConsumeCollateralRet) const;
+    bool IsValidInOuts(CChainState& active_chainstate, const llmq::CInstantSendManager& isman,
+                       const CTxMemPool& mempool, const std::vector<CTxIn>& vin, const std::vector<CTxOut>& vout,
+                       PoolMessage& nMessageIDRet, bool* fConsumeCollateralRet) const;
 
 public:
     int nSessionDenom{0}; // Users must submit a denom matching this
@@ -365,7 +368,8 @@ namespace CoinJoin
     constexpr CAmount GetMaxPoolAmount() { return COINJOIN_ENTRY_MAX_SIZE * vecStandardDenominations.front(); }
 
     /// If the collateral is valid given by a client
-    bool IsCollateralValid(ChainstateManager& chainman, const CTxMemPool& mempool, const CTransaction& txCollateral);
+    bool IsCollateralValid(ChainstateManager& chainman, const llmq::CInstantSendManager& isman,
+                           const CTxMemPool& mempool, const CTransaction& txCollateral);
 }
 
 class CDSTXManager

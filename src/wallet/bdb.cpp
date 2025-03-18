@@ -3,6 +3,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <compat/compat.h>
 #include <fs.h>
 #include <wallet/bdb.h>
 #include <wallet/db.h>
@@ -12,8 +13,15 @@
 
 #include <stdint.h>
 
-#ifndef WIN32
 #include <sys/stat.h>
+
+// Windows may not define S_IRUSR or S_IWUSR. We define both
+// here, with the same values as glibc (see stat.h).
+#ifdef WIN32
+#ifndef S_IRUSR
+#define S_IRUSR             0400
+#define S_IWUSR             0200
+#endif
 #endif
 
 namespace {
@@ -533,7 +541,7 @@ bool BerkeleyDatabase::Rewrite(const char* pszSkip)
 
 void BerkeleyEnvironment::Flush(bool fShutdown)
 {
-    int64_t nStart = GetTimeMillis();
+    const auto start{SteadyClock::now()};
     // Flush log data to the actual data file on all files that are not in use
     LogPrint(BCLog::WALLETDB, "BerkeleyEnvironment::Flush: [%s] Flush(%s)%s\n", strPath, fShutdown ? "true" : "false", fDbEnvInit ? "" : " database not started");
     if (!fDbEnvInit)
@@ -560,7 +568,7 @@ void BerkeleyEnvironment::Flush(bool fShutdown)
                 no_dbs_accessed = false;
             }
         }
-        LogPrint(BCLog::WALLETDB, "BerkeleyEnvironment::Flush: Flush(%s)%s took %15dms\n", fShutdown ? "true" : "false", fDbEnvInit ? "" : " database not started", GetTimeMillis() - nStart);
+        LogPrint(BCLog::WALLETDB, "BerkeleyEnvironment::Flush: Flush(%s)%s took %15dms\n", fShutdown ? "true" : "false", fDbEnvInit ? "" : " database not started", Ticks<std::chrono::milliseconds>(SteadyClock::now() - start));
         if (fShutdown) {
             char** listp;
             if (no_dbs_accessed) {
@@ -589,14 +597,14 @@ bool BerkeleyDatabase::PeriodicFlush()
     if (m_refcount < 0) return false;
 
     LogPrint(BCLog::WALLETDB, "Flushing %s\n", strFile);
-    int64_t nStart = GetTimeMillis();
+    const auto start{SteadyClock::now()};
 
     // Flush wallet file so it's self contained
     env->CloseDb(strFile);
     env->CheckpointLSN(strFile);
     m_refcount = -1;
 
-    LogPrint(BCLog::WALLETDB, "Flushed %s %dms\n", strFile, GetTimeMillis() - nStart);
+    LogPrint(BCLog::WALLETDB, "Flushed %s %dms\n", strFile, Ticks<std::chrono::milliseconds>(SteadyClock::now() - start));
 
     return true;
 }

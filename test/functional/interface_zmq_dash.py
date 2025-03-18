@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018-2024 The Dash Core developers
+# Copyright (c) 2018-2025 The Dash Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test the dash specific ZMQ notification interfaces."""
@@ -136,17 +136,11 @@ class DashZMQTest (DashTestFramework):
             self.zmq_context = zmq.Context()
             # Initialize the network
             self.nodes[0].sporkupdate("SPORK_17_QUORUM_DKG_ENABLED", 0)
+            self.log.info("Test RPC hex getbestchainlock before any CL appeared")
+            assert_raises_rpc_error(-32603, "Unable to find any ChainLock", self.nodes[0].getbestchainlock)
             self.wait_for_sporks_same()
-            self.activate_v19(expected_activation_height=900)
-            self.log.info("Activated v19 at height:" + str(self.nodes[0].getblockcount()))
-            self.move_to_next_cycle()
-            self.log.info("Cycle H height:" + str(self.nodes[0].getblockcount()))
-            self.move_to_next_cycle()
-            self.log.info("Cycle H+C height:" + str(self.nodes[0].getblockcount()))
-            self.move_to_next_cycle()
-            self.log.info("Cycle H+2C height:" + str(self.nodes[0].getblockcount()))
 
-            self.mine_cycle_quorum(llmq_type_name='llmq_test_dip0024', llmq_type=103)
+            self.mine_cycle_quorum()
 
             self.sync_blocks()
             self.wait_for_chainlocked_block_all_nodes(self.nodes[0].getbestblockhash())
@@ -162,12 +156,7 @@ class DashZMQTest (DashTestFramework):
             self.wait_for_chainlocked_block_all_nodes(self.nodes[0].getbestblockhash())
             self.test_instantsend_publishers()
             # At this point, we need to move forward 3 cycles (3 x 24 blocks) so the first 3 quarters can be created (without DKG sessions)
-            self.move_to_next_cycle()
-            self.test_instantsend_publishers()
-            self.move_to_next_cycle()
-            self.test_instantsend_publishers()
-            self.move_to_next_cycle()
-            self.test_instantsend_publishers()
+            self.generate(self.nodes[0], 24)
             self.mine_cycle_quorum()
             self.test_instantsend_publishers()
         finally:
@@ -274,6 +263,7 @@ class DashZMQTest (DashTestFramework):
         assert_equal(uint256_to_string(zmq_chain_lock.blockHash), rpc_chain_lock_hash)
         assert_equal(zmq_chain_locked_block.hash, rpc_chain_lock_hash)
         assert_equal(zmq_chain_lock.sig.hex(), rpc_best_chain_lock_sig)
+        assert_equal(zmq_chain_lock.serialize().hex(), self.nodes[0].getbestchainlock()['hex'])
         # Unsubscribe from ChainLock messages
         self.unsubscribe(chain_lock_publishers)
 
@@ -296,6 +286,7 @@ class DashZMQTest (DashTestFramework):
         # Create two raw TXs, they will conflict with each other
         rpc_raw_tx_1 = self.create_raw_tx(self.nodes[0], self.nodes[0], 1, 1, 100)
         rpc_raw_tx_2 = self.create_raw_tx(self.nodes[0], self.nodes[0], 1, 1, 100)
+        assert_equal(['None'], self.nodes[0].getislocks([rpc_raw_tx_1['txid']]))
         # Send the first transaction and wait for the InstantLock
         rpc_raw_tx_1_hash = self.nodes[0].sendrawtransaction(rpc_raw_tx_1['hex'])
         self.wait_for_instantlock(rpc_raw_tx_1_hash, self.nodes[0])
@@ -315,6 +306,8 @@ class DashZMQTest (DashTestFramework):
         assert_equal(zmq_tx_lock_tx.hash, rpc_raw_tx_1['txid'])
         zmq_tx_lock = msg_isdlock()
         zmq_tx_lock.deserialize(zmq_tx_lock_sig_stream)
+        assert_equal(rpc_raw_tx_1['txid'], self.nodes[0].getislocks([rpc_raw_tx_1['txid']])[0]['txid'])
+        assert_equal(zmq_tx_lock.serialize().hex(), self.nodes[0].getislocks([rpc_raw_tx_1['txid']])[0]['hex'])
         assert_equal(uint256_to_string(zmq_tx_lock.txid), rpc_raw_tx_1['txid'])
         # Try to send the second transaction. This must throw an RPC error because it conflicts with rpc_raw_tx_1
         # which already got the InstantSend lock.

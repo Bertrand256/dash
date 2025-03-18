@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2024 The Dash Core developers
+// Copyright (c) 2014-2025 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -30,18 +30,20 @@
 #include <memory>
 #include <univalue.h>
 
-PeerMsgRet CCoinJoinClientQueueManager::ProcessMessage(const CNode& peer, std::string_view msg_type, CDataStream& vRecv)
+PeerMsgRet CCoinJoinClientQueueManager::ProcessMessage(const CNode& peer, CConnman& connman, PeerManager& peerman,
+                                                       std::string_view msg_type, CDataStream& vRecv)
 {
     if (m_is_masternode) return {};
     if (!m_mn_sync.IsBlockchainSynced()) return {};
 
     if (msg_type == NetMsgType::DSQUEUE) {
-        return CCoinJoinClientQueueManager::ProcessDSQueue(peer, vRecv);
+        return CCoinJoinClientQueueManager::ProcessDSQueue(peer, connman, peerman, vRecv);
     }
     return {};
 }
 
-PeerMsgRet CCoinJoinClientQueueManager::ProcessDSQueue(const CNode& peer, CDataStream& vRecv)
+PeerMsgRet CCoinJoinClientQueueManager::ProcessDSQueue(const CNode& peer, CConnman& connman, PeerManager& peerman,
+                                                       CDataStream& vRecv)
 {
     assert(m_mn_metaman.IsValid());
 
@@ -50,7 +52,7 @@ PeerMsgRet CCoinJoinClientQueueManager::ProcessDSQueue(const CNode& peer, CDataS
 
     {
         LOCK(cs_main);
-        Assert(peerman)->EraseObjectRequest(peer.GetId(), CInv(MSG_DSQ, dsq.GetHash()));
+        peerman.EraseObjectRequest(peer.GetId(), CInv(MSG_DSQ, dsq.GetHash()));
     }
 
     if (dsq.masternodeOutpoint.IsNull() && dsq.m_protxHash.IsNull()) {
@@ -102,8 +104,9 @@ PeerMsgRet CCoinJoinClientQueueManager::ProcessDSQueue(const CNode& peer, CDataS
         }
 
         // if the queue is ready, submit if we can
-        if (dsq.fReady && m_walletman.ForAnyCJClientMan([this, &dmn](std::unique_ptr<CCoinJoinClientManager>& clientman) {
-                return clientman->TrySubmitDenominate(dmn->pdmnState->addr, this->connman);
+        if (dsq.fReady &&
+            m_walletman.ForAnyCJClientMan([this, &connman, &dmn](std::unique_ptr<CCoinJoinClientManager>& clientman) {
+                return clientman->TrySubmitDenominate(dmn->pdmnState->addr, connman);
             })) {
             LogPrint(BCLog::COINJOIN, "DSQUEUE -- CoinJoin queue (%s) is ready on masternode %s\n", dsq.ToString(),
                      dmn->pdmnState->addr.ToStringAddrPort());
@@ -132,7 +135,7 @@ PeerMsgRet CCoinJoinClientQueueManager::ProcessDSQueue(const CNode& peer, CDataS
             WITH_LOCK(cs_vecqueue, vecCoinJoinQueue.push_back(dsq));
         }
     } // cs_ProcessDSQueue
-    peerman->RelayDSQ(dsq);
+    peerman.RelayDSQ(dsq);
     return {};
 }
 
@@ -163,6 +166,7 @@ void CCoinJoinClientManager::ProcessMessage(CNode& peer, CChainState& active_cha
 CCoinJoinClientSession::CCoinJoinClientSession(const std::shared_ptr<CWallet>& wallet, CoinJoinWalletManager& walletman,
                                                CCoinJoinClientManager& clientman, CDeterministicMNManager& dmnman,
                                                CMasternodeMetaMan& mn_metaman, const CMasternodeSync& mn_sync,
+                                               const llmq::CInstantSendManager& isman,
                                                const std::unique_ptr<CCoinJoinClientQueueManager>& queueman,
                                                bool is_masternode) :
     m_wallet(wallet),
@@ -171,6 +175,7 @@ CCoinJoinClientSession::CCoinJoinClientSession(const std::shared_ptr<CWallet>& w
     m_dmnman(dmnman),
     m_mn_metaman(mn_metaman),
     m_mn_sync(mn_sync),
+    m_isman{isman},
     m_queueman(queueman),
     m_is_masternode{is_masternode}
 {}
@@ -586,7 +591,8 @@ bool CCoinJoinClientSession::SignFinalTransaction(CNode& peer, CChainState& acti
 
     // Make sure all inputs/outputs are valid
     PoolMessage nMessageID{MSG_NOERR};
-    if (!IsValidInOuts(active_chainstate, mempool, finalMutableTransaction.vin, finalMutableTransaction.vout, nMessageID, nullptr)) {
+    if (!IsValidInOuts(active_chainstate, m_isman, mempool, finalMutableTransaction.vin, finalMutableTransaction.vout,
+                       nMessageID, nullptr)) {
         WalletCJLogPrint(m_wallet, "CCoinJoinClientSession::%s -- ERROR! IsValidInOuts() failed: %s\n", __func__, CoinJoin::GetMessageByID(nMessageID).translated);
         UnlockCoins();
         keyHolderStorage.ReturnAll();
@@ -950,7 +956,7 @@ bool CCoinJoinClientSession::DoAutomaticDenominating(ChainstateManager& chainman
                 return false;
             }
         } else {
-            if (!CoinJoin::IsCollateralValid(chainman, mempool, CTransaction(txMyCollateral))) {
+            if (!CoinJoin::IsCollateralValid(chainman, m_isman, mempool, CTransaction(txMyCollateral))) {
                 WalletCJLogPrint(m_wallet, "CCoinJoinClientSession::DoAutomaticDenominating -- invalid collateral, recreating...\n");
                 if (!CreateCollateralTransaction(txMyCollateral, strReason)) {
                     WalletCJLogPrint(m_wallet, "CCoinJoinClientSession::DoAutomaticDenominating -- create collateral error: %s\n", strReason);
@@ -1009,7 +1015,7 @@ bool CCoinJoinClientManager::DoAutomaticDenominating(ChainstateManager& chainman
     AssertLockNotHeld(cs_deqsessions);
     LOCK(cs_deqsessions);
     if (int(deqSessions.size()) < CCoinJoinClientOptions::GetSessions()) {
-        deqSessions.emplace_back(m_wallet, m_walletman, *this, m_dmnman, m_mn_metaman, m_mn_sync, m_queueman,
+        deqSessions.emplace_back(m_wallet, m_walletman, *this, m_dmnman, m_mn_metaman, m_mn_sync, m_isman, m_queueman,
                                  m_is_masternode);
     }
     for (auto& session : deqSessions) {
@@ -1482,7 +1488,7 @@ bool CCoinJoinClientSession::MakeCollateralAmounts(const CompactTallyItem& tally
         return false;
     }
 
-    CTransactionBuilder txBuilder(m_wallet, tallyItem);
+    CTransactionBuilder txBuilder(*m_wallet, tallyItem);
 
     WalletCJLogPrint(m_wallet, "CCoinJoinClientSession::%s -- Start %s\n", __func__, txBuilder.ToString());
 
@@ -1645,7 +1651,7 @@ bool CCoinJoinClientSession::CreateDenominated(CAmount nBalanceToDenominate, con
         return false;
     }
 
-    CTransactionBuilder txBuilder(m_wallet, tallyItem);
+    CTransactionBuilder txBuilder(*m_wallet, tallyItem);
 
     WalletCJLogPrint(m_wallet, "CCoinJoinClientSession::%s -- Start %s\n", __func__, txBuilder.ToString());
 
@@ -1912,16 +1918,17 @@ void CoinJoinWalletManager::Add(const std::shared_ptr<CWallet>& wallet)
         LOCK(cs_wallet_manager_map);
         m_wallet_manager_map.try_emplace(wallet->GetName(),
                                          std::make_unique<CCoinJoinClientManager>(wallet, *this, m_dmnman, m_mn_metaman,
-                                                                                  m_mn_sync, m_queueman, m_is_masternode));
+                                                                                  m_mn_sync, m_isman, m_queueman,
+                                                                                  m_is_masternode));
     }
     g_wallet_init_interface.InitCoinJoinSettings(*this);
 }
 
-void CoinJoinWalletManager::DoMaintenance()
+void CoinJoinWalletManager::DoMaintenance(CConnman& connman)
 {
     LOCK(cs_wallet_manager_map);
     for (auto& [_, clientman] : m_wallet_manager_map) {
-        clientman->DoMaintenance(m_chainman, m_connman, m_mempool);
+        clientman->DoMaintenance(m_chainman, connman, m_mempool);
     }
 }
 

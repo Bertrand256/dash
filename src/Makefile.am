@@ -9,9 +9,10 @@ print-%: FORCE
 
 DIST_SUBDIRS = secp256k1
 
-AM_LDFLAGS = $(LIBTOOL_LDFLAGS) $(HARDENED_LDFLAGS) $(GPROF_LDFLAGS) $(SANITIZER_LDFLAGS) $(LTO_LDFLAGS)
-AM_CXXFLAGS = $(DEBUG_CXXFLAGS) $(HARDENED_CXXFLAGS) $(WARN_CXXFLAGS) $(NOWARN_CXXFLAGS) $(ERROR_CXXFLAGS) $(GPROF_CXXFLAGS) $(SANITIZER_CXXFLAGS) $(LTO_CXXFLAGS)
-AM_CPPFLAGS = $(DEBUG_CPPFLAGS) $(HARDENED_CPPFLAGS)
+AM_LDFLAGS = $(LIBTOOL_LDFLAGS) $(HARDENED_LDFLAGS) $(GPROF_LDFLAGS) $(SANITIZER_LDFLAGS) $(CORE_LDFLAGS)
+AM_CFLAGS = $(DEBUG_CFLAGS)
+AM_CXXFLAGS = $(DEBUG_CXXFLAGS) $(HARDENED_CXXFLAGS) $(WARN_CXXFLAGS) $(NOWARN_CXXFLAGS) $(ERROR_CXXFLAGS) $(GPROF_CXXFLAGS) $(SANITIZER_CXXFLAGS) $(CORE_CXXFLAGS)
+AM_CPPFLAGS = $(DEBUG_CPPFLAGS) $(HARDENED_CPPFLAGS) $(CORE_CPPFLAGS)
 AM_LIBTOOLFLAGS = --preserve-dup-deps
 PTHREAD_FLAGS = $(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
 EXTRA_LIBRARIES =
@@ -162,9 +163,9 @@ BITCOIN_CORE_H = \
   coinjoin/util.h \
   coins.h \
   common/bloom.h \
-  compat.h \
   compat/assumptions.h \
   compat/byteswap.h \
+  compat/compat.h \
   compat/cpuid.h \
   compat/endian.h \
   compressor.h \
@@ -269,6 +270,8 @@ BITCOIN_CORE_H = \
   netgroup.h \
   netmessagemaker.h \
   node/blockstorage.h \
+  node/caches.h \
+  node/chainstate.h \
   node/coin.h \
   node/coinstats.h \
   node/connection_types.h \
@@ -279,7 +282,7 @@ BITCOIN_CORE_H = \
   node/psbt.h \
   node/transaction.h \
   node/txreconciliation.h \
-  node/ui_interface.h \
+  node/interface_ui.h \
   node/utxo_snapshot.h \
   noui.h \
   outputtype.h \
@@ -297,6 +300,7 @@ BITCOIN_CORE_H = \
   rpc/blockchain.h \
   rpc/client.h \
   rpc/index_util.h \
+  rpc/mempool.h \
   rpc/mining.h \
   rpc/protocol.h \
   rpc/rawtransaction_util.h \
@@ -368,6 +372,7 @@ BITCOIN_CORE_H = \
   util/sock.h \
   util/string.h \
   util/spanparsing.h \
+  util/syserror.h \
   util/system.h \
   util/time.h \
   util/thread.h \
@@ -501,6 +506,8 @@ libbitcoin_server_a_SOURCES = \
   netgroup.cpp \
   net_processing.cpp \
   node/blockstorage.cpp \
+  node/caches.cpp \
+  node/chainstate.cpp \
   node/coin.cpp \
   node/coinstats.cpp \
   node/connection_types.cpp \
@@ -512,7 +519,7 @@ libbitcoin_server_a_SOURCES = \
   node/psbt.cpp \
   node/transaction.cpp \
   node/txreconciliation.cpp \
-  node/ui_interface.cpp \
+  node/interface_ui.cpp \
   noui.cpp \
   policy/fees.cpp \
   policy/packages.cpp \
@@ -523,8 +530,10 @@ libbitcoin_server_a_SOURCES = \
   rpc/blockchain.cpp \
   rpc/coinjoin.cpp \
   rpc/evo.cpp \
+  rpc/fees.cpp \
   rpc/index_util.cpp \
   rpc/masternode.cpp \
+  rpc/mempool.cpp \
   rpc/governance.cpp \
   rpc/mining.cpp \
   rpc/misc.cpp \
@@ -533,6 +542,8 @@ libbitcoin_server_a_SOURCES = \
   rpc/rawtransaction.cpp \
   rpc/server.cpp \
   rpc/server_util.cpp \
+  rpc/signmessage.cpp \
+  rpc/txoutproof.cpp \
   script/sigcache.cpp \
   shutdown.cpp \
   spork.cpp \
@@ -792,7 +803,6 @@ libbitcoin_util_a_SOURCES = \
   support/lockedpool.cpp \
   chainparamsbase.cpp \
   clientversion.cpp \
-  compat/strnlen.cpp \
   fs.cpp \
   interfaces/echo.cpp \
   interfaces/handler.cpp \
@@ -816,6 +826,7 @@ libbitcoin_util_a_SOURCES = \
   util/hasher.cpp \
   util/getuniquepath.cpp \
   util/sock.cpp \
+  util/syserror.cpp \
   util/system.cpp \
   util/message.cpp \
   util/moneystr.cpp \

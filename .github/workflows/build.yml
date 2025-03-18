@@ -114,22 +114,22 @@ jobs:
           - build_target: linux64
             host: x86_64-pc-linux-gnu
             depends_on: linux64
-          - build_target: linux64_tsan
-            host: x86_64-pc-linux-gnu
-            depends_on: linux64
-          - build_target: linux64_ubsan
+          - build_target: linux64_cxx20
             host: x86_64-pc-linux-gnu
             depends_on: linux64
           - build_target: linux64_fuzz
             host: x86_64-pc-linux-gnu
             depends_on: linux64
-          - build_target: linux64_cxx20
+          - build_target: linux64_nowallet
             host: x86_64-pc-linux-gnu
             depends_on: linux64
           - build_target: linux64_sqlite
             host: x86_64-pc-linux-gnu
             depends_on: linux64
-          - build_target: linux64_nowallet
+          - build_target: linux64_tsan
+            host: x86_64-pc-linux-gnu
+            depends_on: linux64
+          - build_target: linux64_ubsan
             host: x86_64-pc-linux-gnu
             depends_on: linux64
     container:
@@ -140,6 +140,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
 
       - name: Restore depends cache
         uses: actions/cache/restore@v4
@@ -167,7 +168,11 @@ jobs:
 
       - name: Build source and run tests
         run: |
+          git config --global --add advice.detachedHead false
           git config --global --add safe.directory "$PWD"
+          GIT_HEAD="$(git rev-parse HEAD)"
+          git checkout develop
+          git checkout ${GIT_HEAD}
           CCACHE_SIZE="400M"
           CACHE_DIR="/cache"
           mkdir /output

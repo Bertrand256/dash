@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2024 The Dash Core developers
+// Copyright (c) 2018-2025 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -30,15 +30,14 @@ class CBlock;
 class CBlockIndex;
 class CChainState;
 class CCoinsViewCache;
-class CConnman;
 class CEvoDB;
 class TxValidationState;
 
 extern RecursiveMutex cs_main;
 
-namespace llmq
-{
-    class CFinalCommitment;
+namespace llmq {
+class CFinalCommitment;
+class CQuorumSnapshotManager;
 } // namespace llmq
 
 class CDeterministicMN
@@ -583,7 +582,6 @@ private:
     std::atomic<int> to_cleanup {0};
 
     CChainState& m_chainstate;
-    CConnman& connman;
     CEvoDB& m_evoDb;
 
     std::unordered_map<uint256, CDeterministicMNList, StaticSaltedHasher> mnListsCache GUARDED_BY(cs);
@@ -592,20 +590,26 @@ private:
     const CBlockIndex* m_initial_snapshot_index GUARDED_BY(cs) {nullptr};
 
 public:
-    explicit CDeterministicMNManager(CChainState& chainstate, CConnman& _connman, CEvoDB& evoDb) :
-        m_chainstate(chainstate), connman(_connman), m_evoDb(evoDb) {}
+    explicit CDeterministicMNManager(CChainState& chainstate, CEvoDB& evoDb) :
+        m_chainstate(chainstate),
+        m_evoDb(evoDb)
+    {
+    }
     ~CDeterministicMNManager() = default;
 
     bool ProcessBlock(const CBlock& block, gsl::not_null<const CBlockIndex*> pindex, BlockValidationState& state,
-                      const CCoinsViewCache& view, bool fJustCheck, std::optional<MNListUpdates>& updatesRet) EXCLUSIVE_LOCKS_REQUIRED(!cs, cs_main);
+                      const CCoinsViewCache& view, llmq::CQuorumSnapshotManager& qsnapman, bool fJustCheck,
+                      std::optional<MNListUpdates>& updatesRet) EXCLUSIVE_LOCKS_REQUIRED(!cs, cs_main);
     bool UndoBlock(gsl::not_null<const CBlockIndex*> pindex, std::optional<MNListUpdates>& updatesRet) EXCLUSIVE_LOCKS_REQUIRED(!cs);
 
     void UpdatedBlockTip(gsl::not_null<const CBlockIndex*> pindex) EXCLUSIVE_LOCKS_REQUIRED(!cs);
 
     // the returned list will not contain the correct block hash (we can't know it yet as the coinbase TX is not updated yet)
-    bool BuildNewListFromBlock(const CBlock& block, gsl::not_null<const CBlockIndex*> pindexPrev, BlockValidationState& state, const CCoinsViewCache& view,
-                               CDeterministicMNList& mnListRet, bool debugLogs) EXCLUSIVE_LOCKS_REQUIRED(!cs);
-    void HandleQuorumCommitment(const llmq::CFinalCommitment& qc, gsl::not_null<const CBlockIndex*> pQuorumBaseBlockIndex, CDeterministicMNList& mnList, bool debugLogs);
+    bool BuildNewListFromBlock(const CBlock& block, gsl::not_null<const CBlockIndex*> pindexPrev,
+                               BlockValidationState& state, const CCoinsViewCache& view, CDeterministicMNList& mnListRet,
+                               llmq::CQuorumSnapshotManager& qsnapman, bool debugLogs) EXCLUSIVE_LOCKS_REQUIRED(!cs);
+    void HandleQuorumCommitment(const llmq::CFinalCommitment& qc, gsl::not_null<const CBlockIndex*> pQuorumBaseBlockIndex,
+                                CDeterministicMNList& mnList, llmq::CQuorumSnapshotManager& qsnapman, bool debugLogs);
 
     CDeterministicMNList GetListForBlock(gsl::not_null<const CBlockIndex*> pindex) EXCLUSIVE_LOCKS_REQUIRED(!cs) {
         LOCK(cs);

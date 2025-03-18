@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2015-2024 The Dash Core developers
+# Copyright (c) 2015-2025 The Dash Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -10,7 +10,6 @@ Checks LLMQs based ChainLocks
 
 '''
 
-import time
 from io import BytesIO
 
 from test_framework.messages import CBlock, CCbTx
@@ -49,13 +48,7 @@ class LLMQChainLocksTest(DashTestFramework):
         self.nodes[0].sporkupdate("SPORK_17_QUORUM_DKG_ENABLED", 0)
         self.wait_for_sporks_same()
 
-        self.move_to_next_cycle()
-        self.log.info("Cycle H height:" + str(self.nodes[0].getblockcount()))
-        self.move_to_next_cycle()
-        self.log.info("Cycle H+C height:" + str(self.nodes[0].getblockcount()))
-        self.move_to_next_cycle()
-        self.log.info("Cycle H+2C height:" + str(self.nodes[0].getblockcount()))
-        self.mine_cycle_quorum(llmq_type_name="llmq_test_dip0024", llmq_type=103)
+        self.mine_cycle_quorum()
         self.wait_for_chainlocked_block_all_nodes(self.nodes[0].getbestblockhash())
 
         self.log.info("Mine single block, ensure it includes latest chainlock")
@@ -90,7 +83,7 @@ class LLMQChainLocksTest(DashTestFramework):
         previous_block_hash = self.nodes[0].getbestblockhash()
         for _ in range(2):
             block_hash = self.generate(self.nodes[0], 1, sync_fun=self.no_op)[0]
-            self.wait_for_chainlocked_block_all_nodes(block_hash, expected=False)
+            self.wait_for_chainlocked_block_all_nodes(block_hash, timeout=5, expected=False)
             assert self.nodes[0].getblock(previous_block_hash)["chainlock"]
 
         self.nodes[0].sporkupdate("SPORK_19_CHAINLOCKS_ENABLED", 0)
@@ -163,12 +156,10 @@ class LLMQChainLocksTest(DashTestFramework):
         self.nodes[0].invalidateblock(good_tip)
         self.log.info("Now try to reorg the chain")
         self.generate(self.nodes[0], 2, sync_fun=self.no_op)
-        time.sleep(6)
-        assert self.nodes[1].getbestblockhash() == good_tip
+        self.wait_until(lambda: self.nodes[1].getbestblockhash() == good_tip, timeout=6)
         bad_tip = self.generate(self.nodes[0], 2, sync_fun=self.no_op)[-1]
-        time.sleep(6)
-        assert self.nodes[0].getbestblockhash() == bad_tip
-        assert self.nodes[1].getbestblockhash() == good_tip
+        self.wait_until(lambda: self.nodes[1].getbestblockhash() == good_tip and
+                self.nodes[0].getbestblockhash() == bad_tip, timeout=6)
 
         self.log.info("Now let the node which is on the wrong chain reorg back to the locked chain")
         self.nodes[0].reconsiderblock(good_tip)
@@ -191,8 +182,7 @@ class LLMQChainLocksTest(DashTestFramework):
         self.restart_node(0)
         self.nodes[0].invalidateblock(good_fork)
         self.restart_node(0)
-        time.sleep(1)
-        assert self.nodes[0].getbestblockhash() == good_tip
+        self.wait_until(lambda: self.nodes[0].getbestblockhash() == good_tip, timeout=5)
 
         self.log.info("Isolate a node and let it create some transactions which won't get IS locked")
         force_finish_mnsync(self.nodes[0])
@@ -206,10 +196,15 @@ class LLMQChainLocksTest(DashTestFramework):
         for txid in txs:
             tx = self.nodes[0].getrawtransaction(txid, 1)
             assert "confirmations" not in tx
-        time.sleep(1)
-        node0_tip_block = self.nodes[0].getblock(node0_tip)
-        assert not node0_tip_block["chainlock"]
-        assert node0_tip_block["previousblockhash"] == good_tip
+
+        def test_cb(self):
+            node0_tip_block = self.nodes[0].getblock(node0_tip)
+            if node0_tip_block["chainlock"]:
+                return False
+            return node0_tip_block["previousblockhash"] == good_tip
+        self.wait_until(lambda: test_cb(self), timeout=5)
+
+
         self.log.info("Disable LLMQ based InstantSend for a very short time (this never gets propagated to other nodes)")
         self.nodes[0].sporkupdate("SPORK_2_INSTANTSEND_ENABLED", 4070908800)
         self.log.info("Now the TXs should be included")

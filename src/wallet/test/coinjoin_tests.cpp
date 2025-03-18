@@ -12,6 +12,7 @@
 #include <consensus/amount.h>
 #include <node/context.h>
 #include <util/translation.h>
+#include <policy/settings.h>
 #include <validation.h>
 #include <wallet/wallet.h>
 
@@ -231,7 +232,7 @@ BOOST_FIXTURE_TEST_CASE(CTransactionBuilderTest, CTransactionBuilderTestSetup)
     // Tests with single outpoint tallyItem
     {
         CompactTallyItem tallyItem = GetTallyItem({4999});
-        CTransactionBuilder txBuilder(wallet, tallyItem);
+        CTransactionBuilder txBuilder(*wallet, tallyItem);
 
         BOOST_CHECK_EQUAL(txBuilder.CountOutputs(), 0);
         BOOST_CHECK_EQUAL(txBuilder.GetAmountInitial(), tallyItem.nAmount);
@@ -268,7 +269,7 @@ BOOST_FIXTURE_TEST_CASE(CTransactionBuilderTest, CTransactionBuilderTestSetup)
     // Tests with multiple outpoint tallyItem
     {
         CompactTallyItem tallyItem = GetTallyItem({10000, 20000, 30000, 40000, 50000});
-        CTransactionBuilder txBuilder(wallet, tallyItem);
+        CTransactionBuilder txBuilder(*wallet, tallyItem);
         std::vector<CTransactionBuilderOutput*> vecOutputs;
         bilingual_str strResult;
 

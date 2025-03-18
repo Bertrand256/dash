@@ -12,6 +12,7 @@ from test_framework.util import (
     assert_array_result,
     assert_equal,
     assert_fee_amount,
+    assert_greater_than,
     assert_raises_rpc_error,
     count_bytes,
 )
@@ -128,13 +129,49 @@ class WalletTest(BitcoinTestFramework):
         # Exercise locking of unspent outputs
         unspent_0 = self.nodes[2].listunspent()[0]
         unspent_0 = {"txid": unspent_0["txid"], "vout": unspent_0["vout"]}
+        # Trying to unlock an output which isn't locked should error
         assert_raises_rpc_error(-8, "Invalid parameter, expected locked output", self.nodes[2].lockunspent, True, [unspent_0])
+
+        # Locking an already-locked output should error
         self.nodes[2].lockunspent(False, [unspent_0])
         assert_raises_rpc_error(-8, "Invalid parameter, output already locked", self.nodes[2].lockunspent, False, [unspent_0])
+
+        # Restarting the node should clear the lock
+        self.restart_node(2)
+        self.nodes[2].lockunspent(False, [unspent_0])
+
+        # Unloading and reloating the wallet should clear the lock
+        assert_equal(self.nodes[0].listwallets(), [self.default_wallet_name])
+        self.nodes[2].unloadwallet(self.default_wallet_name)
+        self.nodes[2].loadwallet(self.default_wallet_name)
+        assert_equal(len(self.nodes[2].listlockunspent()), 0)
+
+        # Locking non-persistently, then re-locking persistently, is allowed
+        self.nodes[2].lockunspent(False, [unspent_0])
+        self.nodes[2].lockunspent(False, [unspent_0], True)
+
+        # Restarting the node with the lock written to the wallet should keep the lock
+        self.restart_node(2)
+        assert_raises_rpc_error(-8, "Invalid parameter, output already locked", self.nodes[2].lockunspent, False, [unspent_0])
+
+        # Unloading and reloading the wallet with a persistent lock should keep the lock
+        self.nodes[2].unloadwallet(self.default_wallet_name)
+        self.nodes[2].loadwallet(self.default_wallet_name)
+        assert_raises_rpc_error(-8, "Invalid parameter, output already locked", self.nodes[2].lockunspent, False, [unspent_0])
+
+        # Locked outputs should not be used, even if they are the only available funds
         assert_raises_rpc_error(-6, "Insufficient funds", self.nodes[2].sendtoaddress, self.nodes[2].getnewaddress(), 200)
         assert_equal([unspent_0], self.nodes[2].listlockunspent())
+
+        # Unlocking should remove the persistent lock
         self.nodes[2].lockunspent(True, [unspent_0])
+        self.restart_node(2)
         assert_equal(len(self.nodes[2].listlockunspent()), 0)
+
+        # Reconnect node 2 after restarts
+        self.connect_nodes(1, 2)
+        self.connect_nodes(0, 2)
+
         assert_raises_rpc_error(-8, "txid must be of length 64 (not 34, for '0000000000000000000000000000000000')",
                                 self.nodes[2].lockunspent, False,
                                 [{"txid": "0000000000000000000000000000000000", "vout": 0}])
@@ -324,6 +361,33 @@ class WalletTest(BitcoinTestFramework):
                 found = True
                 assert_equal(uTx['amount'], Decimal('0'))
         assert found
+
+        self.log.info("Test listunspent with coinType option")
+        # 0=ALL_COINS
+        # 1=ONLY_FULLY_MIXED
+        # 2=ONLY_READY_TO_MIX
+        # 3=ONLY_NONDENOMINATED
+        # 4=ONLY_MASTERNODE_COLLATERAL
+        # 5=ONLY_COINJOIN_COLLATERAL
+        assert_greater_than(self.nodes[1].getbalance(), 1001)
+        self.generate(self.nodes[0], 1, sync_fun=self.no_op)
+        for cointype in range(6):
+            len_cointype = len(self.nodes[0].listunspent(minconf=0, maxconf=0, include_unsafe=True, query_options={'coinType': cointype}))
+            assert_equal(len_cointype, 0)
+        address = self.nodes[0].getnewaddress()
+        for amount in {0.00100001, 0.00100000, 1000, 0.00010000}:
+            self.nodes[1].sendtoaddress(address=address, amount=amount)
+        self.sync_mempools(self.nodes[0:2])
+        for cointype in range(2, 6):
+            len_cointype = len(self.nodes[0].listunspent(minconf=0, maxconf=0, include_unsafe=True, query_options={'coinType': cointype}))
+            assert_equal(len_cointype,  2 if cointype == 3 else 1) # masternode collaterals are counted as ONLY_NONDENOMINATED too
+        len_default = len(self.nodes[0].listunspent(minconf=0, maxconf=0, include_unsafe=True))
+        len0 = len(self.nodes[0].listunspent(minconf=0, maxconf=0, include_unsafe=True, query_options={'coinType': 0}))
+        len1 = len(self.nodes[0].listunspent(minconf=0, maxconf=0, include_unsafe=True, query_options={'coinType': 1}))
+        assert_equal(len_default, len0)
+        assert_equal(len0, 4)
+        assert_equal(len1, 0)
+        self.generate(self.nodes[0], 1, sync_fun=self.no_op)
 
         self.log.info("Test -walletbroadcast")
         self.stop_nodes()

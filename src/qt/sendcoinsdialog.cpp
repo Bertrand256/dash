@@ -1,5 +1,5 @@
 // Copyright (c) 2011-2020 The Bitcoin Core developers
-// Copyright (c) 2014-2024 The Dash Core developers
+// Copyright (c) 2014-2025 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -21,13 +21,14 @@
 #include <chainparams.h>
 #include <interfaces/node.h>
 #include <key_io.h>
-#include <node/ui_interface.h>
+#include <node/interface_ui.h>
 #include <policy/fees.h>
 #include <txmempool.h>
+#include <validation.h>
 #include <wallet/coincontrol.h>
 #include <wallet/fees.h>
 #include <wallet/wallet.h>
-#include <validation.h>
+#include <chrono>
 
 #include <array>
 #include <fstream>
@@ -232,7 +233,7 @@ void SendCoinsDialog::setModel(WalletModel *_model)
 
         if (model->wallet().privateKeysDisabled()) {
             ui->sendButton->setText(tr("Cr&eate Unsigned"));
-            ui->sendButton->setToolTip(tr("Creates a Partially Signed Bitcoin Transaction (PSBT) for use with e.g. an offline %1 wallet, or a PSBT-compatible hardware wallet.").arg(PACKAGE_NAME));
+            ui->sendButton->setToolTip(tr("Creates a Partially Signed Blockchain Transaction (PSBT) for use with e.g. an offline %1 wallet, or a PSBT-compatible hardware wallet.").arg(PACKAGE_NAME));
         }
 
         // set the smartfee-sliders default value (wallets default conf.target or last stored value)
@@ -1080,7 +1081,7 @@ SendConfirmationDialog::SendConfirmationDialog(const QString& title, const QStri
 int SendConfirmationDialog::exec()
 {
     updateYesButton();
-    countDownTimer.start(1000);
+    countDownTimer.start(1s);
     return QMessageBox::exec();
 }
 
